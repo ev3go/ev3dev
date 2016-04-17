@@ -5,6 +5,7 @@
 package ev3dev
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -14,8 +15,6 @@ import (
 	"sync"
 	"time"
 )
-
-const dcMotor = "dc-motor"
 
 // DCMotor represents a handle to a dc-motor.
 type DCMotor struct {
@@ -31,69 +30,62 @@ func (m *DCMotor) String() string { return fmt.Sprint(motorPrefix, m.id) }
 // returned with a DriverMismatch error.
 // If port is empty, the first dc-motor satisfying the driver name is returned.
 func DCMotorFor(port, driver string) (*DCMotor, error) {
-	p, err := LegoPortFor(port)
+	f, err := os.Open(DCMotorPath)
 	if err != nil {
 		return nil, err
 	}
-	if p == nil {
-		for id := 0; id < 8; id++ {
-			m, err := DCMotorFor(fmt.Sprint(portPrefix, id), driver)
-			if err == nil {
-				return m, err
-			}
-		}
-		return nil, fmt.Errorf("ev3dev: could not find device for driver %q", driver)
+	devices, err := f.Readdirnames(0)
+	f.Close()
+	if err != nil {
+		return nil, fmt.Errorf("ev3dev: could not get devices for %s: %v", DCMotorPath, err)
 	}
 
-	dev, err := ConnectedTo(p)
-	if err != nil {
-		return nil, err
-	}
-	path := filepath.Join(LegoPortPath, p.String(), dev)
-	f, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	files, err := f.Readdirnames(0)
-	f.Close()
-	if err != nil {
-		return nil, err
-	}
-	var mapping string
-	for _, n := range files {
-		parts := strings.SplitN(n, ":", 2)
-		if parts[0] == port {
-			mapping = n
-			break
+	portBytes := []byte(port)
+	driverBytes := []byte(driver)
+	for _, device := range devices {
+		if !strings.HasPrefix(device, motorPrefix) {
+			continue
 		}
+		id, err := strconv.Atoi(strings.TrimPrefix(device, motorPrefix))
+		if err != nil {
+			return nil, fmt.Errorf("ev3dev: could not parse id from device name %q: %v", device, err)
+		}
+
+		if port == "" {
+			path := filepath.Join(DCMotorPath, device, driverName)
+			b, err := ioutil.ReadFile(path)
+			if err != nil {
+				return nil, fmt.Errorf("ev3dev: could not read driver name %s: %v", path, err)
+			}
+			if !bytes.Equal(driverBytes, chomp(b)) {
+				continue
+			}
+			return &DCMotor{id: id}, nil
+		}
+
+		path := filepath.Join(DCMotorPath, device, address)
+		b, err := ioutil.ReadFile(path)
+		if err != nil {
+			return nil, fmt.Errorf("ev3dev: could not read address %s: %v", path, err)
+		}
+		if !bytes.Equal(portBytes, chomp(b)) {
+			continue
+		}
+		path = filepath.Join(DCMotorPath, device, driverName)
+		b, err = ioutil.ReadFile(path)
+		if err != nil {
+			return nil, fmt.Errorf("ev3dev: could not read driver name %s: %v", path, err)
+		}
+		if !bytes.Equal(driverBytes, chomp(b)) {
+			err = DriverMismatch{Want: driver, Have: string(b)}
+		}
+		return &DCMotor{id: id}, err
 	}
-	path = filepath.Join(path, mapping, dcMotor)
-	f, err = os.Open(path)
-	if err != nil {
-		return nil, err
+
+	if port != "" {
+		return nil, fmt.Errorf("ev3dev: could not find device for driver %q on port %s", driver, port)
 	}
-	files, err = f.Readdirnames(0)
-	f.Close()
-	if len(files) != 1 {
-		return nil, fmt.Errorf("ev3dev: more than one device in path %s: %q", path, files)
-	}
-	device := files[0]
-	if !strings.HasPrefix(device, motorPrefix) {
-		return nil, fmt.Errorf("ev3dev: device in path %s not a motor: %q", path, device)
-	}
-	id, err := strconv.Atoi(strings.TrimPrefix(device, motorPrefix))
-	if err != nil {
-		return nil, fmt.Errorf("ev3dev: could not parse id from device name %q: %v", device, err)
-	}
-	m := &DCMotor{id: id}
-	d, err := m.Driver()
-	if err != nil {
-		return nil, fmt.Errorf("ev3dev: could not get driver name: %v", err)
-	}
-	if d != driver {
-		err = DriverMismatch{Want: driver, Have: d}
-	}
-	return m, err
+	return nil, fmt.Errorf("ev3dev: could not find device for driver %q", driver)
 }
 
 func (m *DCMotor) writeFile(path, data string) error {

@@ -5,8 +5,10 @@
 package ev3dev
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -14,8 +16,6 @@ import (
 	"sync"
 	"time"
 )
-
-const sensor = "lego-sensor"
 
 // Sensor represents a handle to a lego-sensor.
 type Sensor struct {
@@ -31,69 +31,63 @@ func (s *Sensor) String() string { return fmt.Sprint(sensorPrefix, s.id) }
 // is returned with a DriverMismatch error.
 // If port is empty, the first sensor satisfying the driver name is returned.
 func SensorFor(port, driver string) (*Sensor, error) {
-	p, err := LegoPortFor(port)
+	f, err := os.Open(SensorPath)
 	if err != nil {
 		return nil, err
 	}
-	if p == nil {
-		for id := 0; id < 8; id++ {
-			s, err := SensorFor(fmt.Sprint(portPrefix, id), driver)
-			if err == nil {
-				return s, err
-			}
-		}
-		return nil, fmt.Errorf("ev3dev: could not find device for driver %q", driver)
+	devices, err := f.Readdirnames(0)
+	f.Close()
+	if err != nil {
+		return nil, fmt.Errorf("ev3dev: could not get devices for %s: %v", SensorPath, err)
 	}
 
-	dev, err := ConnectedTo(p)
-	if err != nil {
-		return nil, err
-	}
-	path := filepath.Join(LegoPortPath, p.String(), dev)
-	f, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	files, err := f.Readdirnames(0)
-	f.Close()
-	if err != nil {
-		return nil, err
-	}
-	var mapping string
-	for _, n := range files {
-		parts := strings.SplitN(n, ":", 2)
-		if parts[0] == port {
-			mapping = n
-			break
+	portBytes := []byte(port)
+	driverBytes := []byte(driver)
+	for _, device := range devices {
+		log.Println(filepath.Join(SensorPath, device))
+		if !strings.HasPrefix(device, sensorPrefix) {
+			continue
 		}
+		id, err := strconv.Atoi(strings.TrimPrefix(device, sensorPrefix))
+		if err != nil {
+			return nil, fmt.Errorf("ev3dev: could not parse id from device name %q: %v", device, err)
+		}
+
+		if port == "" {
+			path := filepath.Join(SensorPath, device, driverName)
+			b, err := ioutil.ReadFile(path)
+			if err != nil {
+				return nil, fmt.Errorf("ev3dev: could not read driver name %s: %v", path, err)
+			}
+			if !bytes.Equal(driverBytes, chomp(b)) {
+				continue
+			}
+			return &Sensor{id: id}, nil
+		}
+
+		path := filepath.Join(SensorPath, device, address)
+		b, err := ioutil.ReadFile(path)
+		if err != nil {
+			return nil, fmt.Errorf("ev3dev: could not read address %s: %v", path, err)
+		}
+		if !bytes.Equal(portBytes, chomp(b)) {
+			continue
+		}
+		path = filepath.Join(SensorPath, device, driverName)
+		b, err = ioutil.ReadFile(path)
+		if err != nil {
+			return nil, fmt.Errorf("ev3dev: could not read driver name %s: %v", path, err)
+		}
+		if !bytes.Equal(driverBytes, chomp(b)) {
+			err = DriverMismatch{Want: driver, Have: string(b)}
+		}
+		return &Sensor{id: id}, err
 	}
-	path = filepath.Join(path, mapping, sensor)
-	f, err = os.Open(path)
-	if err != nil {
-		return nil, err
+
+	if port != "" {
+		return nil, fmt.Errorf("ev3dev: could not find device for driver %q on port %s", driver, port)
 	}
-	files, err = f.Readdirnames(0)
-	f.Close()
-	if len(files) != 1 {
-		return nil, fmt.Errorf("ev3dev: more than one device in path %s: %q", path, files)
-	}
-	device := files[0]
-	if !strings.HasPrefix(device, sensorPrefix) {
-		return nil, fmt.Errorf("ev3dev: device in path %s not a sensor: %q", path, device)
-	}
-	id, err := strconv.Atoi(strings.TrimPrefix(device, sensorPrefix))
-	if err != nil {
-		return nil, fmt.Errorf("ev3dev: could not parse id from device name %q: %v", device, err)
-	}
-	s := &Sensor{id: id}
-	d, err := s.Driver()
-	if err != nil {
-		return nil, fmt.Errorf("ev3dev: could not get driver name: %v", err)
-	}
-	if d != driver {
-		err = DriverMismatch{Want: driver, Have: d}
-	}
-	return s, err
+	return nil, fmt.Errorf("ev3dev: could not find device for driver %q", driver)
 }
 
 func (s *Sensor) writeFile(path, data string) error {

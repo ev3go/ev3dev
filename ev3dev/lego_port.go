@@ -5,9 +5,12 @@
 package ev3dev
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 )
@@ -21,20 +24,67 @@ type LegoPort struct {
 // String satisfies the fmt.Stringer interface.
 func (p *LegoPort) String() string { return fmt.Sprint(portPrefix, p.id) }
 
-// LegoPortFor returns the LegoPort for the given ev3 port name.
-func LegoPortFor(name string) (*LegoPort, error) {
-	if strings.HasPrefix(name, "in") || strings.HasPrefix(name, "out") {
-		for i := 0; i < 8; i++ {
-			addr, err := (&LegoPort{id: i}).Address()
-			if err != nil {
-				return nil, err
-			}
-			if name == addr {
-				return &LegoPort{id: i}, nil
-			}
-		}
+// LegoPortFor returns a LEgoPort for the given ev3 port name and driver. If the
+// lego-port driver does not match the driver string, a LegoPort for the port
+// is returned with a DriverMismatch error.
+// If port is empty, the first port satisfying the driver name is returned.
+func LegoPortFor(port, driver string) (*LegoPort, error) {
+	f, err := os.Open(LegoPortPath)
+	if err != nil {
+		return nil, err
 	}
-	return nil, fmt.Errorf("ev3dev: invalid port name: %q", name)
+	devices, err := f.Readdirnames(0)
+	f.Close()
+	if err != nil {
+		return nil, fmt.Errorf("ev3dev: could not get devices for %s: %v", LegoPortPath, err)
+	}
+
+	portBytes := []byte(port)
+	driverBytes := []byte(driver)
+	for _, device := range devices {
+		if !strings.HasPrefix(device, portPrefix) {
+			continue
+		}
+		id, err := strconv.Atoi(strings.TrimPrefix(device, portPrefix))
+		if err != nil {
+			return nil, fmt.Errorf("ev3dev: could not parse id from device name %q: %v", device, err)
+		}
+
+		if port == "" {
+			path := filepath.Join(LegoPortPath, device, driverName)
+			b, err := ioutil.ReadFile(path)
+			if err != nil {
+				return nil, fmt.Errorf("ev3dev: could not read driver name %s: %v", path, err)
+			}
+			if !bytes.Equal(driverBytes, chomp(b)) {
+				continue
+			}
+			return &LegoPort{id: id}, nil
+		}
+
+		path := filepath.Join(LegoPortPath, device, address)
+		b, err := ioutil.ReadFile(path)
+		if err != nil {
+			return nil, fmt.Errorf("ev3dev: could not read address %s: %v", path, err)
+		}
+		if !bytes.Equal(portBytes, chomp(b)) {
+			continue
+		}
+		path = filepath.Join(LegoPortPath, device, driverName)
+		b, err = ioutil.ReadFile(path)
+		if err != nil {
+			return nil, fmt.Errorf("ev3dev: could not read driver name %s: %v", path, err)
+		}
+		if !bytes.Equal(driverBytes, chomp(b)) {
+			err = DriverMismatch{Want: driver, Have: string(b)}
+		}
+		return &LegoPort{id: id}, err
+	}
+
+	if port != "" {
+		return nil, fmt.Errorf("ev3dev: could not find device for driver %q on port %s", driver, port)
+	}
+	return nil, fmt.Errorf("ev3dev: could not find device for driver %q", driver)
 }
 
 func (p *LegoPort) writeFile(path, data string) error {
