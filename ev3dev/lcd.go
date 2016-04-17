@@ -34,27 +34,52 @@ type FrameBuffer interface {
 	draw.Image
 
 	// Init initializes the frame buffer. If zero
-	// is true the frame buffer is zeroed.
+	// is true the frame buffer is zeroed. It is
+	// safe to call Init on an already initialized
+	// FrameBuffer.
 	Init(zero bool) error
 
 	// Close closes the backing file. The FrameBuffer
-	// is not usable after a call Close without a
+	// is not usable after a call to Close without a
 	// following call to Init.
 	Close() error
 }
 
 // lcd is a reader/writer locked draw.Image.
 type lcd struct {
-	m   sync.RWMutex
-	img draw.Image
+	mu  sync.RWMutex
+	img *Monochrome
 	f   *os.File
 }
 
-func (p *lcd) Init(zero bool) error { return p.frameBuffer("/dev/fb0", zero) }
+func (p *lcd) Init(zero bool) error {
+	p.mu.RLock()
+	if p.f == nil {
+		defer p.mu.RUnlock()
+		return p.frameBuffer("/dev/fb0", zero)
+	}
+	p.mu.RUnlock()
+	if zero {
+		p.mu.Lock()
+		for i := 0; i < LCDHeight*LCDStride; i++ {
+			p.img.Pix[i] = 0
+		}
+		p.mu.Unlock()
+	}
+	return nil
+}
 
-func (p *lcd) Close() error { return p.f.Close() }
+func (p *lcd) Close() error {
+	err := p.f.Close()
+	p.mu.Lock()
+	p.f = nil
+	p.mu.Unlock()
+	return err
+}
 
 func (p *lcd) frameBuffer(path string, zero bool) error {
+	defer p.mu.Unlock()
+	p.mu.Lock()
 	var err error
 	p.f, err = os.OpenFile(path, os.O_RDWR, 0)
 	if err != nil {
@@ -76,14 +101,23 @@ func (p *lcd) frameBuffer(path string, zero bool) error {
 func (p *lcd) ColorModel() color.Model { return p.img.ColorModel() }
 func (p *lcd) Bounds() image.Rectangle { return p.img.Bounds() }
 func (p *lcd) At(x, y int) color.Color {
-	defer p.m.RUnlock()
-	p.m.RLock()
+	defer p.mu.RUnlock()
+	p.mu.RLock()
+	if p.f == nil {
+		return nil
+	}
 	return p.img.At(x, y)
 }
 func (p *lcd) Set(x, y int, c color.Color) {
-	p.m.Lock()
+	p.mu.RLock()
+	if p.f == nil {
+		p.mu.RUnlock()
+		return
+	}
+	p.mu.RUnlock()
+	p.mu.Lock()
 	p.img.Set(x, y, c)
-	p.m.Unlock()
+	p.mu.Unlock()
 }
 
 // NewMonochrome returns a new Monochrome image with the given bounds
