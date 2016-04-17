@@ -15,9 +15,6 @@ import (
 	"time"
 )
 
-// SensorPath is the path to the ev3 lego-sensor file system.
-const SensorPath = "/sys/class/lego-sensor"
-
 // Sensor represents a handle to a lego-sensor.
 type Sensor struct {
 	mu sync.Mutex

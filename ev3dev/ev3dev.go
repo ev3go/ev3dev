@@ -15,6 +15,26 @@ const (
 	sensorPrefix = "sensor"
 )
 
+const (
+	// LEDPath is the path to the ev3 LED file system.
+	LEDPath = "/sys/class/leds"
+
+	// LegoPortPath is the path to the ev3 lego-port file system.
+	LegoPortPath = "/sys/class/lego-port"
+
+	// SensorPath is the path to the ev3 lego-sensor file system.
+	SensorPath = "/sys/class/lego-sensor"
+
+	// TachoMotorPath is the path to the ev3 tacho-motor file system.
+	TachoMotorPath = "/sys/class/tacho-motor"
+
+	// ServoMotorPath is the path to the ev3 servo-motor file system.
+	ServoMotorPath = "/sys/class/servo-motor"
+
+	// DCMotorPath is the path to the ev3 dc-motor file system.
+	DCMotorPath = "/sys/class/dc-motor"
+)
+
 // These are the subsystem path definitions for all device classes.
 const (
 	address                   = "address"

@@ -15,9 +15,6 @@ import (
 	"time"
 )
 
-// ServoMotorPath is the path to the ev3 servo-motor file system.
-const ServoMotorPath = "/sys/class/servo-motor"
-
 // ServoMotor represents a handle to a servo-motor.
 type ServoMotor struct {
 	mu sync.Mutex

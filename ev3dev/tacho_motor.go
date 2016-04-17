@@ -15,9 +15,6 @@ import (
 	"time"
 )
 
-// TachoMotorPath is the path to the ev3 tacho-motor file system.
-const TachoMotorPath = "/sys/class/tacho-motor"
-
 // TachoMotor represents a handle to a tacho-motor.
 type TachoMotor struct {
 	mu sync.Mutex

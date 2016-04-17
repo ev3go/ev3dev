@@ -15,9 +15,6 @@ import (
 	"time"
 )
 
-// DCMotorPath is the path to the ev3 dc-motor file system.
-const DCMotorPath = "/sys/class/dc-motor"
-
 // DCMotor represents a handle to a dc-motor.
 type DCMotor struct {
 	mu sync.Mutex

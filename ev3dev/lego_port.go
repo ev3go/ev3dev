@@ -12,9 +12,6 @@ import (
 	"sync"
 )
 
-// LegoPortPath is the path to the ev3 lego-port file system.
-const LegoPortPath = "/sys/class/lego-port"
-
 // LegoPort represents a handle to a lego-port.
 type LegoPort struct {
 	mu sync.Mutex

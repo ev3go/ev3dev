@@ -12,9 +12,6 @@ import (
 	"sync"
 )
 
-// LEDPath is the path to the ev3 LED file system.
-const LEDPath = "/sys/class/leds"
-
 // LED represents a handle to an ev3 LED.
 type LED struct {
 	mu    sync.Mutex
@@ -23,10 +20,10 @@ type LED struct {
 }
 
 var (
-	GreenLeft  = &LED{color: "green", side: "left"}
-	GreenRight = &LED{color: "green", side: "right"}
-	RedLeft    = &LED{color: "red", side: "left"}
-	RedRight   = &LED{color: "red", side: "right"}
+	GreenLeft  *LED = &LED{color: "green", side: "left"}
+	GreenRight *LED = &LED{color: "green", side: "right"}
+	RedLeft    *LED = &LED{color: "red", side: "left"}
+	RedRight   *LED = &LED{color: "red", side: "right"}
 )
 
 // String satisfies the fmt.Stringer interface.
