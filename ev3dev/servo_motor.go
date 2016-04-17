@@ -5,11 +5,8 @@
 package ev3dev
 
 import (
-	"bytes"
 	"fmt"
 	"io/ioutil"
-	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -30,62 +27,11 @@ func (m *ServoMotor) String() string { return fmt.Sprint(motorPrefix, m.id) }
 // is returned with a DriverMismatch error.
 // If port is empty, the first servo-motor satisfying the driver name is returned.
 func ServoMotorFor(port, driver string) (*ServoMotor, error) {
-	f, err := os.Open(ServoMotorPath)
-	if err != nil {
+	id, err := deviceIDFor(port, driver, ServoMotorPath, motorPrefix)
+	if id == -1 {
 		return nil, err
 	}
-	devices, err := f.Readdirnames(0)
-	f.Close()
-	if err != nil {
-		return nil, fmt.Errorf("ev3dev: could not get devices for %s: %v", ServoMotorPath, err)
-	}
-
-	portBytes := []byte(port)
-	driverBytes := []byte(driver)
-	for _, device := range devices {
-		if !strings.HasPrefix(device, motorPrefix) {
-			continue
-		}
-		id, err := strconv.Atoi(strings.TrimPrefix(device, motorPrefix))
-		if err != nil {
-			return nil, fmt.Errorf("ev3dev: could not parse id from device name %q: %v", device, err)
-		}
-
-		if port == "" {
-			path := filepath.Join(ServoMotorPath, device, driverName)
-			b, err := ioutil.ReadFile(path)
-			if err != nil {
-				return nil, fmt.Errorf("ev3dev: could not read driver name %s: %v", path, err)
-			}
-			if !bytes.Equal(driverBytes, chomp(b)) {
-				continue
-			}
-			return &ServoMotor{id: id}, nil
-		}
-
-		path := filepath.Join(ServoMotorPath, device, address)
-		b, err := ioutil.ReadFile(path)
-		if err != nil {
-			return nil, fmt.Errorf("ev3dev: could not read address %s: %v", path, err)
-		}
-		if !bytes.Equal(portBytes, chomp(b)) {
-			continue
-		}
-		path = filepath.Join(ServoMotorPath, device, driverName)
-		b, err = ioutil.ReadFile(path)
-		if err != nil {
-			return nil, fmt.Errorf("ev3dev: could not read driver name %s: %v", path, err)
-		}
-		if !bytes.Equal(driverBytes, chomp(b)) {
-			err = DriverMismatch{Want: driver, Have: string(b)}
-		}
-		return &ServoMotor{id: id}, err
-	}
-
-	if port != "" {
-		return nil, fmt.Errorf("ev3dev: could not find device for driver %q on port %s", driver, port)
-	}
-	return nil, fmt.Errorf("ev3dev: could not find device for driver %q", driver)
+	return &ServoMotor{id: id}, err
 }
 
 func (m *ServoMotor) writeFile(path, data string) error {

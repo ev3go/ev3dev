@@ -5,11 +5,8 @@
 package ev3dev
 
 import (
-	"bytes"
 	"fmt"
 	"io/ioutil"
-	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -30,62 +27,11 @@ func (m *DCMotor) String() string { return fmt.Sprint(motorPrefix, m.id) }
 // returned with a DriverMismatch error.
 // If port is empty, the first dc-motor satisfying the driver name is returned.
 func DCMotorFor(port, driver string) (*DCMotor, error) {
-	f, err := os.Open(DCMotorPath)
-	if err != nil {
+	id, err := deviceIDFor(port, driver, DCMotorPath, motorPrefix)
+	if id == -1 {
 		return nil, err
 	}
-	devices, err := f.Readdirnames(0)
-	f.Close()
-	if err != nil {
-		return nil, fmt.Errorf("ev3dev: could not get devices for %s: %v", DCMotorPath, err)
-	}
-
-	portBytes := []byte(port)
-	driverBytes := []byte(driver)
-	for _, device := range devices {
-		if !strings.HasPrefix(device, motorPrefix) {
-			continue
-		}
-		id, err := strconv.Atoi(strings.TrimPrefix(device, motorPrefix))
-		if err != nil {
-			return nil, fmt.Errorf("ev3dev: could not parse id from device name %q: %v", device, err)
-		}
-
-		if port == "" {
-			path := filepath.Join(DCMotorPath, device, driverName)
-			b, err := ioutil.ReadFile(path)
-			if err != nil {
-				return nil, fmt.Errorf("ev3dev: could not read driver name %s: %v", path, err)
-			}
-			if !bytes.Equal(driverBytes, chomp(b)) {
-				continue
-			}
-			return &DCMotor{id: id}, nil
-		}
-
-		path := filepath.Join(DCMotorPath, device, address)
-		b, err := ioutil.ReadFile(path)
-		if err != nil {
-			return nil, fmt.Errorf("ev3dev: could not read address %s: %v", path, err)
-		}
-		if !bytes.Equal(portBytes, chomp(b)) {
-			continue
-		}
-		path = filepath.Join(DCMotorPath, device, driverName)
-		b, err = ioutil.ReadFile(path)
-		if err != nil {
-			return nil, fmt.Errorf("ev3dev: could not read driver name %s: %v", path, err)
-		}
-		if !bytes.Equal(driverBytes, chomp(b)) {
-			err = DriverMismatch{Want: driver, Have: string(b)}
-		}
-		return &DCMotor{id: id}, err
-	}
-
-	if port != "" {
-		return nil, fmt.Errorf("ev3dev: could not find device for driver %q on port %s", driver, port)
-	}
-	return nil, fmt.Errorf("ev3dev: could not find device for driver %q", driver)
+	return &DCMotor{id: id}, err
 }
 
 func (m *DCMotor) writeFile(path, data string) error {

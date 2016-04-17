@@ -7,7 +7,15 @@
 // All functions and methods are safe for concurrent use.
 package ev3dev
 
-import "fmt"
+import (
+	"bytes"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
+)
 
 const (
 	motorPrefix  = "motor"
@@ -180,4 +188,67 @@ type DriverMismatch struct {
 
 func (e DriverMismatch) Error() string {
 	return fmt.Sprintf("ev3dev: mismatched driver names: want %q but have %q", e.Want, e.Have)
+}
+
+// deviceIDFor returns the id for the given ev3 port name and driver in the class path.
+// If the driver does not match the driver string, an id for the port is returned with
+// a DriverMismatch error. The prefix parameter is one of "motor", "port" or "sensor".
+// If port is empty, the first tacho-motor satisfying the driver name is returned.
+func deviceIDFor(port, driver, classPath, prefix string) (int, error) {
+	f, err := os.Open(classPath)
+	if err != nil {
+		return -1, err
+	}
+	devices, err := f.Readdirnames(0)
+	f.Close()
+	if err != nil {
+		return -1, fmt.Errorf("ev3dev: could not get devices for %s: %v", classPath, err)
+	}
+
+	portBytes := []byte(port)
+	driverBytes := []byte(driver)
+	for _, device := range devices {
+		if !strings.HasPrefix(device, prefix) {
+			continue
+		}
+		id, err := strconv.Atoi(strings.TrimPrefix(device, prefix))
+		if err != nil {
+			return -1, fmt.Errorf("ev3dev: could not parse id from device name %q: %v", device, err)
+		}
+
+		if port == "" {
+			path := filepath.Join(classPath, device, driverName)
+			b, err := ioutil.ReadFile(path)
+			if err != nil {
+				return -1, fmt.Errorf("ev3dev: could not read driver name %s: %v", path, err)
+			}
+			if !bytes.Equal(driverBytes, chomp(b)) {
+				continue
+			}
+			return id, nil
+		}
+
+		path := filepath.Join(classPath, device, address)
+		b, err := ioutil.ReadFile(path)
+		if err != nil {
+			return -1, fmt.Errorf("ev3dev: could not read address %s: %v", path, err)
+		}
+		if !bytes.Equal(portBytes, chomp(b)) {
+			continue
+		}
+		path = filepath.Join(classPath, device, driverName)
+		b, err = ioutil.ReadFile(path)
+		if err != nil {
+			return -1, fmt.Errorf("ev3dev: could not read driver name %s: %v", path, err)
+		}
+		if !bytes.Equal(driverBytes, chomp(b)) {
+			err = DriverMismatch{Want: driver, Have: string(b)}
+		}
+		return id, err
+	}
+
+	if port != "" {
+		return -1, fmt.Errorf("ev3dev: could not find device for driver %q on port %s", driver, port)
+	}
+	return -1, fmt.Errorf("ev3dev: could not find device for driver %q", driver)
 }

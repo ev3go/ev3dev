@@ -5,12 +5,9 @@
 package ev3dev
 
 import (
-	"bytes"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -31,65 +28,12 @@ func (s *Sensor) String() string { return fmt.Sprint(sensorPrefix, s.id) }
 // is returned with a DriverMismatch error.
 // If port is empty, the first sensor satisfying the driver name is returned.
 func SensorFor(port, driver string) (*Sensor, error) {
-	f, err := os.Open(SensorPath)
-	if err != nil {
+	id, err := deviceIDFor(port, driver, SensorPath, sensorPrefix)
+	if id == -1 {
 		return nil, err
 	}
-	devices, err := f.Readdirnames(0)
-	f.Close()
-	if err != nil {
-		return nil, fmt.Errorf("ev3dev: could not get devices for %s: %v", SensorPath, err)
-	}
-
-	portBytes := []byte(port)
-	driverBytes := []byte(driver)
-	for _, device := range devices {
-		log.Println(filepath.Join(SensorPath, device))
-		if !strings.HasPrefix(device, sensorPrefix) {
-			continue
-		}
-		id, err := strconv.Atoi(strings.TrimPrefix(device, sensorPrefix))
-		if err != nil {
-			return nil, fmt.Errorf("ev3dev: could not parse id from device name %q: %v", device, err)
-		}
-
-		if port == "" {
-			path := filepath.Join(SensorPath, device, driverName)
-			b, err := ioutil.ReadFile(path)
-			if err != nil {
-				return nil, fmt.Errorf("ev3dev: could not read driver name %s: %v", path, err)
-			}
-			if !bytes.Equal(driverBytes, chomp(b)) {
-				continue
-			}
-			return &Sensor{id: id}, nil
-		}
-
-		path := filepath.Join(SensorPath, device, address)
-		b, err := ioutil.ReadFile(path)
-		if err != nil {
-			return nil, fmt.Errorf("ev3dev: could not read address %s: %v", path, err)
-		}
-		if !bytes.Equal(portBytes, chomp(b)) {
-			continue
-		}
-		path = filepath.Join(SensorPath, device, driverName)
-		b, err = ioutil.ReadFile(path)
-		if err != nil {
-			return nil, fmt.Errorf("ev3dev: could not read driver name %s: %v", path, err)
-		}
-		if !bytes.Equal(driverBytes, chomp(b)) {
-			err = DriverMismatch{Want: driver, Have: string(b)}
-		}
-		return &Sensor{id: id}, err
-	}
-
-	if port != "" {
-		return nil, fmt.Errorf("ev3dev: could not find device for driver %q on port %s", driver, port)
-	}
-	return nil, fmt.Errorf("ev3dev: could not find device for driver %q", driver)
+	return &Sensor{id: id}, err
 }
-
 func (s *Sensor) writeFile(path, data string) error {
 	defer s.mu.Unlock()
 	s.mu.Lock()
