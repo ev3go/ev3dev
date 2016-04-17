@@ -15,6 +15,8 @@ import (
 	"time"
 )
 
+const dcMotor = "dc-motor"
+
 // DCMotor represents a handle to a dc-motor.
 type DCMotor struct {
 	mu sync.Mutex
@@ -52,21 +54,36 @@ func DCMotorFor(port, driver string) (*DCMotor, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
-	names, err := f.Readdirnames(0)
+	files, err := f.Readdirnames(0)
+	f.Close()
 	if err != nil {
 		return nil, err
 	}
-	if len(names) != 1 {
-		return nil, fmt.Errorf("ev3dev: more than one device in path %s: %q", path, names)
+	var mapping string
+	for _, n := range files {
+		parts := strings.SplitN(n, ":", 2)
+		if parts[0] == port {
+			mapping = n
+			break
+		}
 	}
-	name := names[0]
-	if !strings.HasPrefix(name, motorPrefix) {
-		return nil, fmt.Errorf("ev3dev: device in path %s not a motor: %q", path, name)
-	}
-	id, err := strconv.Atoi(strings.TrimPrefix(name, motorPrefix))
+	path = filepath.Join(path, mapping, dcMotor)
+	f, err = os.Open(path)
 	if err != nil {
-		return nil, fmt.Errorf("ev3dev: could not parse id from device name %q: %v", name, err)
+		return nil, err
+	}
+	files, err = f.Readdirnames(0)
+	f.Close()
+	if len(files) != 1 {
+		return nil, fmt.Errorf("ev3dev: more than one device in path %s: %q", path, files)
+	}
+	device := files[0]
+	if !strings.HasPrefix(device, motorPrefix) {
+		return nil, fmt.Errorf("ev3dev: device in path %s not a motor: %q", path, device)
+	}
+	id, err := strconv.Atoi(strings.TrimPrefix(device, motorPrefix))
+	if err != nil {
+		return nil, fmt.Errorf("ev3dev: could not parse id from device name %q: %v", device, err)
 	}
 	m := &DCMotor{id: id}
 	d, err := m.Driver()
