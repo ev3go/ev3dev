@@ -27,32 +27,50 @@ const (
 
 // LCD is the draw image used draw directly to the ev3 LCD screen.
 // Drawing operations are safe for concurrent use, but are not atomic
-// beyond the pixel level.
-var LCD draw.Image = frameBuffer("/dev/fb0")
+// beyond the pixel level. It must be initialized before use.
+var LCD FrameBuffer = new(lcd)
 
-func frameBuffer(path string) draw.Image {
-	f, err := os.OpenFile(path, os.O_RDWR, 0)
-	if err != nil {
-		panic(err)
-	}
-	fbdev, err := syscall.Mmap(int(f.Fd()), 0, LCDHeight*LCDStride, syscall.PROT_READ|syscall.PROT_WRITE, syscall.MAP_SHARED)
-	if err != nil {
-		panic(err)
-	}
-	for i := 0; i < LCDHeight*LCDStride; i++ {
-		fbdev[i] = 0
-	}
-	fb0, err := newMonochromeWith(fbdev, image.Rect(0, 0, LCDWidth, LCDHeight), LCDStride)
-	if err != nil {
-		panic(err)
-	}
-	return &lcd{img: fb0}
+type FrameBuffer interface {
+	draw.Image
+
+	// Init initializes the frame buffer. If zero
+	// is true the frame buffer is zeroed.
+	Init(zero bool) error
+
+	// Close closes the backing file. The FrameBuffer
+	// is not usable after a call Close without a
+	// following call to Init.
+	Close() error
 }
 
 // lcd is a reader/writer locked draw.Image.
 type lcd struct {
 	m   sync.RWMutex
 	img draw.Image
+	f   *os.File
+}
+
+func (p *lcd) Init(zero bool) error { return p.frameBuffer("/dev/fb0", zero) }
+
+func (p *lcd) Close() error { return p.f.Close() }
+
+func (p *lcd) frameBuffer(path string, zero bool) error {
+	var err error
+	p.f, err = os.OpenFile(path, os.O_RDWR, 0)
+	if err != nil {
+		return err
+	}
+	fbdev, err := syscall.Mmap(int(p.f.Fd()), 0, LCDHeight*LCDStride, syscall.PROT_READ|syscall.PROT_WRITE, syscall.MAP_SHARED)
+	if err != nil {
+		return err
+	}
+	if zero {
+		for i := 0; i < LCDHeight*LCDStride; i++ {
+			fbdev[i] = 0
+		}
+	}
+	p.img, err = newMonochromeWith(fbdev, image.Rect(0, 0, LCDWidth, LCDHeight), LCDStride)
+	return err
 }
 
 func (p *lcd) ColorModel() color.Model { return p.img.ColorModel() }
