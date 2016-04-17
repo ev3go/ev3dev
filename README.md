@@ -7,13 +7,13 @@ Currently supported:
 ## Low level API
 
 - [x] Automatic identification of attached devices
-- [x] LED
-- [x] LCD
-- [x] Lego Port
-- [x] Sensor
-- [x] DC motor
-- [x] Servo motor
-- [x] Tacho motor
+- [x] LED `/sys/class/leds`
+- [x] LCD `/dev/fb0`
+- [x] Lego Port `/sys/class/lego-port`
+- [x] Sensor `/sys/class/lego-sensor`
+- [x] DC motor `/sys/class/dc-motor`
+- [x] Servo motor `/sys/class/servo-motor`
+- [x] Tacho motor `/sys/class/tacho-motor`
 
 ## Common tasks
 
