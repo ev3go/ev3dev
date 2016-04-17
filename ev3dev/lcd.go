@@ -55,7 +55,7 @@ type lcd struct {
 func (p *lcd) Init(zero bool) error {
 	p.mu.RLock()
 	if p.f == nil {
-		defer p.mu.RUnlock()
+		p.mu.RUnlock()
 		return p.frameBuffer("/dev/fb0", zero)
 	}
 	p.mu.RUnlock()
