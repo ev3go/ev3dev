@@ -277,7 +277,7 @@ func (s *Sensor) Units() (string, error) {
 }
 
 // Value returns tthe value or values measured by the Sensor. Value will return
-// and error if n is greater than the value returned by NumValues.
+// and error if n is greater than or equal to the value returned by NumValues.
 func (s *Sensor) Value(n int) (string, error) {
 	b, err := ioutil.ReadFile(fmt.Sprintf(SensorPath+"/%s/"+value+"%d", s, n))
 	if err != nil {
