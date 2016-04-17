@@ -27,7 +27,9 @@ type TachoMotor struct {
 // String satisfies the fmt.Stringer interface.
 func (m *TachoMotor) String() string { return fmt.Sprint(motorPrefix, m.id) }
 
-// TachoMotorFor returns a TachoMotor for the given ev3 port name and driver.
+// TachoMotorFor returns a TachoMotor for the given ev3 port name and driver. If the
+// motor driver does not match the driver string, a TechoMotor for the port is
+// returned with a DriverMismatch error.
 // If port is empty, the first tacho-motor satisfying the driver name is returned.
 func TachoMotorFor(port, driver string) (*TachoMotor, error) {
 	p, err := LegoPortFor(port)
@@ -75,7 +77,7 @@ func TachoMotorFor(port, driver string) (*TachoMotor, error) {
 		return nil, fmt.Errorf("ev3dev: could not get driver name: %v", err)
 	}
 	if d != driver {
-		err = fmt.Errorf("ev3dev: mismatched driver names: want %q but have %q", driver, d)
+		err = DriverMismatch{Want: driver, Have: d}
 	}
 	return m, err
 }

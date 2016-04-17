@@ -7,6 +7,8 @@
 // All functions and methods are safe for concurrent use.
 package ev3dev
 
+import "fmt"
+
 const (
 	motorPrefix  = "motor"
 	portPrefix   = "port"
@@ -142,4 +144,20 @@ func chomp(b []byte) []byte {
 		b = b[:len(b)-1]
 	}
 	return b
+}
+
+// DriverMismatch errors are returned when a device is found that
+// does not match the requested driver.
+type DriverMismatch struct {
+	// Want is the string describing
+	// the requested driver.
+	Want string
+
+	// Have is the string describing
+	// the driver present on the device.
+	Have string
+}
+
+func (e DriverMismatch) Error() string {
+	return fmt.Sprintf("ev3dev: mismatched driver names: want %q but have %q", e.Want, e.Have)
 }

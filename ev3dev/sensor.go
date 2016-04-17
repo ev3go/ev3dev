@@ -27,7 +27,9 @@ type Sensor struct {
 // String satisfies the fmt.Stringer interface.
 func (s *Sensor) String() string { return fmt.Sprint(sensorPrefix, s.id) }
 
-// SensorFor returns a Sensor for the given ev3 port name and driver.
+// SensorFor returns a Sensor for the given ev3 port name and driver. If the
+// sensor driver does not match the driver string, a Sensor for the port
+// is returned with a DriverMismatch error.
 // If port is empty, the first sensor satisfying the driver name is returned.
 func SensorFor(port, driver string) (*Sensor, error) {
 	p, err := LegoPortFor(port)
@@ -75,25 +77,9 @@ func SensorFor(port, driver string) (*Sensor, error) {
 		return nil, fmt.Errorf("ev3dev: could not get driver name: %v", err)
 	}
 	if d != driver {
-		err = fmt.Errorf("ev3dev: mismatched driver names: want %q but have %q", driver, d)
+		err = DriverMismatch{Want: driver, Have: d}
 	}
 	return s, err
-}
-
-// SensorForName returns the Sensor for the given ev3 port name.
-func SensorForName(name string) (*Sensor, error) {
-	if strings.HasPrefix(name, "in") || strings.HasPrefix(name, "out") {
-		for i := 0; i < 8; i++ {
-			addr, err := (&Sensor{id: i}).Address()
-			if err != nil {
-				return nil, err
-			}
-			if name == addr {
-				return &Sensor{id: i}, nil
-			}
-		}
-	}
-	return nil, fmt.Errorf("ev3dev: invalid port name: %q", name)
 }
 
 func (s *Sensor) writeFile(path, data string) error {

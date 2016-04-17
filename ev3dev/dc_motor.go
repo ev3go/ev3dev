@@ -27,7 +27,9 @@ type DCMotor struct {
 // String satisfies the fmt.Stringer interface.
 func (m *DCMotor) String() string { return fmt.Sprint(motorPrefix, m.id) }
 
-// DCMotorFor returns a DCMotor for the given ev3 port name and driver.
+// DCMotorFor returns a DCMotor for the given ev3 port name and driver. If the
+// motor driver does not match the driver string, a DCMotor for the port is
+// returned with a DriverMismatch error.
 // If port is empty, the first dc-motor satisfying the driver name is returned.
 func DCMotorFor(port, driver string) (*DCMotor, error) {
 	p, err := LegoPortFor(port)
@@ -75,7 +77,7 @@ func DCMotorFor(port, driver string) (*DCMotor, error) {
 		return nil, fmt.Errorf("ev3dev: could not get driver name: %v", err)
 	}
 	if d != driver {
-		err = fmt.Errorf("ev3dev: mismatched driver names: want %q but have %q", driver, d)
+		err = DriverMismatch{Want: driver, Have: d}
 	}
 	return m, err
 }

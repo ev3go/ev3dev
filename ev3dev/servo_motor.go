@@ -28,6 +28,8 @@ type ServoMotor struct {
 func (m *ServoMotor) String() string { return fmt.Sprint(motorPrefix, m.id) }
 
 // ServoMotorFor returns a ServoMotor for the given ev3 port name and driver.
+// If the motor driver does not match the driver string, a ServoMotor for the port
+// is returned with a DriverMismatch error.
 // If port is empty, the first servo-motor satisfying the driver name is returned.
 func ServoMotorFor(port, driver string) (*ServoMotor, error) {
 	p, err := LegoPortFor(port)
@@ -75,7 +77,7 @@ func ServoMotorFor(port, driver string) (*ServoMotor, error) {
 		return nil, fmt.Errorf("ev3dev: could not get driver name: %v", err)
 	}
 	if d != driver {
-		err = fmt.Errorf("ev3dev: mismatched driver names: want %q but have %q", driver, d)
+		err = DriverMismatch{Want: driver, Have: d}
 	}
 	return m, err
 }
