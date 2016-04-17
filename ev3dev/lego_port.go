@@ -21,7 +21,7 @@ type LegoPort struct {
 // String satisfies the fmt.Stringer interface.
 func (p *LegoPort) String() string { return fmt.Sprint(portPrefix, p.id) }
 
-// LegoPortFor returns a LEgoPort for the given ev3 port name and driver. If the
+// LegoPortFor returns a LegoPort for the given ev3 port name and driver. If the
 // lego-port driver does not match the driver string, a LegoPort for the port
 // is returned with a DriverMismatch error.
 // If port is empty, the first port satisfying the driver name is returned.
