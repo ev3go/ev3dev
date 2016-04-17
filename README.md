@@ -2,7 +2,7 @@
 
 The goal is to implement a simple Go style ev3dev API and helpers for common tasks.
 
-Currently supported (not yet tested):
+Currently supported:
 
 ## Low level API
 
