@@ -145,9 +145,9 @@ func (m *TachoMotor) DutyCycle() (int, error) {
 	return sp, nil
 }
 
-// DutyCycleSetPoint returns the current duty cycle set point value for the TachoMotor.
-func (m *TachoMotor) DutyCycleSetPoint() (int, error) {
-	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+dutyCycleSetPoint, m))
+// DutyCycleSetpoint returns the current duty cycle set point value for the TachoMotor.
+func (m *TachoMotor) DutyCycleSetpoint() (int, error) {
+	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+dutyCycleSetpoint, m))
 	if err != nil {
 		return -1, fmt.Errorf("ev3dev: failed to read duty cycle set point: %v", err)
 	}
@@ -158,12 +158,12 @@ func (m *TachoMotor) DutyCycleSetPoint() (int, error) {
 	return sp, nil
 }
 
-// SetDutyCycleSetPoint sets the duty cycle set point value for the TachoMotor
-func (m *TachoMotor) SetDutyCycleSetPoint(sp int) error {
+// SetDutyCycleSetpoint sets the duty cycle set point value for the TachoMotor
+func (m *TachoMotor) SetDutyCycleSetpoint(sp int) error {
 	if sp < -100 || sp > 100 {
 		return fmt.Errorf("ev3dev: invalid duty cycle set point: %d (valid -100 - 100)", sp)
 	}
-	err := m.writeFile(fmt.Sprintf(TachoMotorPath+"/%s/"+dutyCycleSetPoint, m), fmt.Sprintln(sp))
+	err := m.writeFile(fmt.Sprintf(TachoMotorPath+"/%s/"+dutyCycleSetpoint, m), fmt.Sprintln(sp))
 	if err != nil {
 		return fmt.Errorf("ev3dev: failed to set duty cycle set point: %v", err)
 	}
@@ -282,9 +282,9 @@ func (m *TachoMotor) SetHoldPIDKp(pos int) error {
 	return nil
 }
 
-// PositionSetPoint returns the current position set point value for the TachoMotor.
-func (m *TachoMotor) PositionSetPoint() (int, error) {
-	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+positionSetPoint, m))
+// PositionSetpoint returns the current position set point value for the TachoMotor.
+func (m *TachoMotor) PositionSetpoint() (int, error) {
+	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+positionSetpoint, m))
 	if err != nil {
 		return -1, fmt.Errorf("ev3dev: failed to read position set point: %v", err)
 	}
@@ -295,12 +295,12 @@ func (m *TachoMotor) PositionSetPoint() (int, error) {
 	return pos, nil
 }
 
-// SetPositionSetPoint sets the position set point value for the TachoMotor.
-func (m *TachoMotor) SetPositionSetPoint(pos int) error {
+// SetPositionSetpoint sets the position set point value for the TachoMotor.
+func (m *TachoMotor) SetPositionSetpoint(pos int) error {
 	if pos != int(int32(pos)) {
 		return fmt.Errorf("ev3dev: invalid position set point: %d (valid in int32)", pos)
 	}
-	err := m.writeFile(fmt.Sprintf(TachoMotorPath+"/%s/"+positionSetPoint, m), fmt.Sprintln(pos))
+	err := m.writeFile(fmt.Sprintf(TachoMotorPath+"/%s/"+positionSetpoint, m), fmt.Sprintln(pos))
 	if err != nil {
 		return fmt.Errorf("ev3dev: failed to set position set point: %v", err)
 	}
@@ -320,9 +320,9 @@ func (m *TachoMotor) Speed() (int, error) {
 	return sp, nil
 }
 
-// SpeedSetPoint returns the current speed set point value for the TachoMotor.
-func (m *TachoMotor) SpeedSetPoint() (int, error) {
-	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+speedSetPoint, m))
+// SpeedSetpoint returns the current speed set point value for the TachoMotor.
+func (m *TachoMotor) SpeedSetpoint() (int, error) {
+	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+speedSetpoint, m))
 	if err != nil {
 		return -1, fmt.Errorf("ev3dev: failed to read speed set point: %v", err)
 	}
@@ -333,18 +333,18 @@ func (m *TachoMotor) SpeedSetPoint() (int, error) {
 	return sp, nil
 }
 
-// SetSpeedSetPoint sets the speed set point value for the TachoMotor.
-func (m *TachoMotor) SetSpeedSetPoint(sp int) error {
-	err := m.writeFile(fmt.Sprintf(TachoMotorPath+"/%s/"+speedSetPoint, m), fmt.Sprintln(sp))
+// SetSpeedSetpoint sets the speed set point value for the TachoMotor.
+func (m *TachoMotor) SetSpeedSetpoint(sp int) error {
+	err := m.writeFile(fmt.Sprintf(TachoMotorPath+"/%s/"+speedSetpoint, m), fmt.Sprintln(sp))
 	if err != nil {
 		return fmt.Errorf("ev3dev: failed to set speed set point: %v", err)
 	}
 	return nil
 }
 
-// RampUpSetPoint returns the current ramp up set point value for the TachoMotor.
-func (m *TachoMotor) RampUpSetPoint() (time.Duration, error) {
-	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+rampUpSetPoint, m))
+// RampUpSetpoint returns the current ramp up set point value for the TachoMotor.
+func (m *TachoMotor) RampUpSetpoint() (time.Duration, error) {
+	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+rampUpSetpoint, m))
 	if err != nil {
 		return -1, fmt.Errorf("ev3dev: failed to read ramp up set point: %v", err)
 	}
@@ -355,21 +355,21 @@ func (m *TachoMotor) RampUpSetPoint() (time.Duration, error) {
 	return time.Duration(d) * time.Millisecond, nil
 }
 
-// SetRampUpSetPoint sets the ramp up set point value for the TachoMotor.
-func (m *TachoMotor) SetRampUpSetPoint(d time.Duration) error {
+// SetRampUpSetpoint sets the ramp up set point value for the TachoMotor.
+func (m *TachoMotor) SetRampUpSetpoint(d time.Duration) error {
 	if d < 0 {
 		return fmt.Errorf("ev3dev: invalid ramp up set point: %v (must be positive)", d)
 	}
-	err := m.writeFile(fmt.Sprintf(TachoMotorPath+"/%s/"+rampUpSetPoint, m), fmt.Sprintln(int(d/time.Millisecond)))
+	err := m.writeFile(fmt.Sprintf(TachoMotorPath+"/%s/"+rampUpSetpoint, m), fmt.Sprintln(int(d/time.Millisecond)))
 	if err != nil {
 		return fmt.Errorf("ev3dev: failed to set ramp up set point: %v", err)
 	}
 	return nil
 }
 
-// RampDownSetPoint returns the current ramp down set point value for the TachoMotor.
-func (m *TachoMotor) RampDownSetPoint() (time.Duration, error) {
-	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+rampDownSetPoint, m))
+// RampDownSetpoint returns the current ramp down set point value for the TachoMotor.
+func (m *TachoMotor) RampDownSetpoint() (time.Duration, error) {
+	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+rampDownSetpoint, m))
 	if err != nil {
 		return -1, fmt.Errorf("ev3dev: failed to read ramp down set point: %v", err)
 	}
@@ -380,12 +380,12 @@ func (m *TachoMotor) RampDownSetPoint() (time.Duration, error) {
 	return time.Duration(d) * time.Millisecond, nil
 }
 
-// SetRampDownSetPoint sets the ramp down set point value for the TachoMotor.
-func (m *TachoMotor) SetRampDownSetPoint(d time.Duration) error {
+// SetRampDownSetpoint sets the ramp down set point value for the TachoMotor.
+func (m *TachoMotor) SetRampDownSetpoint(d time.Duration) error {
 	if d < 0 {
 		return fmt.Errorf("ev3dev: invalid ramp down set point: %v (must be positive)", d)
 	}
-	err := m.writeFile(fmt.Sprintf(TachoMotorPath+"/%s/"+rampDownSetPoint, m), fmt.Sprintln(int(d/time.Millisecond)))
+	err := m.writeFile(fmt.Sprintf(TachoMotorPath+"/%s/"+rampDownSetpoint, m), fmt.Sprintln(int(d/time.Millisecond)))
 	if err != nil {
 		return fmt.Errorf("ev3dev: failed to set ramp down set point: %v", err)
 	}
@@ -514,9 +514,9 @@ func (m *TachoMotor) StopCommands() ([]string, error) {
 	return strings.Split(string(chomp(b)), " "), nil
 }
 
-// TimeSetPoint returns the current time set point value for the TachoMotor.
-func (m *TachoMotor) TimeSetPoint() (time.Duration, error) {
-	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+timeSetPoint, m))
+// TimeSetpoint returns the current time set point value for the TachoMotor.
+func (m *TachoMotor) TimeSetpoint() (time.Duration, error) {
+	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+timeSetpoint, m))
 	if err != nil {
 		return -1, fmt.Errorf("ev3dev: failed to read time set point: %v", err)
 	}
@@ -527,9 +527,9 @@ func (m *TachoMotor) TimeSetPoint() (time.Duration, error) {
 	return time.Duration(d) * time.Millisecond, nil
 }
 
-// SetTimeSetPoint sets the time set point value for the TachoMotor.
-func (m *TachoMotor) SetTimeSetPoint(d time.Duration) error {
-	err := m.writeFile(fmt.Sprintf(TachoMotorPath+"/%s/"+timeSetPoint, m), fmt.Sprintln(int(d/time.Millisecond)))
+// SetTimeSetpoint sets the time set point value for the TachoMotor.
+func (m *TachoMotor) SetTimeSetpoint(d time.Duration) error {
+	err := m.writeFile(fmt.Sprintf(TachoMotorPath+"/%s/"+timeSetpoint, m), fmt.Sprintln(int(d/time.Millisecond)))
 	if err != nil {
 		return fmt.Errorf("ev3dev: failed to set time set point: %v", err)
 	}

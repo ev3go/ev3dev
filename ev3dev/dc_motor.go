@@ -103,9 +103,9 @@ func (m *DCMotor) DutyCycle() (int, error) {
 	return sp, nil
 }
 
-// DutyCycleSetPoint returns the current duty cycle set point value for the DCMotor.
-func (m *DCMotor) DutyCycleSetPoint() (int, error) {
-	b, err := ioutil.ReadFile(fmt.Sprintf(DCMotorPath+"/%s/"+dutyCycleSetPoint, m))
+// DutyCycleSetpoint returns the current duty cycle set point value for the DCMotor.
+func (m *DCMotor) DutyCycleSetpoint() (int, error) {
+	b, err := ioutil.ReadFile(fmt.Sprintf(DCMotorPath+"/%s/"+dutyCycleSetpoint, m))
 	if err != nil {
 		return -1, fmt.Errorf("ev3dev: failed to read duty cycle set point: %v", err)
 	}
@@ -116,12 +116,12 @@ func (m *DCMotor) DutyCycleSetPoint() (int, error) {
 	return sp, nil
 }
 
-// SetDutyCycleSetPoint sets the duty cycle set point value for the DCMotor
-func (m *DCMotor) SetDutyCycleSetPoint(sp int) error {
+// SetDutyCycleSetpoint sets the duty cycle set point value for the DCMotor
+func (m *DCMotor) SetDutyCycleSetpoint(sp int) error {
 	if sp < -100 || sp > 100 {
 		return fmt.Errorf("ev3dev: invalid duty cycle set point: %d (valid -100 - 100)", sp)
 	}
-	err := m.writeFile(fmt.Sprintf(DCMotorPath+"/%s/"+dutyCycleSetPoint, m), fmt.Sprintln(sp))
+	err := m.writeFile(fmt.Sprintf(DCMotorPath+"/%s/"+dutyCycleSetpoint, m), fmt.Sprintln(sp))
 	if err != nil {
 		return fmt.Errorf("ev3dev: failed to set duty cycle set point: %v", err)
 	}
@@ -149,9 +149,9 @@ func (m *DCMotor) SetPolarity(p Polarity) error {
 	return nil
 }
 
-// RampUpSetPoint returns the current ramp up set point value for the DCMotor.
-func (m *DCMotor) RampUpSetPoint() (time.Duration, error) {
-	b, err := ioutil.ReadFile(fmt.Sprintf(DCMotorPath+"/%s/"+rampUpSetPoint, m))
+// RampUpSetpoint returns the current ramp up set point value for the DCMotor.
+func (m *DCMotor) RampUpSetpoint() (time.Duration, error) {
+	b, err := ioutil.ReadFile(fmt.Sprintf(DCMotorPath+"/%s/"+rampUpSetpoint, m))
 	if err != nil {
 		return -1, fmt.Errorf("ev3dev: failed to read ramp up set point: %v", err)
 	}
@@ -162,21 +162,21 @@ func (m *DCMotor) RampUpSetPoint() (time.Duration, error) {
 	return time.Duration(d) * time.Millisecond, nil
 }
 
-// SetRampUpSetPoint sets the ramp up set point value for the DCMotor.
-func (m *DCMotor) SetRampUpSetPoint(d time.Duration) error {
+// SetRampUpSetpoint sets the ramp up set point value for the DCMotor.
+func (m *DCMotor) SetRampUpSetpoint(d time.Duration) error {
 	if d < 0 || d > 10000 {
 		return fmt.Errorf("ev3dev: invalid ramp up set point: %v (must be positive)", d)
 	}
-	err := m.writeFile(fmt.Sprintf(DCMotorPath+"/%s/"+rampUpSetPoint, m), fmt.Sprintln(int(d/time.Millisecond)))
+	err := m.writeFile(fmt.Sprintf(DCMotorPath+"/%s/"+rampUpSetpoint, m), fmt.Sprintln(int(d/time.Millisecond)))
 	if err != nil {
 		return fmt.Errorf("ev3dev: failed to set ramp up set point: %v", err)
 	}
 	return nil
 }
 
-// RampDownSetPoint returns the current ramp down set point value for the DCMotor.
-func (m *DCMotor) RampDownSetPoint() (time.Duration, error) {
-	b, err := ioutil.ReadFile(fmt.Sprintf(DCMotorPath+"/%s/"+rampDownSetPoint, m))
+// RampDownSetpoint returns the current ramp down set point value for the DCMotor.
+func (m *DCMotor) RampDownSetpoint() (time.Duration, error) {
+	b, err := ioutil.ReadFile(fmt.Sprintf(DCMotorPath+"/%s/"+rampDownSetpoint, m))
 	if err != nil {
 		return -1, fmt.Errorf("ev3dev: failed to read ramp down set point: %v", err)
 	}
@@ -187,12 +187,12 @@ func (m *DCMotor) RampDownSetPoint() (time.Duration, error) {
 	return time.Duration(d) * time.Millisecond, nil
 }
 
-// SetRampDownSetPoint sets the ramp down set point value for the DCMotor.
-func (m *DCMotor) SetRampDownSetPoint(d time.Duration) error {
+// SetRampDownSetpoint sets the ramp down set point value for the DCMotor.
+func (m *DCMotor) SetRampDownSetpoint(d time.Duration) error {
 	if d < 0 || d > 10000 {
 		return fmt.Errorf("ev3dev: invalid ramp down set point: %v (must be positive)", d)
 	}
-	err := m.writeFile(fmt.Sprintf(DCMotorPath+"/%s/"+rampDownSetPoint, m), fmt.Sprintln(int(d/time.Millisecond)))
+	err := m.writeFile(fmt.Sprintf(DCMotorPath+"/%s/"+rampDownSetpoint, m), fmt.Sprintln(int(d/time.Millisecond)))
 	if err != nil {
 		return fmt.Errorf("ev3dev: failed to set ramp down set point: %v", err)
 	}
@@ -255,9 +255,9 @@ func (m *DCMotor) StopCommands() ([]string, error) {
 	return strings.Split(string(chomp(b)), " "), nil
 }
 
-// TimeSetPoint returns the current time set point value for the DCMotor.
-func (m *DCMotor) TimeSetPoint() (time.Duration, error) {
-	b, err := ioutil.ReadFile(fmt.Sprintf(DCMotorPath+"/%s/"+timeSetPoint, m))
+// TimeSetpoint returns the current time set point value for the DCMotor.
+func (m *DCMotor) TimeSetpoint() (time.Duration, error) {
+	b, err := ioutil.ReadFile(fmt.Sprintf(DCMotorPath+"/%s/"+timeSetpoint, m))
 	if err != nil {
 		return -1, fmt.Errorf("ev3dev: failed to read time set point: %v", err)
 	}
@@ -268,9 +268,9 @@ func (m *DCMotor) TimeSetPoint() (time.Duration, error) {
 	return time.Duration(d) * time.Millisecond, nil
 }
 
-// SetTimeSetPoint sets the time set point value for the DCMotor.
-func (m *DCMotor) SetTimeSetPoint(d time.Duration) error {
-	err := m.writeFile(fmt.Sprintf(DCMotorPath+"/%s/"+timeSetPoint, m), fmt.Sprintln(int(d/time.Millisecond)))
+// SetTimeSetpoint sets the time set point value for the DCMotor.
+func (m *DCMotor) SetTimeSetpoint(d time.Duration) error {
+	err := m.writeFile(fmt.Sprintf(DCMotorPath+"/%s/"+timeSetpoint, m), fmt.Sprintln(int(d/time.Millisecond)))
 	if err != nil {
 		return fmt.Errorf("ev3dev: failed to set time set point: %v", err)
 	}

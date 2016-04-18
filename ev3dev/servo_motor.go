@@ -86,9 +86,9 @@ func (m *ServoMotor) Driver() (string, error) {
 	return string(chomp(b)), err
 }
 
-// MaxPulseSetPoint returns the current max pulse set point value for the ServoMotor.
-func (m *ServoMotor) MaxPulseSetPoint() (int, error) {
-	b, err := ioutil.ReadFile(fmt.Sprintf(ServoMotorPath+"/%s/"+maxPulseSetPoint, m))
+// MaxPulseSetpoint returns the current max pulse set point value for the ServoMotor.
+func (m *ServoMotor) MaxPulseSetpoint() (int, error) {
+	b, err := ioutil.ReadFile(fmt.Sprintf(ServoMotorPath+"/%s/"+maxPulseSetpoint, m))
 	if err != nil {
 		return -1, fmt.Errorf("ev3dev: failed to read max pulse set point: %v", err)
 	}
@@ -99,21 +99,21 @@ func (m *ServoMotor) MaxPulseSetPoint() (int, error) {
 	return sp, nil
 }
 
-// SetMaxPulseSetPoint sets the max pulse set point value for the ServoMotor
-func (m *ServoMotor) SetMaxPulseSetPoint(sp int) error {
+// SetMaxPulseSetpoint sets the max pulse set point value for the ServoMotor
+func (m *ServoMotor) SetMaxPulseSetpoint(sp int) error {
 	if sp < 2300 || sp > 2700 {
 		return fmt.Errorf("ev3dev: invalid max pulse set point: %d (valid 2300-1700)", sp)
 	}
-	err := m.writeFile(fmt.Sprintf(ServoMotorPath+"/%s/"+maxPulseSetPoint, m), fmt.Sprintln(sp))
+	err := m.writeFile(fmt.Sprintf(ServoMotorPath+"/%s/"+maxPulseSetpoint, m), fmt.Sprintln(sp))
 	if err != nil {
 		return fmt.Errorf("ev3dev: failed to set max pulse set point: %v", err)
 	}
 	return nil
 }
 
-// MidPulseSetPoint returns the current mid pulse set point value for the ServoMotor.
-func (m *ServoMotor) MidPulseSetPoint() (int, error) {
-	b, err := ioutil.ReadFile(fmt.Sprintf(ServoMotorPath+"/%s/"+midPulseSetPoint, m))
+// MidPulseSetpoint returns the current mid pulse set point value for the ServoMotor.
+func (m *ServoMotor) MidPulseSetpoint() (int, error) {
+	b, err := ioutil.ReadFile(fmt.Sprintf(ServoMotorPath+"/%s/"+midPulseSetpoint, m))
 	if err != nil {
 		return -1, fmt.Errorf("ev3dev: failed to read mid pulse set point: %v", err)
 	}
@@ -124,21 +124,21 @@ func (m *ServoMotor) MidPulseSetPoint() (int, error) {
 	return sp, nil
 }
 
-// SetMidPulseSetPoint sets the mid pulse set point value for the ServoMotor
-func (m *ServoMotor) SetMidPulseSetPoint(sp int) error {
+// SetMidPulseSetpoint sets the mid pulse set point value for the ServoMotor
+func (m *ServoMotor) SetMidPulseSetpoint(sp int) error {
 	if sp < 1300 || sp > 1700 {
 		return fmt.Errorf("ev3dev: invalid mid pulse set point: %d (valid 1300-1700)", sp)
 	}
-	err := m.writeFile(fmt.Sprintf(ServoMotorPath+"/%s/"+midPulseSetPoint, m), fmt.Sprintln(sp))
+	err := m.writeFile(fmt.Sprintf(ServoMotorPath+"/%s/"+midPulseSetpoint, m), fmt.Sprintln(sp))
 	if err != nil {
 		return fmt.Errorf("ev3dev: failed to set mid pulse set point: %v", err)
 	}
 	return nil
 }
 
-// MinPulseSetPoint returns the current min pulse set point value for the ServoMotor.
-func (m *ServoMotor) MinPulseSetPoint() (int, error) {
-	b, err := ioutil.ReadFile(fmt.Sprintf(ServoMotorPath+"/%s/"+minPulseSetPoint, m))
+// MinPulseSetpoint returns the current min pulse set point value for the ServoMotor.
+func (m *ServoMotor) MinPulseSetpoint() (int, error) {
+	b, err := ioutil.ReadFile(fmt.Sprintf(ServoMotorPath+"/%s/"+minPulseSetpoint, m))
 	if err != nil {
 		return -1, fmt.Errorf("ev3dev: failed to read min pulse set point: %v", err)
 	}
@@ -149,12 +149,12 @@ func (m *ServoMotor) MinPulseSetPoint() (int, error) {
 	return sp, nil
 }
 
-// SetMinPulseSetPoint sets the min pulse set point value for the ServoMotor
-func (m *ServoMotor) SetMinPulseSetPoint(sp int) error {
+// SetMinPulseSetpoint sets the min pulse set point value for the ServoMotor
+func (m *ServoMotor) SetMinPulseSetpoint(sp int) error {
 	if sp < 300 || sp > 700 {
 		return fmt.Errorf("ev3dev: invalid min pulse set point: %d (valid 300 - 700)", sp)
 	}
-	err := m.writeFile(fmt.Sprintf(ServoMotorPath+"/%s/"+minPulseSetPoint, m), fmt.Sprintln(sp))
+	err := m.writeFile(fmt.Sprintf(ServoMotorPath+"/%s/"+minPulseSetpoint, m), fmt.Sprintln(sp))
 	if err != nil {
 		return fmt.Errorf("ev3dev: failed to set min pulse set point: %v", err)
 	}
@@ -207,9 +207,9 @@ func (m *ServoMotor) SetPosition(pos int) error {
 	return nil
 }
 
-// RateSetPoint returns the current rate set point value for the ServoMotor.
-func (m *ServoMotor) RateSetPoint() (time.Duration, error) {
-	b, err := ioutil.ReadFile(fmt.Sprintf(ServoMotorPath+"/%s/"+rateSetPoint, m))
+// RateSetpoint returns the current rate set point value for the ServoMotor.
+func (m *ServoMotor) RateSetpoint() (time.Duration, error) {
+	b, err := ioutil.ReadFile(fmt.Sprintf(ServoMotorPath+"/%s/"+rateSetpoint, m))
 	if err != nil {
 		return -1, fmt.Errorf("ev3dev: failed to read rate set point: %v", err)
 	}
@@ -220,9 +220,9 @@ func (m *ServoMotor) RateSetPoint() (time.Duration, error) {
 	return time.Duration(d) * time.Millisecond, nil
 }
 
-// SetRateSetPoint sets the rate set point value for the ServoMotor.
-func (m *ServoMotor) SetRateSetPoint(d time.Duration) error {
-	err := m.writeFile(fmt.Sprintf(ServoMotorPath+"/%s/"+rateSetPoint, m), fmt.Sprintln(int(d/time.Millisecond)))
+// SetRateSetpoint sets the rate set point value for the ServoMotor.
+func (m *ServoMotor) SetRateSetpoint(d time.Duration) error {
+	err := m.writeFile(fmt.Sprintf(ServoMotorPath+"/%s/"+rateSetpoint, m), fmt.Sprintln(int(d/time.Millisecond)))
 	if err != nil {
 		return fmt.Errorf("ev3dev: failed to set rate set point: %v", err)
 	}

@@ -58,14 +58,14 @@ func main() {
 		draw.Draw(ev3dev.LCD, ev3dev.LCD.Bounds(), gopher, gopher.Bounds().Min, draw.Src)
 
 		// Run medium motor on outA at power 50, wait for 0.5 second and then brake.
-		outA.SetDutyCycleSetPoint(50)
+		outA.SetDutyCycleSetpoint(50)
 		outA.Command("run-forever")
 		time.Sleep(time.Second / 2)
 		outA.Command("stop")
 
 		// Run large motors on B+C at power 70, wait for 2 second and then brake.
-		outB.SetDutyCycleSetPoint(70)
-		outC.SetDutyCycleSetPoint(70)
+		outB.SetDutyCycleSetpoint(70)
+		outC.SetDutyCycleSetpoint(70)
 		outB.Command("run-forever")
 		outC.Command("run-forever")
 		time.Sleep(2 * time.Second)
@@ -73,7 +73,7 @@ func main() {
 		outC.Command("stop")
 
 		// Run medium motor on outA at power -75, wait for 0.5 second and then brake.
-		outA.SetDutyCycleSetPoint(-75)
+		outA.SetDutyCycleSetpoint(-75)
 		outA.Command("run-forever")
 		time.Sleep(time.Second / 2)
 		outA.Command("stop")
@@ -82,8 +82,8 @@ func main() {
 		draw.Draw(ev3dev.LCD, ev3dev.LCD.Bounds(), gopherSquint, gopherSquint.Bounds().Min, draw.Src)
 
 		// Run large motors on B at power -50 and C at power 50, wait for 1 second and then brake.
-		outB.SetDutyCycleSetPoint(-50)
-		outC.SetDutyCycleSetPoint(50)
+		outB.SetDutyCycleSetpoint(-50)
+		outC.SetDutyCycleSetpoint(50)
 		outB.Command("run-forever")
 		outC.Command("run-forever")
 		time.Sleep(time.Second)
