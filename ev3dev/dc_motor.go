@@ -19,6 +19,12 @@ type DCMotor struct {
 	id int
 }
 
+// Path returns the dc-motor sysfs path.
+func (*DCMotor) Path() string { return DCMotorPath }
+
+// Path returns "motor".
+func (*DCMotor) Type() string { return motorPrefix }
+
 // String satisfies the fmt.Stringer interface.
 func (m *DCMotor) String() string { return fmt.Sprint(motorPrefix, m.id) }
 
@@ -27,7 +33,7 @@ func (m *DCMotor) String() string { return fmt.Sprint(motorPrefix, m.id) }
 // returned with a DriverMismatch error.
 // If port is empty, the first dc-motor satisfying the driver name is returned.
 func DCMotorFor(port, driver string) (*DCMotor, error) {
-	id, err := deviceIDFor(port, driver, DCMotorPath, motorPrefix)
+	id, err := deviceIDFor(port, driver, (*DCMotor)(nil))
 	if id == -1 {
 		return nil, err
 	}
@@ -38,15 +44,6 @@ func (m *DCMotor) writeFile(path, data string) error {
 	defer m.mu.Unlock()
 	m.mu.Lock()
 	return ioutil.WriteFile(path, []byte(data), 0)
-}
-
-// Address returns the ev3 port name for the DCMotor.
-func (m *DCMotor) Address() (string, error) {
-	b, err := ioutil.ReadFile(fmt.Sprintf(DCMotorPath+"/%s/"+address, m))
-	if err != nil {
-		return "", fmt.Errorf("ev3dev: failed to read port address: %v", err)
-	}
-	return string(chomp(b)), err
 }
 
 // Commands returns the available commands for the DCMotor.
@@ -79,15 +76,6 @@ func (m *DCMotor) Command(comm string) error {
 		return fmt.Errorf("ev3dev: failed to issue dc-motor command: %v", err)
 	}
 	return nil
-}
-
-// Driver returns the driver name for the DCMotor.
-func (m *DCMotor) Driver() (string, error) {
-	b, err := ioutil.ReadFile(fmt.Sprintf(DCMotorPath+"/%s/"+driverName, m))
-	if err != nil {
-		return "", fmt.Errorf("ev3dev: failed to read port driver name: %v", err)
-	}
-	return string(chomp(b)), err
 }
 
 // DutyCycle returns the current duty cycle value for the DCMotor.

@@ -20,6 +20,12 @@ type Sensor struct {
 	id int
 }
 
+// Path returns the lego-sensor sysfs path.
+func (*Sensor) Path() string { return SensorPath }
+
+// Path returns "sensor".
+func (*Sensor) Type() string { return sensorPrefix }
+
 // String satisfies the fmt.Stringer interface.
 func (s *Sensor) String() string { return fmt.Sprint(sensorPrefix, s.id) }
 
@@ -28,25 +34,17 @@ func (s *Sensor) String() string { return fmt.Sprint(sensorPrefix, s.id) }
 // is returned with a DriverMismatch error.
 // If port is empty, the first sensor satisfying the driver name is returned.
 func SensorFor(port, driver string) (*Sensor, error) {
-	id, err := deviceIDFor(port, driver, SensorPath, sensorPrefix)
+	id, err := deviceIDFor(port, driver, (*Sensor)(nil))
 	if id == -1 {
 		return nil, err
 	}
 	return &Sensor{id: id}, err
 }
+
 func (s *Sensor) writeFile(path, data string) error {
 	defer s.mu.Unlock()
 	s.mu.Lock()
 	return ioutil.WriteFile(path, []byte(data), 0)
-}
-
-// Address returns the ev3 port name for the Sensor.
-func (s *Sensor) Address() (string, error) {
-	b, err := ioutil.ReadFile(fmt.Sprintf(SensorPath+"/%s/"+address, s))
-	if err != nil {
-		return "", fmt.Errorf("ev3dev: failed to read port address: %v", err)
-	}
-	return string(chomp(b)), err
 }
 
 // BinData returns the unscaled raw values from the Sensor.
@@ -132,15 +130,6 @@ func (s *Sensor) Decimals() (int, error) {
 		return -1, fmt.Errorf("ev3dev: failed to parse number of decimals: %v", err)
 	}
 	return places, nil
-}
-
-// Driver returns the driver name for the Sensor.
-func (s *Sensor) Driver() (string, error) {
-	b, err := ioutil.ReadFile(fmt.Sprintf(SensorPath+"/%s/"+driverName, s))
-	if err != nil {
-		return "", fmt.Errorf("ev3dev: failed to read sensor driver name: %v", err)
-	}
-	return string(chomp(b)), err
 }
 
 // Modes returns the available modes for the Sensor.

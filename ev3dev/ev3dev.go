@@ -190,34 +190,66 @@ func (e DriverMismatch) Error() string {
 	return fmt.Sprintf("ev3dev: mismatched driver names: want %q but have %q", e.Want, e.Have)
 }
 
-// deviceIDFor returns the id for the given ev3 port name and driver in the class path.
-// If the driver does not match the driver string, an id for the port is returned with
-// a DriverMismatch error. The prefix parameter is one of "motor", "port" or "sensor".
-// If port is empty, the first tacho-motor satisfying the driver name is returned.
-func deviceIDFor(port, driver, classPath, prefix string) (int, error) {
-	f, err := os.Open(classPath)
+// Device is an ev3dev API device.
+type Device interface {
+	// Path returns the sysfs path
+	// for the device type.
+	Path() string
+
+	// Type returns the type of the
+	// device, one of "motor", "port"
+	// or "sensor".
+	Type() string
+
+	fmt.Stringer
+}
+
+// AddressOf returns the port address of the Device.
+func AddressOf(d Device) (string, error) {
+	b, err := ioutil.ReadFile(fmt.Sprintf(d.Path()+"/%s/"+address, d))
+	if err != nil {
+		return "", fmt.Errorf("ev3dev: failed to read %s address: %v", d.Type(), err)
+	}
+	return string(chomp(b)), err
+}
+
+// DriverFor returns the driver name for the Device.
+func DriverFor(d Device) (string, error) {
+	b, err := ioutil.ReadFile(fmt.Sprintf(d.Path()+"/%s/"+driverName, d))
+	if err != nil {
+		return "", fmt.Errorf("ev3dev: failed to read %s driver name: %v", d.Type(), err)
+	}
+	return string(chomp(b)), err
+}
+
+// deviceIDFor returns the id for the given ev3 port name and driver of the Device.
+// If the driver does not match the driver string, an id for the device is returned
+// with a DriverMismatch error.
+// If port is empty, the first device satisfying the driver name is returned.
+func deviceIDFor(port, driver string, d Device) (int, error) {
+	f, err := os.Open(d.Path())
 	if err != nil {
 		return -1, err
 	}
 	devices, err := f.Readdirnames(0)
 	f.Close()
 	if err != nil {
-		return -1, fmt.Errorf("ev3dev: could not get devices for %s: %v", classPath, err)
+		return -1, fmt.Errorf("ev3dev: could not get devices for %s: %v", d.Path(), err)
 	}
 
 	portBytes := []byte(port)
 	driverBytes := []byte(driver)
 	for _, device := range devices {
-		if !strings.HasPrefix(device, prefix) {
+		if !strings.HasPrefix(device, d.Type()) {
 			continue
 		}
-		id, err := strconv.Atoi(strings.TrimPrefix(device, prefix))
+		id, err := strconv.Atoi(strings.TrimPrefix(device, d.Type()))
 		if err != nil {
 			return -1, fmt.Errorf("ev3dev: could not parse id from device name %q: %v", device, err)
 		}
 
 		if port == "" {
-			path := filepath.Join(classPath, device, driverName)
+			path := filepath.Join(d.Path(), device, driverName)
 			b, err := ioutil.ReadFile(path)
 			if err != nil {
 				return -1, fmt.Errorf("ev3dev: could not read driver name %s: %v", path, err)
@@ -228,7 +260,7 @@ func deviceIDFor(port, driver, classPath, prefix string) (int, error) {
 			return id, nil
 		}
 
-		path := filepath.Join(classPath, device, address)
+		path := filepath.Join(d.Path(), device, address)
 		b, err := ioutil.ReadFile(path)
 		if err != nil {
 			return -1, fmt.Errorf("ev3dev: could not read address %s: %v", path, err)
@@ -236,7 +268,7 @@ func deviceIDFor(port, driver, classPath, prefix string) (int, error) {
 		if !bytes.Equal(portBytes, chomp(b)) {
 			continue
 		}
-		path = filepath.Join(classPath, device, driverName)
+		path = filepath.Join(d.Path(), device, driverName)
 		b, err = ioutil.ReadFile(path)
 		if err != nil {
 			return -1, fmt.Errorf("ev3dev: could not read driver name %s: %v", path, err)

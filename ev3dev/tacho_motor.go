@@ -19,6 +19,12 @@ type TachoMotor struct {
 	id int
 }
 
+// Path returns the tacho-motor sysfs path.
+func (*TachoMotor) Path() string { return TachoMotorPath }
+
+// Path returns "motor".
+func (*TachoMotor) Type() string { return motorPrefix }
+
 // String satisfies the fmt.Stringer interface.
 func (m *TachoMotor) String() string { return fmt.Sprint(motorPrefix, m.id) }
 
@@ -27,7 +33,7 @@ func (m *TachoMotor) String() string { return fmt.Sprint(motorPrefix, m.id) }
 // returned with a DriverMismatch error.
 // If port is empty, the first tacho-motor satisfying the driver name is returned.
 func TachoMotorFor(port, driver string) (*TachoMotor, error) {
-	id, err := deviceIDFor(port, driver, TachoMotorPath, motorPrefix)
+	id, err := deviceIDFor(port, driver, (*TachoMotor)(nil))
 	if id == -1 {
 		return nil, err
 	}
@@ -38,15 +44,6 @@ func (m *TachoMotor) writeFile(path, data string) error {
 	defer m.mu.Unlock()
 	m.mu.Lock()
 	return ioutil.WriteFile(path, []byte(data), 0)
-}
-
-// Address returns the ev3 port name for the TachoMotor.
-func (m *TachoMotor) Address() (string, error) {
-	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+address, m))
-	if err != nil {
-		return "", fmt.Errorf("ev3dev: failed to read port address: %v", err)
-	}
-	return string(chomp(b)), err
 }
 
 // Commands returns the available commands for the TachoMotor.
@@ -121,15 +118,6 @@ func (m *TachoMotor) FullTravelCount() (int, error) {
 		return -1, fmt.Errorf("ev3dev: failed to parse full travel count: %v", err)
 	}
 	return sp, nil
-}
-
-// Driver returns the driver name for the TachoMotor.
-func (m *TachoMotor) Driver() (string, error) {
-	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+driverName, m))
-	if err != nil {
-		return "", fmt.Errorf("ev3dev: failed to read port driver name: %v", err)
-	}
-	return string(chomp(b)), err
 }
 
 // DutyCycle returns the current duty cycle value for the TachoMotor.

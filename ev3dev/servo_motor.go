@@ -19,6 +19,12 @@ type ServoMotor struct {
 	id int
 }
 
+// Path returns the servo-motor sysfs path.
+func (*ServoMotor) Path() string { return ServoMotorPath }
+
+// Path returns "motor".
+func (*ServoMotor) Type() string { return motorPrefix }
+
 // String satisfies the fmt.Stringer interface.
 func (m *ServoMotor) String() string { return fmt.Sprint(motorPrefix, m.id) }
 
@@ -27,7 +33,7 @@ func (m *ServoMotor) String() string { return fmt.Sprint(motorPrefix, m.id) }
 // is returned with a DriverMismatch error.
 // If port is empty, the first servo-motor satisfying the driver name is returned.
 func ServoMotorFor(port, driver string) (*ServoMotor, error) {
-	id, err := deviceIDFor(port, driver, ServoMotorPath, motorPrefix)
+	id, err := deviceIDFor(port, driver, (*ServoMotor)(nil))
 	if id == -1 {
 		return nil, err
 	}
@@ -38,15 +44,6 @@ func (m *ServoMotor) writeFile(path, data string) error {
 	defer m.mu.Unlock()
 	m.mu.Lock()
 	return ioutil.WriteFile(path, []byte(data), 0)
-}
-
-// Address returns the ev3 port name for the ServoMotor.
-func (m *ServoMotor) Address() (string, error) {
-	b, err := ioutil.ReadFile(fmt.Sprintf(ServoMotorPath+"/%s/"+address, m))
-	if err != nil {
-		return "", fmt.Errorf("ev3dev: failed to read port address: %v", err)
-	}
-	return string(chomp(b)), err
 }
 
 // Commands returns the available commands for the ServoMotor.
@@ -75,15 +72,6 @@ func (m *ServoMotor) Command(comm string) error {
 		return fmt.Errorf("ev3dev: failed to issue servo-motor command: %v", err)
 	}
 	return nil
-}
-
-// Driver returns the driver name for the ServoMotor.
-func (m *ServoMotor) Driver() (string, error) {
-	b, err := ioutil.ReadFile(fmt.Sprintf(ServoMotorPath+"/%s/"+driverName, m))
-	if err != nil {
-		return "", fmt.Errorf("ev3dev: failed to read port driver name: %v", err)
-	}
-	return string(chomp(b)), err
 }
 
 // MaxPulseSetpoint returns the current max pulse set point value for the ServoMotor.

@@ -12,6 +12,12 @@ import (
 	"sync"
 )
 
+// Path returns the lego-port sysfs path.
+func (*LegoPort) Path() string { return LegoPortPath }
+
+// Path returns "port".
+func (*LegoPort) Type() string { return portPrefix }
+
 // LegoPort represents a handle to a lego-port.
 type LegoPort struct {
 	mu sync.Mutex
@@ -26,7 +32,7 @@ func (p *LegoPort) String() string { return fmt.Sprint(portPrefix, p.id) }
 // is returned with a DriverMismatch error.
 // If port is empty, the first port satisfying the driver name is returned.
 func LegoPortFor(port, driver string) (*LegoPort, error) {
-	id, err := deviceIDFor(port, driver, LegoPortPath, portPrefix)
+	id, err := deviceIDFor(port, driver, (*LegoPort)(nil))
 	if id == -1 {
 		return nil, err
 	}
@@ -37,24 +43,6 @@ func (p *LegoPort) writeFile(path, data string) error {
 	defer p.mu.Unlock()
 	p.mu.Lock()
 	return ioutil.WriteFile(path, []byte(data), 0)
-}
-
-// Address returns the ev3 port name for the LegoPort.
-func (p *LegoPort) Address() (string, error) {
-	b, err := ioutil.ReadFile(fmt.Sprintf(LegoPortPath+"/%s/"+address, p))
-	if err != nil {
-		return "", fmt.Errorf("ev3dev: failed to read port address: %v", err)
-	}
-	return string(chomp(b)), err
-}
-
-// Driver returns the driver name for the device registered to the LegoPort.
-func (p *LegoPort) Driver() (string, error) {
-	b, err := ioutil.ReadFile(fmt.Sprintf(LegoPortPath+"/%s/"+driverName, p))
-	if err != nil {
-		return "", fmt.Errorf("ev3dev: failed to read port driver name: %v", err)
-	}
-	return string(chomp(b)), err
 }
 
 // Modes returns the available modes for the LegoPort.
