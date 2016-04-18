@@ -205,20 +205,20 @@ func (m *DCMotor) State() (MotorState, error) {
 	return stat, nil
 }
 
-// StopCommand returns the stop action used when a stop command is issued
+// StopAction returns the stop action used when a stop command is issued
 // to the DCMotor.
-func (m *DCMotor) StopCommand() (string, error) {
-	b, err := ioutil.ReadFile(fmt.Sprintf(DCMotorPath+"/%s/"+stopCommand, m))
+func (m *DCMotor) StopAction() (string, error) {
+	b, err := ioutil.ReadFile(fmt.Sprintf(DCMotorPath+"/%s/"+stopAction, m))
 	if err != nil {
 		return "", fmt.Errorf("ev3dev: failed to read stop command: %v", err)
 	}
 	return string(chomp(b)), err
 }
 
-// SetStopCommand sets the stop action to be used when a stop command is
+// SetStopAction sets the stop action to be used when a stop command is
 // issued to the DCMotor.
-func (m *DCMotor) SetStopCommand(comm string) error {
-	avail, err := m.StopCommands()
+func (m *DCMotor) SetStopAction(comm string) error {
+	avail, err := m.StopActions()
 	if err != nil {
 		return err
 	}
@@ -232,16 +232,16 @@ func (m *DCMotor) SetStopCommand(comm string) error {
 	if !ok {
 		return fmt.Errorf("ev3dev: stop command %q not available for %s (available:%q)", comm, m, avail)
 	}
-	err = m.writeFile(fmt.Sprintf(DCMotorPath+"/%s/"+stopCommand, m), comm)
+	err = m.writeFile(fmt.Sprintf(DCMotorPath+"/%s/"+stopAction, m), comm)
 	if err != nil {
 		return fmt.Errorf("ev3dev: failed to set dc-motor stop command: %v", err)
 	}
 	return nil
 }
 
-// StopCommands returns the available stop actions for the DCMotor.
-func (m *DCMotor) StopCommands() ([]string, error) {
-	b, err := ioutil.ReadFile(fmt.Sprintf(DCMotorPath+"/%s/"+stopCommands, m))
+// StopActions returns the available stop actions for the DCMotor.
+func (m *DCMotor) StopActions() ([]string, error) {
+	b, err := ioutil.ReadFile(fmt.Sprintf(DCMotorPath+"/%s/"+stopActions, m))
 	if err != nil {
 		return nil, fmt.Errorf("ev3dev: failed to read dc-motor stop command: %v", err)
 	}

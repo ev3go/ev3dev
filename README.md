@@ -2,6 +2,8 @@
 
 The goal is to implement a simple Go style ev3dev API and helpers for common tasks.
 
+github.com/kortschak/ev3/ev3dev depends on an ev3dev kernel v3.16.7-ckt26-10-ev3dev-ev3 or better (See http://www.ev3dev.org/news/2016/04/11/Kernel-Release-Cycle-10/)
+
 Currently supported:
 
 ## Low level API
@@ -12,6 +14,7 @@ Currently supported:
 - [x] Lego Port `/sys/class/lego-port`
 - [x] Sensor `/sys/class/lego-sensor`
 - [x] DC motor `/sys/class/dc-motor`
+- [ ] Linear actuator `/sys/class/tacho-motor`
 - [x] Servo motor `/sys/class/servo-motor`
 - [x] Tacho motor `/sys/class/tacho-motor`
 

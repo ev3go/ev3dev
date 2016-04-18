@@ -275,6 +275,19 @@ func (m *TachoMotor) SetHoldPIDKp(pos int) error {
 	return nil
 }
 
+// MaxSpeed returns  the maximum value that is accepted by SpeedSetpoint.
+func (m *TachoMotor) MaxSpeed() (int, error) {
+	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+maxSpeed, m))
+	if err != nil {
+		return -1, fmt.Errorf("ev3dev: failed to read max speed: %v", err)
+	}
+	pos, err := strconv.Atoi(string(chomp(b)))
+	if err != nil {
+		return -1, fmt.Errorf("ev3dev: failed to parse max speed: %v", err)
+	}
+	return pos, nil
+}
+
 // PositionSetpoint returns the current position set point value for the TachoMotor.
 func (m *TachoMotor) PositionSetpoint() (int, error) {
 	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+positionSetpoint, m))
@@ -464,20 +477,20 @@ func (m *TachoMotor) State() (MotorState, error) {
 	return stat, nil
 }
 
-// StopCommand returns the stop action used when a stop command is issued
+// StopAction returns the stop action used when a stop command is issued
 // to the TachoMotor.
-func (m *TachoMotor) StopCommand() (string, error) {
-	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+stopCommand, m))
+func (m *TachoMotor) StopAction() (string, error) {
+	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+stopAction, m))
 	if err != nil {
 		return "", fmt.Errorf("ev3dev: failed to read stop command: %v", err)
 	}
 	return string(chomp(b)), err
 }
 
-// SetStopCommand sets the stop action to be used when a stop command is
+// SetStopAction sets the stop action to be used when a stop command is
 // issued to the TachoMotor.
-func (m *TachoMotor) SetStopCommand(comm string) error {
-	avail, err := m.StopCommands()
+func (m *TachoMotor) SetStopAction(comm string) error {
+	avail, err := m.StopActions()
 	if err != nil {
 		return err
 	}
@@ -491,16 +504,16 @@ func (m *TachoMotor) SetStopCommand(comm string) error {
 	if !ok {
 		return fmt.Errorf("ev3dev: stop command %q not available for %s (available:%q)", comm, m, avail)
 	}
-	err = m.writeFile(fmt.Sprintf(TachoMotorPath+"/%s/"+stopCommand, m), comm)
+	err = m.writeFile(fmt.Sprintf(TachoMotorPath+"/%s/"+stopAction, m), comm)
 	if err != nil {
 		return fmt.Errorf("ev3dev: failed to set tacho-motor stop command: %v", err)
 	}
 	return nil
 }
 
-// StopCommands returns the available stop actions for the TachoMotor.
-func (m *TachoMotor) StopCommands() ([]string, error) {
-	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+stopCommands, m))
+// StopActions returns the available stop actions for the TachoMotor.
+func (m *TachoMotor) StopActions() ([]string, error) {
+	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+stopActions, m))
 	if err != nil {
 		return nil, fmt.Errorf("ev3dev: failed to read tacho-motor stop command: %v", err)
 	}

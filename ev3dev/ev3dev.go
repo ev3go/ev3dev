@@ -18,6 +18,7 @@ import (
 )
 
 const (
+	linearPrefix = "linear"
 	motorPrefix  = "motor"
 	portPrefix   = "port"
 	sensorPrefix = "sensor"
@@ -58,7 +59,6 @@ const (
 	driverName                = "driver_name"
 	dutyCycle                 = "duty_cycle"
 	dutyCycleSetpoint         = "duty_cycle_sp"
-	encoderPolarity           = "encoder_polarity"
 	fullTravelCount           = "full_travel_count"
 	holdPID                   = "hold_pid/"
 	holdPIDkd                 = holdPID + kd
@@ -71,6 +71,7 @@ const (
 	maxPulseSetpoint          = "max_pulse_sp"
 	midPulseSetpoint          = "mid_pulse_sp"
 	minPulseSetpoint          = "min_pulse_sp"
+	maxSpeed                  = "max_speed"
 	mode                      = "mode"
 	modes                     = "modes"
 	numValues                 = "num_values"
@@ -93,12 +94,11 @@ const (
 	speedPIDkd                = speedPID + kd
 	speedPIDki                = speedPID + ki
 	speedPIDkp                = speedPID + kp
-	speedRegulation           = "speed_regulation"
 	speedSetpoint             = "speed_sp"
 	state                     = "state"
 	status                    = "status"
-	stopCommand               = "stop_command"
-	stopCommands              = "stop_commands"
+	stopAction                = "stop_action"
+	stopActions               = "stop_actions"
 	subsystem                 = "subsystem"
 	textValues                = "text_values"
 	timeSetpoint              = "time_sp"
@@ -197,8 +197,8 @@ type Device interface {
 	Path() string
 
 	// Type returns the type of the
-	// device, one of "motor", "port"
-	// or "sensor".
+	// device, one of "linear", "motor",
+	// "port" or "sensor".
 	Type() string
 
 	fmt.Stringer
