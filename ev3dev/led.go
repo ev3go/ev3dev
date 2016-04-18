@@ -9,12 +9,10 @@ import (
 	"io/ioutil"
 	"strconv"
 	"strings"
-	"sync"
 )
 
 // LED represents a handle to an ev3 LED.
 type LED struct {
-	mu    sync.Mutex
 	color string
 	side  string
 }
@@ -30,8 +28,6 @@ var (
 func (l *LED) String() string { return fmt.Sprintf("ev3:%s:%s", l.side, l.color) }
 
 func (l *LED) writeFile(path, data string) error {
-	defer l.mu.Unlock()
-	l.mu.Lock()
 	return ioutil.WriteFile(path, []byte(data), 0)
 }
 

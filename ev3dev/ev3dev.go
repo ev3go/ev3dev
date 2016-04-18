@@ -4,7 +4,6 @@
 
 // Package ev3dev provides low level access to the ev3dev control and sensor drivers.
 // See documentation at http://www.ev3dev.org/docs/drivers/.
-// All functions and methods are safe for concurrent use.
 package ev3dev
 
 import (

@@ -9,13 +9,11 @@ import (
 	"io/ioutil"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 )
 
 // TachoMotor represents a handle to a tacho-motor.
 type TachoMotor struct {
-	mu sync.Mutex
 	id int
 }
 
@@ -46,8 +44,6 @@ func TachoMotorFor(port, driver string) (*TachoMotor, error) {
 }
 
 func (m *TachoMotor) writeFile(path, data string) error {
-	defer m.mu.Unlock()
-	m.mu.Lock()
 	return ioutil.WriteFile(path, []byte(data), 0)
 }
 

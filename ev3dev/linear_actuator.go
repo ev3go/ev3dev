@@ -9,13 +9,11 @@ import (
 	"io/ioutil"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 )
 
 // LinearActuator represents a handle to a linear actuator tacho-motor.
 type LinearActuator struct {
-	mu sync.Mutex
 	id int
 }
 
@@ -46,8 +44,6 @@ func LinearActuatorFor(port, driver string) (*LinearActuator, error) {
 }
 
 func (m *LinearActuator) writeFile(path, data string) error {
-	defer m.mu.Unlock()
-	m.mu.Lock()
 	return ioutil.WriteFile(path, []byte(data), 0)
 }
 

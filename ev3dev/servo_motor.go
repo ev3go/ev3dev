@@ -9,13 +9,11 @@ import (
 	"io/ioutil"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 )
 
 // ServoMotor represents a handle to a servo-motor.
 type ServoMotor struct {
-	mu sync.Mutex
 	id int
 }
 
@@ -46,8 +44,6 @@ func ServoMotorFor(port, driver string) (*ServoMotor, error) {
 }
 
 func (m *ServoMotor) writeFile(path, data string) error {
-	defer m.mu.Unlock()
-	m.mu.Lock()
 	return ioutil.WriteFile(path, []byte(data), 0)
 }
 

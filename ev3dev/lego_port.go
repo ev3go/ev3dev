@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
-	"sync"
 )
 
 // Path returns the lego-port sysfs path.
@@ -20,7 +19,6 @@ func (*LegoPort) Type() string { return portPrefix }
 
 // LegoPort represents a handle to a lego-port.
 type LegoPort struct {
-	mu sync.Mutex
 	id int
 }
 
@@ -40,8 +38,6 @@ func LegoPortFor(port, driver string) (*LegoPort, error) {
 }
 
 func (p *LegoPort) writeFile(path, data string) error {
-	defer p.mu.Unlock()
-	p.mu.Lock()
 	return ioutil.WriteFile(path, []byte(data), 0)
 }
 

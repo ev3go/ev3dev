@@ -10,13 +10,11 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 )
 
 // Sensor represents a handle to a lego-sensor.
 type Sensor struct {
-	mu sync.Mutex
 	id int
 }
 
@@ -47,8 +45,6 @@ func SensorFor(port, driver string) (*Sensor, error) {
 }
 
 func (s *Sensor) writeFile(path, data string) error {
-	defer s.mu.Unlock()
-	s.mu.Lock()
 	return ioutil.WriteFile(path, []byte(data), 0)
 }
 

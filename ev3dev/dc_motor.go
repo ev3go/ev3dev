@@ -9,13 +9,11 @@ import (
 	"io/ioutil"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 )
 
 // DCMotor represents a handle to a dc-motor.
 type DCMotor struct {
-	mu sync.Mutex
 	id int
 }
 
@@ -46,8 +44,6 @@ func DCMotorFor(port, driver string) (*DCMotor, error) {
 }
 
 func (m *DCMotor) writeFile(path, data string) error {
-	defer m.mu.Unlock()
-	m.mu.Lock()
 	return ioutil.WriteFile(path, []byte(data), 0)
 }
 
