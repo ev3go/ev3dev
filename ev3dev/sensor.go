@@ -27,7 +27,12 @@ func (*Sensor) Path() string { return SensorPath }
 func (*Sensor) Type() string { return sensorPrefix }
 
 // String satisfies the fmt.Stringer interface.
-func (s *Sensor) String() string { return fmt.Sprint(sensorPrefix, s.id) }
+func (s *Sensor) String() string {
+	if s == nil {
+		return sensorPrefix + "*"
+	}
+	return fmt.Sprint(sensorPrefix, s.id)
+}
 
 // SensorFor returns a Sensor for the given ev3 port name and driver. If the
 // sensor driver does not match the driver string, a Sensor for the port

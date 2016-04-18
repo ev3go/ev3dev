@@ -26,7 +26,12 @@ func (*TachoMotor) Path() string { return TachoMotorPath }
 func (*TachoMotor) Type() string { return motorPrefix }
 
 // String satisfies the fmt.Stringer interface.
-func (m *TachoMotor) String() string { return fmt.Sprint(motorPrefix, m.id) }
+func (m *TachoMotor) String() string {
+	if m == nil {
+		return motorPrefix + "*"
+	}
+	return fmt.Sprint(motorPrefix, m.id)
+}
 
 // TachoMotorFor returns a TachoMotor for the given ev3 port name and driver. If the
 // motor driver does not match the driver string, a TechoMotor for the port is

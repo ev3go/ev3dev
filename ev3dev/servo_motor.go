@@ -26,7 +26,12 @@ func (*ServoMotor) Path() string { return ServoMotorPath }
 func (*ServoMotor) Type() string { return motorPrefix }
 
 // String satisfies the fmt.Stringer interface.
-func (m *ServoMotor) String() string { return fmt.Sprint(motorPrefix, m.id) }
+func (m *ServoMotor) String() string {
+	if m == nil {
+		return motorPrefix + "*"
+	}
+	return fmt.Sprint(motorPrefix, m.id)
+}
 
 // ServoMotorFor returns a ServoMotor for the given ev3 port name and driver.
 // If the motor driver does not match the driver string, a ServoMotor for the port

@@ -26,7 +26,12 @@ func (*DCMotor) Path() string { return DCMotorPath }
 func (*DCMotor) Type() string { return motorPrefix }
 
 // String satisfies the fmt.Stringer interface.
-func (m *DCMotor) String() string { return fmt.Sprint(motorPrefix, m.id) }
+func (m *DCMotor) String() string {
+	if m == nil {
+		return motorPrefix + "*"
+	}
+	return fmt.Sprint(motorPrefix, m.id)
+}
 
 // DCMotorFor returns a DCMotor for the given ev3 port name and driver. If the
 // motor driver does not match the driver string, a DCMotor for the port is
