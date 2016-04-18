@@ -20,7 +20,7 @@ type ServoMotor struct {
 // Path returns the servo-motor sysfs path.
 func (*ServoMotor) Path() string { return ServoMotorPath }
 
-// Path returns "motor".
+// Type returns "motor".
 func (*ServoMotor) Type() string { return motorPrefix }
 
 // String satisfies the fmt.Stringer interface.

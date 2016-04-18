@@ -20,7 +20,7 @@ type DCMotor struct {
 // Path returns the dc-motor sysfs path.
 func (*DCMotor) Path() string { return DCMotorPath }
 
-// Path returns "motor".
+// Type returns "motor".
 func (*DCMotor) Type() string { return motorPrefix }
 
 // String satisfies the fmt.Stringer interface.

@@ -21,7 +21,7 @@ type Sensor struct {
 // Path returns the lego-sensor sysfs path.
 func (*Sensor) Path() string { return SensorPath }
 
-// Path returns "sensor".
+// Type returns "sensor".
 func (*Sensor) Type() string { return sensorPrefix }
 
 // String satisfies the fmt.Stringer interface.

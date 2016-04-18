@@ -20,7 +20,7 @@ type TachoMotor struct {
 // Path returns the tacho-motor sysfs path.
 func (*TachoMotor) Path() string { return TachoMotorPath }
 
-// Path returns "motor".
+// Type returns "motor".
 func (*TachoMotor) Type() string { return motorPrefix }
 
 // String satisfies the fmt.Stringer interface.

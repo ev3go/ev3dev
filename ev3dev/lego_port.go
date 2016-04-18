@@ -14,7 +14,7 @@ import (
 // Path returns the lego-port sysfs path.
 func (*LegoPort) Path() string { return LegoPortPath }
 
-// Path returns "port".
+// Type returns "port".
 func (*LegoPort) Type() string { return portPrefix }
 
 // LegoPort represents a handle to a lego-port.

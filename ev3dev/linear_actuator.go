@@ -20,7 +20,7 @@ type LinearActuator struct {
 // Path returns the tacho-motor sysfs path.
 func (*LinearActuator) Path() string { return TachoMotorPath }
 
-// Path returns "motor".
+// Type returns "linear".
 func (*LinearActuator) Type() string { return linearPrefix }
 
 // String satisfies the fmt.Stringer interface.
