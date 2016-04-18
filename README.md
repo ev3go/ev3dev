@@ -14,7 +14,7 @@ Currently supported:
 - [x] Lego Port `/sys/class/lego-port`
 - [x] Sensor `/sys/class/lego-sensor`
 - [x] DC motor `/sys/class/dc-motor`
-- [ ] Linear actuator `/sys/class/tacho-motor`
+- [x] Linear actuator `/sys/class/tacho-motor`
 - [x] Servo motor `/sys/class/servo-motor`
 - [x] Tacho motor `/sys/class/tacho-motor`
 

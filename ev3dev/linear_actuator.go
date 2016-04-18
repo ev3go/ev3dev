@@ -13,46 +13,46 @@ import (
 	"time"
 )
 
-// TachoMotor represents a handle to a tacho-motor.
-type TachoMotor struct {
+// LinearActuator represents a handle to a linear actuator tacho-motor.
+type LinearActuator struct {
 	mu sync.Mutex
 	id int
 }
 
 // Path returns the tacho-motor sysfs path.
-func (*TachoMotor) Path() string { return TachoMotorPath }
+func (*LinearActuator) Path() string { return TachoMotorPath }
 
 // Path returns "motor".
-func (*TachoMotor) Type() string { return motorPrefix }
+func (*LinearActuator) Type() string { return linearPrefix }
 
 // String satisfies the fmt.Stringer interface.
-func (m *TachoMotor) String() string {
+func (m *LinearActuator) String() string {
 	if m == nil {
-		return motorPrefix + "*"
+		return linearPrefix + "*"
 	}
-	return fmt.Sprint(motorPrefix, m.id)
+	return fmt.Sprint(linearPrefix, m.id)
 }
 
-// TachoMotorFor returns a TachoMotor for the given ev3 port name and driver. If the
-// motor driver does not match the driver string, a TechoMotor for the port is
-// returned with a DriverMismatch error.
+// LinearActuatorFor returns a LinearActuator for the given ev3 port name and driver.
+// If the motor driver does not match the driver string, a LinearActuator for the port
+// is returned with a DriverMismatch error.
 // If port is empty, the first tacho-motor satisfying the driver name is returned.
-func TachoMotorFor(port, driver string) (*TachoMotor, error) {
-	id, err := deviceIDFor(port, driver, (*TachoMotor)(nil))
+func LinearActuatorFor(port, driver string) (*LinearActuator, error) {
+	id, err := deviceIDFor(port, driver, (*LinearActuator)(nil))
 	if id == -1 {
 		return nil, err
 	}
-	return &TachoMotor{id: id}, err
+	return &LinearActuator{id: id}, err
 }
 
-func (m *TachoMotor) writeFile(path, data string) error {
+func (m *LinearActuator) writeFile(path, data string) error {
 	defer m.mu.Unlock()
 	m.mu.Lock()
 	return ioutil.WriteFile(path, []byte(data), 0)
 }
 
-// Commands returns the available commands for the TachoMotor.
-func (m *TachoMotor) Commands() ([]string, error) {
+// Commands returns the available commands for the LinearActuator.
+func (m *LinearActuator) Commands() ([]string, error) {
 	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+commands, m))
 	if err != nil {
 		return nil, fmt.Errorf("ev3dev: failed to read tacho-motor commands: %v", err)
@@ -60,8 +60,8 @@ func (m *TachoMotor) Commands() ([]string, error) {
 	return strings.Split(string(chomp(b)), " "), nil
 }
 
-// Command issues a command to the TachoMotor.
-func (m *TachoMotor) Command(comm string) error {
+// Command issues a command to the LinearActuator.
+func (m *LinearActuator) Command(comm string) error {
 	avail, err := m.Commands()
 	if err != nil {
 		return err
@@ -83,22 +83,36 @@ func (m *TachoMotor) Command(comm string) error {
 	return nil
 }
 
-// CountPerRot returns the number of tacho counts in one rotation of the motor.
-// Calls to CountPerRot will return an error for non-rotational motors.
-func (m *TachoMotor) CountPerRot() (int, error) {
-	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+countPerRot, m))
+// CountPerMeter returns the number of tacho counts in one meter of travel of the motor.
+// Calls to CountPerMeter will return an error for non-linear motors.
+func (m *LinearActuator) CountPerMeter() (int, error) {
+	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+countPerMeter, m))
 	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to read count per rotation: %v", err)
+		return -1, fmt.Errorf("ev3dev: failed to read count per meter: %v", err)
 	}
 	sp, err := strconv.Atoi(string(chomp(b)))
 	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to parse count per rotation: %v", err)
+		return -1, fmt.Errorf("ev3dev: failed to parse count per meter: %v", err)
 	}
 	return sp, nil
 }
 
-// DutyCycle returns the current duty cycle value for the TachoMotor.
-func (m *TachoMotor) DutyCycle() (int, error) {
+// FullTravelCount returns the the number of tacho counts in the full travel of the motor.
+// Calls to FullTravelCount will return an error for non-linear motors.
+func (m *LinearActuator) FullTravelCount() (int, error) {
+	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+fullTravelCount, m))
+	if err != nil {
+		return -1, fmt.Errorf("ev3dev: failed to read full travel count: %v", err)
+	}
+	sp, err := strconv.Atoi(string(chomp(b)))
+	if err != nil {
+		return -1, fmt.Errorf("ev3dev: failed to parse full travel count: %v", err)
+	}
+	return sp, nil
+}
+
+// DutyCycle returns the current duty cycle value for the LinearActuator.
+func (m *LinearActuator) DutyCycle() (int, error) {
 	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+dutyCycle, m))
 	if err != nil {
 		return -1, fmt.Errorf("ev3dev: failed to read duty cycle: %v", err)
@@ -110,8 +124,8 @@ func (m *TachoMotor) DutyCycle() (int, error) {
 	return sp, nil
 }
 
-// DutyCycleSetpoint returns the current duty cycle set point value for the TachoMotor.
-func (m *TachoMotor) DutyCycleSetpoint() (int, error) {
+// DutyCycleSetpoint returns the current duty cycle set point value for the LinearActuator.
+func (m *LinearActuator) DutyCycleSetpoint() (int, error) {
 	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+dutyCycleSetpoint, m))
 	if err != nil {
 		return -1, fmt.Errorf("ev3dev: failed to read duty cycle set point: %v", err)
@@ -123,8 +137,8 @@ func (m *TachoMotor) DutyCycleSetpoint() (int, error) {
 	return sp, nil
 }
 
-// SetDutyCycleSetpoint sets the duty cycle set point value for the TachoMotor
-func (m *TachoMotor) SetDutyCycleSetpoint(sp int) error {
+// SetDutyCycleSetpoint sets the duty cycle set point value for the LinearActuator
+func (m *LinearActuator) SetDutyCycleSetpoint(sp int) error {
 	if sp < -100 || sp > 100 {
 		return fmt.Errorf("ev3dev: invalid duty cycle set point: %d (valid -100 - 100)", sp)
 	}
@@ -135,8 +149,8 @@ func (m *TachoMotor) SetDutyCycleSetpoint(sp int) error {
 	return nil
 }
 
-// Polarity returns the current polarity of the TachoMotor.
-func (m *TachoMotor) Polarity() (string, error) {
+// Polarity returns the current polarity of the LinearActuator.
+func (m *LinearActuator) Polarity() (string, error) {
 	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+polarity, m))
 	if err != nil {
 		return "", fmt.Errorf("ev3dev: failed to read polarity: %v", err)
@@ -144,8 +158,8 @@ func (m *TachoMotor) Polarity() (string, error) {
 	return string(b), nil
 }
 
-// SetPolarity sets the polarity of the TachoMotor
-func (m *TachoMotor) SetPolarity(p Polarity) error {
+// SetPolarity sets the polarity of the LinearActuator
+func (m *LinearActuator) SetPolarity(p Polarity) error {
 	if p != Normal && p != Inversed {
 		return fmt.Errorf("ev3dev: invalid polarity: %q (valid \"normal\" or \"inversed\")", p)
 	}
@@ -156,8 +170,8 @@ func (m *TachoMotor) SetPolarity(p Polarity) error {
 	return nil
 }
 
-// Position returns the current position value for the TachoMotor.
-func (m *TachoMotor) Position() (int, error) {
+// Position returns the current position value for the LinearActuator.
+func (m *LinearActuator) Position() (int, error) {
 	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+position, m))
 	if err != nil {
 		return -1, fmt.Errorf("ev3dev: failed to read position: %v", err)
@@ -169,8 +183,8 @@ func (m *TachoMotor) Position() (int, error) {
 	return pos, nil
 }
 
-// SetPosition sets the position value for the TachoMotor.
-func (m *TachoMotor) SetPosition(pos int) error {
+// SetPosition sets the position value for the LinearActuator.
+func (m *LinearActuator) SetPosition(pos int) error {
 	if pos != int(int32(pos)) {
 		return fmt.Errorf("ev3dev: invalid position: %d (valid in int32)", pos)
 	}
@@ -181,8 +195,8 @@ func (m *TachoMotor) SetPosition(pos int) error {
 	return nil
 }
 
-// HoldPIDKd returns the derivative constant for the position PID for the TachoMotor.
-func (m *TachoMotor) HoldPIDKd() (int, error) {
+// HoldPIDKd returns the derivative constant for the position PID for the LinearActuator.
+func (m *LinearActuator) HoldPIDKd() (int, error) {
 	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+holdPIDkd, m))
 	if err != nil {
 		return -1, fmt.Errorf("ev3dev: failed to read hold PID Kd: %v", err)
@@ -194,8 +208,8 @@ func (m *TachoMotor) HoldPIDKd() (int, error) {
 	return pos, nil
 }
 
-// SetHoldPIDKd sets the derivative constant for the position PID for the TachoMotor.
-func (m *TachoMotor) SetHoldPIDKd(pos int) error {
+// SetHoldPIDKd sets the derivative constant for the position PID for the LinearActuator.
+func (m *LinearActuator) SetHoldPIDKd(pos int) error {
 	err := m.writeFile(fmt.Sprintf(TachoMotorPath+"/%s/"+holdPIDkd, m), fmt.Sprintln(pos))
 	if err != nil {
 		return fmt.Errorf("ev3dev: failed to set hold PID Kd: %v", err)
@@ -203,8 +217,8 @@ func (m *TachoMotor) SetHoldPIDKd(pos int) error {
 	return nil
 }
 
-// HoldPIDKi returns the integral constant for the position PID for the TachoMotor.
-func (m *TachoMotor) HoldPIDKi() (int, error) {
+// HoldPIDKi returns the integral constant for the position PID for the LinearActuator.
+func (m *LinearActuator) HoldPIDKi() (int, error) {
 	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+holdPIDki, m))
 	if err != nil {
 		return -1, fmt.Errorf("ev3dev: failed to read hold PID Ki: %v", err)
@@ -216,8 +230,8 @@ func (m *TachoMotor) HoldPIDKi() (int, error) {
 	return pos, nil
 }
 
-// SetHoldPIDKi sets the integral constant for the position PID for the TachoMotor.
-func (m *TachoMotor) SetHoldPIDKi(pos int) error {
+// SetHoldPIDKi sets the integral constant for the position PID for the LinearActuator.
+func (m *LinearActuator) SetHoldPIDKi(pos int) error {
 	err := m.writeFile(fmt.Sprintf(TachoMotorPath+"/%s/"+holdPIDki, m), fmt.Sprintln(pos))
 	if err != nil {
 		return fmt.Errorf("ev3dev: failed to set hold PID Ki: %v", err)
@@ -225,8 +239,8 @@ func (m *TachoMotor) SetHoldPIDKi(pos int) error {
 	return nil
 }
 
-// HoldPIDKp returns the proportional constant for the position PID for the TachoMotor.
-func (m *TachoMotor) HoldPIDKp() (int, error) {
+// HoldPIDKp returns the proportional constant for the position PID for the LinearActuator.
+func (m *LinearActuator) HoldPIDKp() (int, error) {
 	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+holdPIDkp, m))
 	if err != nil {
 		return -1, fmt.Errorf("ev3dev: failed to read hold PID Kp: %v", err)
@@ -238,8 +252,8 @@ func (m *TachoMotor) HoldPIDKp() (int, error) {
 	return pos, nil
 }
 
-// SetHoldPIDKp sets the proportional constant for the position PID for the TachoMotor.
-func (m *TachoMotor) SetHoldPIDKp(pos int) error {
+// SetHoldPIDKp sets the proportional constant for the position PID for the LinearActuator.
+func (m *LinearActuator) SetHoldPIDKp(pos int) error {
 	err := m.writeFile(fmt.Sprintf(TachoMotorPath+"/%s/"+holdPIDkp, m), fmt.Sprintln(pos))
 	if err != nil {
 		return fmt.Errorf("ev3dev: failed to set hold PID Kp: %v", err)
@@ -248,7 +262,7 @@ func (m *TachoMotor) SetHoldPIDKp(pos int) error {
 }
 
 // MaxSpeed returns  the maximum value that is accepted by SpeedSetpoint.
-func (m *TachoMotor) MaxSpeed() (int, error) {
+func (m *LinearActuator) MaxSpeed() (int, error) {
 	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+maxSpeed, m))
 	if err != nil {
 		return -1, fmt.Errorf("ev3dev: failed to read max speed: %v", err)
@@ -260,8 +274,8 @@ func (m *TachoMotor) MaxSpeed() (int, error) {
 	return pos, nil
 }
 
-// PositionSetpoint returns the current position set point value for the TachoMotor.
-func (m *TachoMotor) PositionSetpoint() (int, error) {
+// PositionSetpoint returns the current position set point value for the LinearActuator.
+func (m *LinearActuator) PositionSetpoint() (int, error) {
 	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+positionSetpoint, m))
 	if err != nil {
 		return -1, fmt.Errorf("ev3dev: failed to read position set point: %v", err)
@@ -273,8 +287,8 @@ func (m *TachoMotor) PositionSetpoint() (int, error) {
 	return pos, nil
 }
 
-// SetPositionSetpoint sets the position set point value for the TachoMotor.
-func (m *TachoMotor) SetPositionSetpoint(pos int) error {
+// SetPositionSetpoint sets the position set point value for the LinearActuator.
+func (m *LinearActuator) SetPositionSetpoint(pos int) error {
 	if pos != int(int32(pos)) {
 		return fmt.Errorf("ev3dev: invalid position set point: %d (valid in int32)", pos)
 	}
@@ -285,8 +299,8 @@ func (m *TachoMotor) SetPositionSetpoint(pos int) error {
 	return nil
 }
 
-// Speed returns the current speed set point value for the TachoMotor.
-func (m *TachoMotor) Speed() (int, error) {
+// Speed returns the current speed set point value for the LinearActuator.
+func (m *LinearActuator) Speed() (int, error) {
 	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+speed, m))
 	if err != nil {
 		return -1, fmt.Errorf("ev3dev: failed to read speed: %v", err)
@@ -298,8 +312,8 @@ func (m *TachoMotor) Speed() (int, error) {
 	return sp, nil
 }
 
-// SpeedSetpoint returns the current speed set point value for the TachoMotor.
-func (m *TachoMotor) SpeedSetpoint() (int, error) {
+// SpeedSetpoint returns the current speed set point value for the LinearActuator.
+func (m *LinearActuator) SpeedSetpoint() (int, error) {
 	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+speedSetpoint, m))
 	if err != nil {
 		return -1, fmt.Errorf("ev3dev: failed to read speed set point: %v", err)
@@ -311,8 +325,8 @@ func (m *TachoMotor) SpeedSetpoint() (int, error) {
 	return sp, nil
 }
 
-// SetSpeedSetpoint sets the speed set point value for the TachoMotor.
-func (m *TachoMotor) SetSpeedSetpoint(sp int) error {
+// SetSpeedSetpoint sets the speed set point value for the LinearActuator.
+func (m *LinearActuator) SetSpeedSetpoint(sp int) error {
 	err := m.writeFile(fmt.Sprintf(TachoMotorPath+"/%s/"+speedSetpoint, m), fmt.Sprintln(sp))
 	if err != nil {
 		return fmt.Errorf("ev3dev: failed to set speed set point: %v", err)
@@ -320,8 +334,8 @@ func (m *TachoMotor) SetSpeedSetpoint(sp int) error {
 	return nil
 }
 
-// RampUpSetpoint returns the current ramp up set point value for the TachoMotor.
-func (m *TachoMotor) RampUpSetpoint() (time.Duration, error) {
+// RampUpSetpoint returns the current ramp up set point value for the LinearActuator.
+func (m *LinearActuator) RampUpSetpoint() (time.Duration, error) {
 	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+rampUpSetpoint, m))
 	if err != nil {
 		return -1, fmt.Errorf("ev3dev: failed to read ramp up set point: %v", err)
@@ -333,8 +347,8 @@ func (m *TachoMotor) RampUpSetpoint() (time.Duration, error) {
 	return time.Duration(d) * time.Millisecond, nil
 }
 
-// SetRampUpSetpoint sets the ramp up set point value for the TachoMotor.
-func (m *TachoMotor) SetRampUpSetpoint(d time.Duration) error {
+// SetRampUpSetpoint sets the ramp up set point value for the LinearActuator.
+func (m *LinearActuator) SetRampUpSetpoint(d time.Duration) error {
 	if d < 0 {
 		return fmt.Errorf("ev3dev: invalid ramp up set point: %v (must be positive)", d)
 	}
@@ -345,8 +359,8 @@ func (m *TachoMotor) SetRampUpSetpoint(d time.Duration) error {
 	return nil
 }
 
-// RampDownSetpoint returns the current ramp down set point value for the TachoMotor.
-func (m *TachoMotor) RampDownSetpoint() (time.Duration, error) {
+// RampDownSetpoint returns the current ramp down set point value for the LinearActuator.
+func (m *LinearActuator) RampDownSetpoint() (time.Duration, error) {
 	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+rampDownSetpoint, m))
 	if err != nil {
 		return -1, fmt.Errorf("ev3dev: failed to read ramp down set point: %v", err)
@@ -358,8 +372,8 @@ func (m *TachoMotor) RampDownSetpoint() (time.Duration, error) {
 	return time.Duration(d) * time.Millisecond, nil
 }
 
-// SetRampDownSetpoint sets the ramp down set point value for the TachoMotor.
-func (m *TachoMotor) SetRampDownSetpoint(d time.Duration) error {
+// SetRampDownSetpoint sets the ramp down set point value for the LinearActuator.
+func (m *LinearActuator) SetRampDownSetpoint(d time.Duration) error {
 	if d < 0 {
 		return fmt.Errorf("ev3dev: invalid ramp down set point: %v (must be positive)", d)
 	}
@@ -370,8 +384,8 @@ func (m *TachoMotor) SetRampDownSetpoint(d time.Duration) error {
 	return nil
 }
 
-// SpeedPIDKd returns the derivative constant for the speed regulation PID for the TachoMotor.
-func (m *TachoMotor) SpeedPIDKd() (int, error) {
+// SpeedPIDKd returns the derivative constant for the speed regulation PID for the LinearActuator.
+func (m *LinearActuator) SpeedPIDKd() (int, error) {
 	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+speedPIDkd, m))
 	if err != nil {
 		return -1, fmt.Errorf("ev3dev: failed to read speed PID Kd: %v", err)
@@ -383,8 +397,8 @@ func (m *TachoMotor) SpeedPIDKd() (int, error) {
 	return pos, nil
 }
 
-// SetSpeedPIDKd sets the derivative constant for the speed regulation PID for the TachoMotor.
-func (m *TachoMotor) SetSpeedPIDKd(pos int) error {
+// SetSpeedPIDKd sets the derivative constant for the speed regulation PID for the LinearActuator.
+func (m *LinearActuator) SetSpeedPIDKd(pos int) error {
 	err := m.writeFile(fmt.Sprintf(TachoMotorPath+"/%s/"+speedPIDkd, m), fmt.Sprintln(pos))
 	if err != nil {
 		return fmt.Errorf("ev3dev: failed to set speed PID Kd: %v", err)
@@ -392,8 +406,8 @@ func (m *TachoMotor) SetSpeedPIDKd(pos int) error {
 	return nil
 }
 
-// SpeedPIDKi returns the integral constant for the speed regulation PID for the TachoMotor.
-func (m *TachoMotor) SpeedPIDKi() (int, error) {
+// SpeedPIDKi returns the integral constant for the speed regulation PID for the LinearActuator.
+func (m *LinearActuator) SpeedPIDKi() (int, error) {
 	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+speedPIDki, m))
 	if err != nil {
 		return -1, fmt.Errorf("ev3dev: failed to read speed PID Ki: %v", err)
@@ -405,8 +419,8 @@ func (m *TachoMotor) SpeedPIDKi() (int, error) {
 	return pos, nil
 }
 
-// SetSpeedPIDKi sets the integral constant for the speed regulation PID for the TachoMotor.
-func (m *TachoMotor) SetSpeedPIDKi(pos int) error {
+// SetSpeedPIDKi sets the integral constant for the speed regulation PID for the LinearActuator.
+func (m *LinearActuator) SetSpeedPIDKi(pos int) error {
 	err := m.writeFile(fmt.Sprintf(TachoMotorPath+"/%s/"+speedPIDki, m), fmt.Sprintln(pos))
 	if err != nil {
 		return fmt.Errorf("ev3dev: failed to set speed PID Ki: %v", err)
@@ -414,8 +428,8 @@ func (m *TachoMotor) SetSpeedPIDKi(pos int) error {
 	return nil
 }
 
-// SpeedPIDKp returns the proportional constant for the speed regulation PID for the TachoMotor.
-func (m *TachoMotor) SpeedPIDKp() (int, error) {
+// SpeedPIDKp returns the proportional constant for the speed regulation PID for the LinearActuator.
+func (m *LinearActuator) SpeedPIDKp() (int, error) {
 	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+speedPIDkp, m))
 	if err != nil {
 		return -1, fmt.Errorf("ev3dev: failed to read speed PID Kp: %v", err)
@@ -427,8 +441,8 @@ func (m *TachoMotor) SpeedPIDKp() (int, error) {
 	return pos, nil
 }
 
-// SetSpeedPIDKp sets the proportional constant for the speed regulation PID for the TachoMotor.
-func (m *TachoMotor) SetSpeedPIDKp(pos int) error {
+// SetSpeedPIDKp sets the proportional constant for the speed regulation PID for the LinearActuator.
+func (m *LinearActuator) SetSpeedPIDKp(pos int) error {
 	err := m.writeFile(fmt.Sprintf(TachoMotorPath+"/%s/"+speedPIDkp, m), fmt.Sprintln(pos))
 	if err != nil {
 		return fmt.Errorf("ev3dev: failed to set speed PID Kp: %v", err)
@@ -436,8 +450,8 @@ func (m *TachoMotor) SetSpeedPIDKp(pos int) error {
 	return nil
 }
 
-// State returns the current state of the TachoMotor.
-func (m *TachoMotor) State() (MotorState, error) {
+// State returns the current state of the LinearActuator.
+func (m *LinearActuator) State() (MotorState, error) {
 	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+commands, m))
 	if err != nil {
 		return 0, fmt.Errorf("ev3dev: failed to read tacho-motor commands: %v", err)
@@ -450,8 +464,8 @@ func (m *TachoMotor) State() (MotorState, error) {
 }
 
 // StopAction returns the stop action used when a stop command is issued
-// to the TachoMotor.
-func (m *TachoMotor) StopAction() (string, error) {
+// to the LinearActuator.
+func (m *LinearActuator) StopAction() (string, error) {
 	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+stopAction, m))
 	if err != nil {
 		return "", fmt.Errorf("ev3dev: failed to read stop command: %v", err)
@@ -460,8 +474,8 @@ func (m *TachoMotor) StopAction() (string, error) {
 }
 
 // SetStopAction sets the stop action to be used when a stop command is
-// issued to the TachoMotor.
-func (m *TachoMotor) SetStopAction(comm string) error {
+// issued to the LinearActuator.
+func (m *LinearActuator) SetStopAction(comm string) error {
 	avail, err := m.StopActions()
 	if err != nil {
 		return err
@@ -483,8 +497,8 @@ func (m *TachoMotor) SetStopAction(comm string) error {
 	return nil
 }
 
-// StopActions returns the available stop actions for the TachoMotor.
-func (m *TachoMotor) StopActions() ([]string, error) {
+// StopActions returns the available stop actions for the LinearActuator.
+func (m *LinearActuator) StopActions() ([]string, error) {
 	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+stopActions, m))
 	if err != nil {
 		return nil, fmt.Errorf("ev3dev: failed to read tacho-motor stop command: %v", err)
@@ -492,8 +506,8 @@ func (m *TachoMotor) StopActions() ([]string, error) {
 	return strings.Split(string(chomp(b)), " "), nil
 }
 
-// TimeSetpoint returns the current time set point value for the TachoMotor.
-func (m *TachoMotor) TimeSetpoint() (time.Duration, error) {
+// TimeSetpoint returns the current time set point value for the LinearActuator.
+func (m *LinearActuator) TimeSetpoint() (time.Duration, error) {
 	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+timeSetpoint, m))
 	if err != nil {
 		return -1, fmt.Errorf("ev3dev: failed to read time set point: %v", err)
@@ -505,8 +519,8 @@ func (m *TachoMotor) TimeSetpoint() (time.Duration, error) {
 	return time.Duration(d) * time.Millisecond, nil
 }
 
-// SetTimeSetpoint sets the time set point value for the TachoMotor.
-func (m *TachoMotor) SetTimeSetpoint(d time.Duration) error {
+// SetTimeSetpoint sets the time set point value for the LinearActuator.
+func (m *LinearActuator) SetTimeSetpoint(d time.Duration) error {
 	err := m.writeFile(fmt.Sprintf(TachoMotorPath+"/%s/"+timeSetpoint, m), fmt.Sprintln(int(d/time.Millisecond)))
 	if err != nil {
 		return fmt.Errorf("ev3dev: failed to set time set point: %v", err)
