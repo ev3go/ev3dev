@@ -226,12 +226,7 @@ func DriverFor(d Device) (string, error) {
 // with a DriverMismatch error.
 // If port is empty, the first device satisfying the driver name is returned.
 func deviceIDFor(port, driver string, d Device) (int, error) {
-	f, err := os.Open(d.Path())
-	if err != nil {
-		return -1, err
-	}
-	devices, err := f.Readdirnames(0)
-	f.Close()
+	devices, err := devicesIn(d.Path())
 	if err != nil {
 		return -1, fmt.Errorf("ev3dev: could not get devices for %s: %v", d.Path(), err)
 	}
@@ -282,4 +277,13 @@ func deviceIDFor(port, driver string, d Device) (int, error) {
 		return -1, fmt.Errorf("ev3dev: could not find device for driver %q on port %s", driver, port)
 	}
 	return -1, fmt.Errorf("ev3dev: could not find device for driver %q", driver)
+}
+
+func devicesIn(path string) ([]string, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	return f.Readdirnames(0)
 }
