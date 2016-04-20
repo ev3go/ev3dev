@@ -69,12 +69,17 @@ func (p *lcd) Init(zero bool) error {
 	return nil
 }
 
-func (p *lcd) Close() error {
-	err := p.f.Close()
+func (p *lcd) Close() (err error) {
+	defer func() {
+		p.mu.Unlock()
+		_err := p.f.Close()
+		p.f = nil
+		if err == nil {
+			err = _err
+		}
+	}()
 	p.mu.Lock()
-	p.f = nil
-	p.mu.Unlock()
-	return err
+	return syscall.Munmap(p.img.Pix)
 }
 
 func (p *lcd) frameBuffer(path string, zero bool) error {
