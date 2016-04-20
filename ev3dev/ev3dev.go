@@ -41,18 +41,24 @@ const (
 
 	// DCMotorPath is the path to the ev3 dc-motor file system.
 	DCMotorPath = "/sys/class/dc-motor"
+
+	// PowerSupplyPath is the path to the ev3 power supply file system.
+	PowerSupplyPath = "/sys/class/power_supply"
 )
 
 // These are the subsystem path definitions for all device classes.
 const (
 	address                   = "address"
 	binData                   = "bin_data"
+	batteryTechnology         = "technology"
+	batteryType               = "type"
 	binDataFormat             = "bin_data_format"
 	brightness                = "brightness"
 	command                   = "command"
 	commands                  = "commands"
 	countPerMeter             = "count_per_m"
 	countPerRot               = "count_per_rot"
+	currentNow                = "current_now"
 	decimals                  = "decimals"
 	direct                    = "direct"
 	driverName                = "driver_name"
@@ -104,6 +110,9 @@ const (
 	trigger                   = "trigger"
 	units                     = "units"
 	value                     = "value"
+	voltageMaxDesign          = "voltage_max_design"
+	voltageMinDesign          = "voltage_min_design"
+	voltageNow                = "voltage_now"
 )
 
 // Polarity represent motor polarity states.

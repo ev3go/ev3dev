@@ -10,7 +10,7 @@ Currently supported:
 
 - [x] Automatic identification of attached devices
 - [ ] Buttons
-- [ ] Power supply
+- [x] Power supply `/sys/class/power_supply`
 - [x] LED `/sys/class/leds`
 - [x] LCD `/dev/fb0`
 - [x] Lego Port `/sys/class/lego-port`
