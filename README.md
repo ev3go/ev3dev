@@ -4,12 +4,12 @@ The goal is to implement a simple Go style ev3dev API and helpers for common tas
 
 github.com/kortschak/ev3/ev3dev depends on an ev3dev kernel v3.16.7-ckt26-10-ev3dev-ev3 or better (See http://www.ev3dev.org/news/2016/04/11/Kernel-Release-Cycle-10/)
 
-Currently supported:
+## Currently supported:
 
-## Low level API
+### Low level API
 
 - [x] Automatic identification of attached devices
-- [ ] Buttons
+- [ ] Buttons `/dev/input/by-path/platform-gpio-keys.0-event`
 - [x] Power supply `/sys/class/power_supply`
 - [x] LED `/sys/class/leds`
 - [x] LCD `/dev/fb0`
@@ -20,7 +20,7 @@ Currently supported:
 - [x] Servo motor `/sys/class/servo-motor`
 - [x] Tacho motor `/sys/class/tacho-motor`
 
-## Common tasks
+### Common tasks
 
 None yet.
 
