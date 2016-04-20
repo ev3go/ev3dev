@@ -15,6 +15,8 @@ import (
 type LED struct {
 	color string
 	side  string
+
+	err error
 }
 
 var (
@@ -27,12 +29,22 @@ var (
 // String satisfies the fmt.Stringer interface.
 func (l *LED) String() string { return fmt.Sprintf("ev3:%s:%s", l.side, l.color) }
 
+// Err returns the error state of the LED and clears it.
+func (l *LED) Err() error {
+	err := l.err
+	l.err = nil
+	return err
+}
+
 func (l *LED) writeFile(path, data string) error {
 	return ioutil.WriteFile(path, []byte(data), 0)
 }
 
 // MaxBrightness returns the maximum brightness value for the LED.
 func (l *LED) MaxBrightness() (int, error) {
+	if l.err != nil {
+		return -1, l.Err()
+	}
 	b, err := ioutil.ReadFile(fmt.Sprintf(LEDPath+"/%s/"+maxBrightness, l))
 	if err != nil {
 		return -1, fmt.Errorf("ev3dev: failed to read maximum led brightness: %v", err)
@@ -46,6 +58,9 @@ func (l *LED) MaxBrightness() (int, error) {
 
 // Brightness returns the current brightness value for the LED.
 func (l *LED) Brightness() (int, error) {
+	if l.err != nil {
+		return -1, l.Err()
+	}
 	b, err := ioutil.ReadFile(fmt.Sprintf(LEDPath+"/%s/"+brightness, l))
 	if err != nil {
 		return -1, fmt.Errorf("ev3dev: failed to read led brightness: %v", err)
@@ -58,23 +73,31 @@ func (l *LED) Brightness() (int, error) {
 }
 
 // SetBrightness sets the brightness of the LED.
-func (l *LED) SetBrightness(bright int) error {
+func (l *LED) SetBrightness(bright int) *LED {
+	if l.err != nil {
+		return l
+	}
 	max, err := l.MaxBrightness()
 	if err != nil {
-		return err
+		l.err = err
+		return l
 	}
 	if bright < 0 || bright > max {
-		return fmt.Errorf("ev3dev: invalid led brightness: %d (valid 0-%d)", bright, max)
+		l.err = fmt.Errorf("ev3dev: invalid led brightness: %d (valid 0-%d)", bright, max)
+		return l
 	}
 	err = l.writeFile(fmt.Sprintf(LEDPath+"/%s/"+brightness, l), fmt.Sprintln(bright))
 	if err != nil {
-		return fmt.Errorf("ev3dev: failed to set led brightness: %v", err)
+		l.err = fmt.Errorf("ev3dev: failed to set led brightness: %v", err)
 	}
-	return nil
+	return l
 }
 
 // Trigger returns the current and available triggers for the LED.
 func (l *LED) Trigger() (current string, available []string, err error) {
+	if l.err != nil {
+		return "", nil, l.Err()
+	}
 	b, err := ioutil.ReadFile(fmt.Sprintf(LEDPath+"/%s/"+trigger, l))
 	if err != nil {
 		return "", nil, fmt.Errorf("ev3dev: failed to read led trigger: %v", err)
@@ -85,10 +108,14 @@ func (l *LED) Trigger() (current string, available []string, err error) {
 }
 
 // SetTrigger sets the trigger for the LED.
-func (l *LED) SetTrigger(trig string) error {
+func (l *LED) SetTrigger(trig string) *LED {
+	if l.err != nil {
+		return l
+	}
 	_, avail, err := l.Trigger()
 	if err != nil {
-		return err
+		l.err = err
+		return l
 	}
 	ok := false
 	for _, t := range avail {
@@ -98,11 +125,12 @@ func (l *LED) SetTrigger(trig string) error {
 		}
 	}
 	if !ok {
-		return fmt.Errorf("ev3dev: led trigger %q not available for %s (available:%q)", mode, l, avail)
+		l.err = fmt.Errorf("ev3dev: led trigger %q not available for %s (available:%q)", mode, l, avail)
+		return l
 	}
 	err = l.writeFile(fmt.Sprintf(LEDPath+"/%s/"+trigger, l), trig)
 	if err != nil {
-		return fmt.Errorf("ev3dev: failed to set led trigger: %v", err)
+		l.err = fmt.Errorf("ev3dev: failed to set led trigger: %v", err)
 	}
-	return nil
+	return l
 }

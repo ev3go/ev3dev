@@ -4,6 +4,20 @@
 
 // Package ev3dev provides low level access to the ev3dev control and sensor drivers.
 // See documentation at http://www.ev3dev.org/docs/drivers/.
+//
+// The API provided in the ev3dev package allows fluent chaining of action calls.
+// Methods for each of the device handle types are split into two classes: action
+// and result. Action method calls return the receiver and result method calls
+// return an error value generally with another result. Action methods result in
+// a change of state in the robot while result methods return the requested attribute
+// state of the robot.
+//
+// To allow fluent call chains, errors are sticky for action methods and are cleared
+// and returned by result methods. In a chain of calls the first error that is caused
+// by an action method prevents execution of all subsequent action method calls, and
+// is returned by the first result method called on the device handle, clearing the
+// error state. Any attribute value returned by a call chain returning a non-nil error
+// is invalid.
 package ev3dev
 
 import (

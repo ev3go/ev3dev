@@ -11,6 +11,7 @@
 package main
 
 import (
+	"fmt"
 	"image"
 	"image/draw"
 	"log"
@@ -28,7 +29,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to find medium motor on outA: %v", err)
 	}
-	err = outA.SetStopAction("brake")
+	err = outA.SetStopAction("brake").Err()
 	if err != nil {
 		log.Fatalf("failed to set brake stop for medium motor on outA: %v", err)
 	}
@@ -42,7 +43,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to find left large motor on outB: %v", err)
 	}
-	err = outB.SetStopAction("brake")
+	err = outB.SetStopAction("brake").Err()
 	if err != nil {
 		log.Fatalf("failed to set brake stop for left large motor on outB: %v", err)
 	}
@@ -56,7 +57,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to find right large motor on outC: %v", err)
 	}
-	err = outC.SetStopAction("brake")
+	err = outC.SetStopAction("brake").Err()
 	if err != nil {
 		log.Fatalf("failed to set brake stop for right large motor on outB: %v", err)
 	}
@@ -66,37 +67,54 @@ func main() {
 		draw.Draw(ev3dev.LCD, ev3dev.LCD.Bounds(), gopher, gopher.Bounds().Min, draw.Src)
 
 		// Run medium motor on outA at speed 50, wait for 0.5 second and then brake.
-		outA.SetSpeedSetpoint(50 * maxMedium / 100)
-		outA.Command("run-forever")
+		outA.SetSpeedSetpoint(50 * maxMedium / 100).Command("run-forever")
 		time.Sleep(time.Second / 2)
 		outA.Command("stop")
+		checkErrors(outA)
 
 		// Run large motors on B+C at speed 70, wait for 2 second and then brake.
-		outB.SetSpeedSetpoint(70 * maxLarge / 100)
-		outC.SetSpeedSetpoint(70 * maxLarge / 100)
-		outB.Command("run-forever")
-		outC.Command("run-forever")
+		outB.SetSpeedSetpoint(70 * maxLarge / 100).Command("run-forever")
+		outC.SetSpeedSetpoint(70 * maxLarge / 100).Command("run-forever")
+		checkErrors(outB, outC)
 		time.Sleep(2 * time.Second)
 		outB.Command("stop")
 		outC.Command("stop")
+		checkErrors(outB, outC)
 
 		// Run medium motor on outA at speed -75, wait for 0.5 second and then brake.
-		outA.SetSpeedSetpoint(-75 * maxMedium / 100)
-		outA.Command("run-forever")
+		outA.SetSpeedSetpoint(-75 * maxMedium / 100).Command("run-forever")
 		time.Sleep(time.Second / 2)
 		outA.Command("stop")
+		checkErrors(outA)
 
 		// Render the gopher to the screen.
 		draw.Draw(ev3dev.LCD, ev3dev.LCD.Bounds(), gopherSquint, gopherSquint.Bounds().Min, draw.Src)
 
 		// Run large motors on B at speed -50 and C at speed 50, wait for 1 second and then brake.
-		outB.SetSpeedSetpoint(-50 * maxLarge / 100)
-		outC.SetSpeedSetpoint(50 * maxLarge / 100)
-		outB.Command("run-forever")
-		outC.Command("run-forever")
+		outB.SetSpeedSetpoint(-50 * maxLarge / 100).Command("run-forever")
+		outC.SetSpeedSetpoint(50 * maxLarge / 100).Command("run-forever")
+		checkErrors(outB, outC)
 		time.Sleep(time.Second)
 		outB.Command("stop")
 		outC.Command("stop")
+		checkErrors(outB, outC)
+	}
+}
+
+func checkErrors(devs ...ev3dev.Device) {
+	for _, d := range devs {
+		err := d.(*ev3dev.TachoMotor).Err()
+		if err != nil {
+			drv, dErr := ev3dev.DriverFor(d)
+			if dErr != nil {
+				drv = fmt.Sprintf("(missing driver name: %v)", dErr)
+			}
+			addr, aErr := ev3dev.AddressOf(d)
+			if aErr != nil {
+				drv = fmt.Sprintf("(missing port address: %v)", aErr)
+			}
+			log.Fatalf("motor error for %s:%s on port %s: %v", d, drv, addr, err)
+		}
 	}
 }
 
