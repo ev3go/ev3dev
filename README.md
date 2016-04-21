@@ -9,7 +9,7 @@ github.com/kortschak/ev3/ev3dev depends on an ev3dev kernel v3.16.7-ckt26-10-ev3
 ### Low level API
 
 - [x] Automatic identification of attached devices
-- [ ] Buttons `/dev/input/by-path/platform-gpio-keys.0-event`
+- [x] Buttons `/dev/input/by-path/platform-gpio-keys.0-event`
 - [x] Power supply `/sys/class/power_supply`
 - [x] LED `/sys/class/leds`
 - [x] LCD `/dev/fb0`
