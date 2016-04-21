@@ -12,6 +12,11 @@ import (
 )
 
 // LED represents a handle to an ev3 LED.
+//
+// Interaction with shared physical resources is intrinsically
+// subject to race conditions without a transactional model,
+// which is not provided here. If concurrent access to LEDs is
+// needed, the user is required to establish this model.
 type LED struct {
 	color string
 	side  string
