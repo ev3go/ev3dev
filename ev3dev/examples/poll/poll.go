@@ -10,7 +10,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/kortschak/ev3/ev3dev"
+	"github.com/ev3go/ev3/ev3dev"
 )
 
 func main() {
