@@ -6,8 +6,6 @@ package ev3dev
 
 import (
 	"fmt"
-	"io/ioutil"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -52,20 +50,9 @@ func LinearActuatorFor(port, driver string) (*LinearActuator, error) {
 	return &LinearActuator{id: id}, err
 }
 
-func (m *LinearActuator) writeFile(path, data string) error {
-	return ioutil.WriteFile(path, []byte(data), 0)
-}
-
 // Commands returns the available commands for the LinearActuator.
 func (m *LinearActuator) Commands() ([]string, error) {
-	if m.err != nil {
-		return nil, m.Err()
-	}
-	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+commands, m))
-	if err != nil {
-		return nil, fmt.Errorf("ev3dev: failed to read tacho-motor commands: %v", err)
-	}
-	return strings.Split(string(chomp(b)), " "), nil
+	return stringSliceFrom(attributeOf(m, commands))
 }
 
 // Command issues a command to the LinearActuator.
@@ -89,105 +76,49 @@ func (m *LinearActuator) Command(comm string) *LinearActuator {
 		m.err = fmt.Errorf("ev3dev: command %q not available for %s (available:%q)", comm, m, avail)
 		return m
 	}
-	err = m.writeFile(fmt.Sprintf(TachoMotorPath+"/%s/"+command, m), comm)
-	if err != nil {
-		m.err = fmt.Errorf("ev3dev: failed to issue tacho-motor command: %v", err)
-	}
+	m.err = setAttributeOf(m, command, comm)
 	return m
 }
 
 // CountPerMeter returns the number of tacho counts in one meter of travel of the motor.
 // Calls to CountPerMeter will return an error for non-linear motors.
 func (m *LinearActuator) CountPerMeter() (int, error) {
-	if m.err != nil {
-		return -1, m.Err()
-	}
-	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+countPerMeter, m))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to read count per meter: %v", err)
-	}
-	sp, err := strconv.Atoi(string(chomp(b)))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to parse count per meter: %v", err)
-	}
-	return sp, nil
+	return intFrom(attributeOf(m, countPerMeter))
 }
 
 // FullTravelCount returns the the number of tacho counts in the full travel of the motor.
 // Calls to FullTravelCount will return an error for non-linear motors.
 func (m *LinearActuator) FullTravelCount() (int, error) {
-	if m.err != nil {
-		return -1, m.Err()
-	}
-	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+fullTravelCount, m))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to read full travel count: %v", err)
-	}
-	sp, err := strconv.Atoi(string(chomp(b)))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to parse full travel count: %v", err)
-	}
-	return sp, nil
+	return intFrom(attributeOf(m, fullTravelCount))
 }
 
 // DutyCycle returns the current duty cycle value for the LinearActuator.
 func (m *LinearActuator) DutyCycle() (int, error) {
-	if m.err != nil {
-		return -1, m.Err()
-	}
-	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+dutyCycle, m))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to read duty cycle: %v", err)
-	}
-	sp, err := strconv.Atoi(string(chomp(b)))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to parse duty cycle: %v", err)
-	}
-	return sp, nil
+	return intFrom(attributeOf(m, dutyCycle))
 }
 
-// DutyCycleSetpoint returns the current duty cycle set point value for the LinearActuator.
+// DutyCycleSetpoint returns the current duty cycle setpoint value for the LinearActuator.
 func (m *LinearActuator) DutyCycleSetpoint() (int, error) {
-	if m.err != nil {
-		return -1, m.Err()
-	}
-	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+dutyCycleSetpoint, m))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to read duty cycle set point: %v", err)
-	}
-	sp, err := strconv.Atoi(string(chomp(b)))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to parse duty cycle set point: %v", err)
-	}
-	return sp, nil
+	return intFrom(attributeOf(m, dutyCycleSetpoint))
 }
 
-// SetDutyCycleSetpoint sets the duty cycle set point value for the LinearActuator
+// SetDutyCycleSetpoint sets the duty cycle setpoint value for the LinearActuator
 func (m *LinearActuator) SetDutyCycleSetpoint(sp int) *LinearActuator {
 	if m.err != nil {
 		return m
 	}
 	if sp < -100 || sp > 100 {
-		m.err = fmt.Errorf("ev3dev: invalid duty cycle set point: %d (valid -100 - 100)", sp)
+		m.err = fmt.Errorf("ev3dev: invalid duty cycle setpoint: %d (valid -100 - 100)", sp)
 		return m
 	}
-	err := m.writeFile(fmt.Sprintf(TachoMotorPath+"/%s/"+dutyCycleSetpoint, m), fmt.Sprintln(sp))
-	if err != nil {
-		m.err = fmt.Errorf("ev3dev: failed to set duty cycle set point: %v", err)
-	}
+	m.err = setAttributeOf(m, dutyCycleSetpoint, fmt.Sprintln(sp))
 	return m
 }
 
 // Polarity returns the current polarity of the LinearActuator.
-func (m *LinearActuator) Polarity() (string, error) {
-	if m.err != nil {
-		return "", m.Err()
-	}
-	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+polarity, m))
-	if err != nil {
-		return "", fmt.Errorf("ev3dev: failed to read polarity: %v", err)
-	}
-	return string(b), nil
+func (m *LinearActuator) Polarity() (Polarity, error) {
+	p, err := stringFrom(attributeOf(m, polarity))
+	return Polarity(p), err
 }
 
 // SetPolarity sets the polarity of the LinearActuator
@@ -199,27 +130,13 @@ func (m *LinearActuator) SetPolarity(p Polarity) *LinearActuator {
 		m.err = fmt.Errorf("ev3dev: invalid polarity: %q (valid \"normal\" or \"inversed\")", p)
 		return m
 	}
-	err := m.writeFile(fmt.Sprintf(TachoMotorPath+"/%s/"+polarity, m), string(p))
-	if err != nil {
-		m.err = fmt.Errorf("ev3dev: failed to set polarity %v", err)
-	}
+	m.err = setAttributeOf(m, polarity, string(p))
 	return m
 }
 
 // Position returns the current position value for the LinearActuator.
 func (m *LinearActuator) Position() (int, error) {
-	if m.err != nil {
-		return -1, m.Err()
-	}
-	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+position, m))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to read position: %v", err)
-	}
-	pos, err := strconv.Atoi(string(chomp(b)))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to parse position: %v", err)
-	}
-	return pos, nil
+	return intFrom(attributeOf(m, position))
 }
 
 // SetPosition sets the position value for the LinearActuator.
@@ -231,334 +148,169 @@ func (m *LinearActuator) SetPosition(pos int) *LinearActuator {
 		m.err = fmt.Errorf("ev3dev: invalid position: %d (valid in int32)", pos)
 		return m
 	}
-	err := m.writeFile(fmt.Sprintf(TachoMotorPath+"/%s/"+position, m), fmt.Sprintln(pos))
-	if err != nil {
-		m.err = fmt.Errorf("ev3dev: failed to set position: %v", err)
-	}
+	m.err = setAttributeOf(m, position, fmt.Sprintln(pos))
 	return m
 }
 
 // HoldPIDKd returns the derivative constant for the position PID for the LinearActuator.
 func (m *LinearActuator) HoldPIDKd() (int, error) {
-	if m.err != nil {
-		return -1, m.Err()
-	}
-	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+holdPIDkd, m))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to read hold PID Kd: %v", err)
-	}
-	pos, err := strconv.Atoi(string(chomp(b)))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to parse hold PID Kd: %v", err)
-	}
-	return pos, nil
+	return intFrom(attributeOf(m, holdPIDkd))
 }
 
 // SetHoldPIDKd sets the derivative constant for the position PID for the LinearActuator.
-func (m *LinearActuator) SetHoldPIDKd(pos int) *LinearActuator {
+func (m *LinearActuator) SetHoldPIDKd(k int) *LinearActuator {
 	if m.err != nil {
 		return m
 	}
-	err := m.writeFile(fmt.Sprintf(TachoMotorPath+"/%s/"+holdPIDkd, m), fmt.Sprintln(pos))
-	if err != nil {
-		m.err = fmt.Errorf("ev3dev: failed to set hold PID Kd: %v", err)
-	}
+	m.err = setAttributeOf(m, holdPIDkd, fmt.Sprintln(k))
 	return m
 }
 
 // HoldPIDKi returns the integral constant for the position PID for the LinearActuator.
 func (m *LinearActuator) HoldPIDKi() (int, error) {
-	if m.err != nil {
-		return -1, m.Err()
-	}
-	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+holdPIDki, m))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to read hold PID Ki: %v", err)
-	}
-	pos, err := strconv.Atoi(string(chomp(b)))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to parse hold PID Ki: %v", err)
-	}
-	return pos, nil
+	return intFrom(attributeOf(m, holdPIDki))
 }
 
 // SetHoldPIDKi sets the integral constant for the position PID for the LinearActuator.
-func (m *LinearActuator) SetHoldPIDKi(pos int) *LinearActuator {
+func (m *LinearActuator) SetHoldPIDKi(k int) *LinearActuator {
 	if m.err != nil {
 		return m
 	}
-	err := m.writeFile(fmt.Sprintf(TachoMotorPath+"/%s/"+holdPIDki, m), fmt.Sprintln(pos))
-	if err != nil {
-		m.err = fmt.Errorf("ev3dev: failed to set hold PID Ki: %v", err)
-	}
+	m.err = setAttributeOf(m, holdPIDki, fmt.Sprintln(k))
 	return m
 }
 
 // HoldPIDKp returns the proportional constant for the position PID for the LinearActuator.
 func (m *LinearActuator) HoldPIDKp() (int, error) {
-	if m.err != nil {
-		return -1, m.Err()
-	}
-	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+holdPIDkp, m))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to read hold PID Kp: %v", err)
-	}
-	pos, err := strconv.Atoi(string(chomp(b)))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to parse hold PID Kp: %v", err)
-	}
-	return pos, nil
+	return intFrom(attributeOf(m, holdPIDkp))
 }
 
 // SetHoldPIDKp sets the proportional constant for the position PID for the LinearActuator.
-func (m *LinearActuator) SetHoldPIDKp(pos int) *LinearActuator {
+func (m *LinearActuator) SetHoldPIDKp(k int) *LinearActuator {
 	if m.err != nil {
 		return m
 	}
-	err := m.writeFile(fmt.Sprintf(TachoMotorPath+"/%s/"+holdPIDkp, m), fmt.Sprintln(pos))
-	if err != nil {
-		m.err = fmt.Errorf("ev3dev: failed to set hold PID Kp: %v", err)
-	}
+	m.err = setAttributeOf(m, holdPIDkp, fmt.Sprintln(k))
 	return m
 }
 
-// MaxSpeed returns  the maximum value that is accepted by SpeedSetpoint.
+// MaxSpeed returns the maximum value that is accepted by SpeedSetpoint.
 func (m *LinearActuator) MaxSpeed() (int, error) {
-	if m.err != nil {
-		return -1, m.Err()
-	}
-	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+maxSpeed, m))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to read max speed: %v", err)
-	}
-	pos, err := strconv.Atoi(string(chomp(b)))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to parse max speed: %v", err)
-	}
-	return pos, nil
+	return intFrom(attributeOf(m, maxSpeed))
 }
 
-// PositionSetpoint returns the current position set point value for the LinearActuator.
+// PositionSetpoint returns the current position setpoint value for the LinearActuator.
 func (m *LinearActuator) PositionSetpoint() (int, error) {
-	if m.err != nil {
-		return -1, m.Err()
-	}
-	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+positionSetpoint, m))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to read position set point: %v", err)
-	}
-	pos, err := strconv.Atoi(string(chomp(b)))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to parse position set point: %v", err)
-	}
-	return pos, nil
+	return intFrom(attributeOf(m, positionSetpoint))
 }
 
-// SetPositionSetpoint sets the position set point value for the LinearActuator.
-func (m *LinearActuator) SetPositionSetpoint(pos int) *LinearActuator {
+// SetPositionSetpoint sets the position setpoint value for the LinearActuator.
+func (m *LinearActuator) SetPositionSetpoint(sp int) *LinearActuator {
 	if m.err != nil {
 		return m
 	}
-	if pos != int(int32(pos)) {
-		m.err = fmt.Errorf("ev3dev: invalid position set point: %d (valid in int32)", pos)
+	if sp != int(int32(sp)) {
+		m.err = fmt.Errorf("ev3dev: invalid position setpoint: %d (valid in int32)", sp)
 		return m
 	}
-	err := m.writeFile(fmt.Sprintf(TachoMotorPath+"/%s/"+positionSetpoint, m), fmt.Sprintln(pos))
-	if err != nil {
-		m.err = fmt.Errorf("ev3dev: failed to set position set point: %v", err)
-	}
+	m.err = setAttributeOf(m, positionSetpoint, fmt.Sprintln(sp))
 	return m
 }
 
-// Speed returns the current speed set point value for the LinearActuator.
+// Speed returns the current speed of the LinearActuator.
 func (m *LinearActuator) Speed() (int, error) {
-	if m.err != nil {
-		return -1, m.Err()
-	}
-	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+speed, m))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to read speed: %v", err)
-	}
-	sp, err := strconv.Atoi(string(chomp(b)))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to parse speed: %v", err)
-	}
-	return sp, nil
+	return intFrom(attributeOf(m, speed))
 }
 
-// SpeedSetpoint returns the current speed set point value for the LinearActuator.
+// SpeedSetpoint returns the current speed setpoint value for the LinearActuator.
 func (m *LinearActuator) SpeedSetpoint() (int, error) {
-	if m.err != nil {
-		return -1, m.Err()
-	}
-	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+speedSetpoint, m))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to read speed set point: %v", err)
-	}
-	sp, err := strconv.Atoi(string(chomp(b)))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to parse speed set point: %v", err)
-	}
-	return sp, nil
+	return intFrom(attributeOf(m, speedSetpoint))
 }
 
-// SetSpeedSetpoint sets the speed set point value for the LinearActuator.
+// SetSpeedSetpoint sets the speed setpoint value for the LinearActuator.
 func (m *LinearActuator) SetSpeedSetpoint(sp int) *LinearActuator {
 	if m.err != nil {
 		return m
 	}
-	err := m.writeFile(fmt.Sprintf(TachoMotorPath+"/%s/"+speedSetpoint, m), fmt.Sprintln(sp))
-	if err != nil {
-		m.err = fmt.Errorf("ev3dev: failed to set speed set point: %v", err)
-	}
+	m.err = setAttributeOf(m, speedSetpoint, fmt.Sprintln(sp))
 	return m
 }
 
-// RampUpSetpoint returns the current ramp up set point value for the LinearActuator.
+// RampUpSetpoint returns the current ramp up setpoint value for the LinearActuator.
 func (m *LinearActuator) RampUpSetpoint() (time.Duration, error) {
-	if m.err != nil {
-		return -1, m.Err()
-	}
-	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+rampUpSetpoint, m))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to read ramp up set point: %v", err)
-	}
-	d, err := strconv.Atoi(string(chomp(b)))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to parse ramp up set point: %v", err)
-	}
-	return time.Duration(d) * time.Millisecond, nil
+	return durationFrom(attributeOf(m, rampUpSetpoint))
 }
 
-// SetRampUpSetpoint sets the ramp up set point value for the LinearActuator.
-func (m *LinearActuator) SetRampUpSetpoint(d time.Duration) *LinearActuator {
+// SetRampUpSetpoint sets the ramp up setpoint value for the LinearActuator.
+func (m *LinearActuator) SetRampUpSetpoint(sp time.Duration) *LinearActuator {
 	if m.err != nil {
 		return m
 	}
-	if d < 0 {
-		m.err = fmt.Errorf("ev3dev: invalid ramp up set point: %v (must be positive)", d)
+	if sp < 0 {
+		m.err = fmt.Errorf("ev3dev: invalid ramp up setpoint: %v (must be positive)", sp)
 		return m
 	}
-	err := m.writeFile(fmt.Sprintf(TachoMotorPath+"/%s/"+rampUpSetpoint, m), fmt.Sprintln(int(d/time.Millisecond)))
-	if err != nil {
-		m.err = fmt.Errorf("ev3dev: failed to set ramp up set point: %v", err)
-	}
+	m.err = setAttributeOf(m, rampUpSetpoint, fmt.Sprintln(int(sp/time.Millisecond)))
 	return m
 }
 
-// RampDownSetpoint returns the current ramp down set point value for the LinearActuator.
+// RampDownSetpoint returns the current ramp down setpoint value for the LinearActuator.
 func (m *LinearActuator) RampDownSetpoint() (time.Duration, error) {
-	if m.err != nil {
-		return -1, m.Err()
-	}
-	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+rampDownSetpoint, m))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to read ramp down set point: %v", err)
-	}
-	d, err := strconv.Atoi(string(chomp(b)))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to parse ramp down set point: %v", err)
-	}
-	return time.Duration(d) * time.Millisecond, nil
+	return durationFrom(attributeOf(m, rampDownSetpoint))
 }
 
-// SetRampDownSetpoint sets the ramp down set point value for the LinearActuator.
-func (m *LinearActuator) SetRampDownSetpoint(d time.Duration) *LinearActuator {
+// SetRampDownSetpoint sets the ramp down setpoint value for the LinearActuator.
+func (m *LinearActuator) SetRampDownSetpoint(sp time.Duration) *LinearActuator {
 	if m.err != nil {
 		return m
 	}
-	if d < 0 {
-		m.err = fmt.Errorf("ev3dev: invalid ramp down set point: %v (must be positive)", d)
+	if sp < 0 {
+		m.err = fmt.Errorf("ev3dev: invalid ramp down setpoint: %v (must be positive)", sp)
 		return m
 	}
-	err := m.writeFile(fmt.Sprintf(TachoMotorPath+"/%s/"+rampDownSetpoint, m), fmt.Sprintln(int(d/time.Millisecond)))
-	if err != nil {
-		m.err = fmt.Errorf("ev3dev: failed to set ramp down set point: %v", err)
-	}
+	m.err = setAttributeOf(m, rampDownSetpoint, fmt.Sprintln(int(sp/time.Millisecond)))
 	return m
 }
 
 // SpeedPIDKd returns the derivative constant for the speed regulation PID for the LinearActuator.
 func (m *LinearActuator) SpeedPIDKd() (int, error) {
-	if m.err != nil {
-		return -1, m.Err()
-	}
-	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+speedPIDkd, m))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to read speed PID Kd: %v", err)
-	}
-	pos, err := strconv.Atoi(string(chomp(b)))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to parse speed PID Kd: %v", err)
-	}
-	return pos, nil
+	return intFrom(attributeOf(m, speedPIDkd))
 }
 
 // SetSpeedPIDKd sets the derivative constant for the speed regulation PID for the LinearActuator.
-func (m *LinearActuator) SetSpeedPIDKd(pos int) *LinearActuator {
+func (m *LinearActuator) SetSpeedPIDKd(sp int) *LinearActuator {
 	if m.err != nil {
 		return m
 	}
-	err := m.writeFile(fmt.Sprintf(TachoMotorPath+"/%s/"+speedPIDkd, m), fmt.Sprintln(pos))
-	if err != nil {
-		m.err = fmt.Errorf("ev3dev: failed to set speed PID Kd: %v", err)
-	}
+	m.err = setAttributeOf(m, speedPIDkd, fmt.Sprintln(sp))
 	return m
 }
 
 // SpeedPIDKi returns the integral constant for the speed regulation PID for the LinearActuator.
 func (m *LinearActuator) SpeedPIDKi() (int, error) {
-	if m.err != nil {
-		return -1, m.Err()
-	}
-	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+speedPIDki, m))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to read speed PID Ki: %v", err)
-	}
-	pos, err := strconv.Atoi(string(chomp(b)))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to parse speed PID Ki: %v", err)
-	}
-	return pos, nil
+	return intFrom(attributeOf(m, speedPIDki))
 }
 
 // SetSpeedPIDKi sets the integral constant for the speed regulation PID for the LinearActuator.
-func (m *LinearActuator) SetSpeedPIDKi(pos int) *LinearActuator {
+func (m *LinearActuator) SetSpeedPIDKi(sp int) *LinearActuator {
 	if m.err != nil {
 		return m
 	}
-	err := m.writeFile(fmt.Sprintf(TachoMotorPath+"/%s/"+speedPIDki, m), fmt.Sprintln(pos))
-	if err != nil {
-		m.err = fmt.Errorf("ev3dev: failed to set speed PID Ki: %v", err)
-	}
+	m.err = setAttributeOf(m, speedPIDki, fmt.Sprintln(sp))
 	return m
 }
 
 // SpeedPIDKp returns the proportional constant for the speed regulation PID for the LinearActuator.
 func (m *LinearActuator) SpeedPIDKp() (int, error) {
-	if m.err != nil {
-		return -1, m.Err()
-	}
-	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+speedPIDkp, m))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to read speed PID Kp: %v", err)
-	}
-	pos, err := strconv.Atoi(string(chomp(b)))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to parse speed PID Kp: %v", err)
-	}
-	return pos, nil
+	return intFrom(attributeOf(m, speedPIDkp))
 }
 
 // SetSpeedPIDKp sets the proportional constant for the speed regulation PID for the LinearActuator.
-func (m *LinearActuator) SetSpeedPIDKp(pos int) *LinearActuator {
+func (m *LinearActuator) SetSpeedPIDKp(sp int) *LinearActuator {
 	if m.err != nil {
 		return m
 	}
-	err := m.writeFile(fmt.Sprintf(TachoMotorPath+"/%s/"+speedPIDkp, m), fmt.Sprintln(pos))
-	if err != nil {
-		m.err = fmt.Errorf("ev3dev: failed to set speed PID Kp: %v", err)
-	}
+	m.err = setAttributeOf(m, speedPIDkp, fmt.Sprintln(sp))
 	return m
 }
 
@@ -567,13 +319,17 @@ func (m *LinearActuator) State() (MotorState, error) {
 	if m.err != nil {
 		return 0, m.Err()
 	}
-	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+commands, m))
+	data, _, err := attributeOf(m, state)
 	if err != nil {
-		return 0, fmt.Errorf("ev3dev: failed to read tacho-motor commands: %v", err)
+		return 0, err
 	}
 	var stat MotorState
-	for _, s := range strings.Split(string(chomp(b)), " ") {
-		stat |= motorStateTable[s]
+	for _, s := range strings.Split(data, " ") {
+		bit, ok := motorStateTable[s]
+		if !ok {
+			return 0, fmt.Errorf("ev3dev: unrecognized motor state value: %s in [%s]", s, data)
+		}
+		stat |= bit
 	}
 	return stat, nil
 }
@@ -581,19 +337,12 @@ func (m *LinearActuator) State() (MotorState, error) {
 // StopAction returns the stop action used when a stop command is issued
 // to the LinearActuator.
 func (m *LinearActuator) StopAction() (string, error) {
-	if m.err != nil {
-		return "", m.Err()
-	}
-	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+stopAction, m))
-	if err != nil {
-		return "", fmt.Errorf("ev3dev: failed to read stop command: %v", err)
-	}
-	return string(chomp(b)), err
+	return stringFrom(attributeOf(m, stopAction))
 }
 
 // SetStopAction sets the stop action to be used when a stop command is
 // issued to the LinearActuator.
-func (m *LinearActuator) SetStopAction(comm string) *LinearActuator {
+func (m *LinearActuator) SetStopAction(action string) *LinearActuator {
 	if m.err != nil {
 		return m
 	}
@@ -603,59 +352,35 @@ func (m *LinearActuator) SetStopAction(comm string) *LinearActuator {
 		return m
 	}
 	ok := false
-	for _, c := range avail {
-		if c == comm {
+	for _, a := range avail {
+		if a == action {
 			ok = true
 			break
 		}
 	}
 	if !ok {
-		m.err = fmt.Errorf("ev3dev: stop command %q not available for %s (available:%q)", comm, m, avail)
+		m.err = fmt.Errorf("ev3dev: stop action %q not available for %s (available:%q)", action, m, avail)
 		return m
 	}
-	err = m.writeFile(fmt.Sprintf(TachoMotorPath+"/%s/"+stopAction, m), comm)
-	if err != nil {
-		m.err = fmt.Errorf("ev3dev: failed to set tacho-motor stop command: %v", err)
-	}
+	m.err = setAttributeOf(m, stopAction, action)
 	return m
 }
 
 // StopActions returns the available stop actions for the LinearActuator.
 func (m *LinearActuator) StopActions() ([]string, error) {
-	if m.err != nil {
-		return nil, m.Err()
-	}
-	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+stopActions, m))
-	if err != nil {
-		return nil, fmt.Errorf("ev3dev: failed to read tacho-motor stop command: %v", err)
-	}
-	return strings.Split(string(chomp(b)), " "), nil
+	return stringSliceFrom(attributeOf(m, stopActions))
 }
 
-// TimeSetpoint returns the current time set point value for the LinearActuator.
+// TimeSetpoint returns the current time setpoint value for the LinearActuator.
 func (m *LinearActuator) TimeSetpoint() (time.Duration, error) {
-	if m.err != nil {
-		return -1, m.Err()
-	}
-	b, err := ioutil.ReadFile(fmt.Sprintf(TachoMotorPath+"/%s/"+timeSetpoint, m))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to read time set point: %v", err)
-	}
-	d, err := strconv.Atoi(string(chomp(b)))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to parse time set point: %v", err)
-	}
-	return time.Duration(d) * time.Millisecond, nil
+	return durationFrom(attributeOf(m, timeSetpoint))
 }
 
-// SetTimeSetpoint sets the time set point value for the LinearActuator.
-func (m *LinearActuator) SetTimeSetpoint(d time.Duration) *LinearActuator {
+// SetTimeSetpoint sets the time setpoint value for the LinearActuator.
+func (m *LinearActuator) SetTimeSetpoint(sp time.Duration) *LinearActuator {
 	if m.err != nil {
 		return m
 	}
-	err := m.writeFile(fmt.Sprintf(TachoMotorPath+"/%s/"+timeSetpoint, m), fmt.Sprintln(int(d/time.Millisecond)))
-	if err != nil {
-		m.err = fmt.Errorf("ev3dev: failed to set time set point: %v", err)
-	}
+	m.err = setAttributeOf(m, timeSetpoint, fmt.Sprintln(int(sp/time.Millisecond)))
 	return m
 }

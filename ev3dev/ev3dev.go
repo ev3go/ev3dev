@@ -24,10 +24,12 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const (
@@ -77,6 +79,8 @@ const (
 	countPerRot               = "count_per_rot"
 	currentNow                = "current_now"
 	decimals                  = "decimals"
+	delayOff                  = "delay_off"
+	delayOn                   = "delay_on"
 	direct                    = "direct"
 	driverName                = "driver_name"
 	dutyCycle                 = "duty_cycle"
@@ -192,13 +196,6 @@ func (f MotorState) String() string {
 	return string(b)
 }
 
-func chomp(b []byte) []byte {
-	if b[len(b)-1] == '\n' {
-		b = b[:len(b)-1]
-	}
-	return b
-}
-
 // DriverMismatch errors are returned when a device is found that
 // does not match the requested driver.
 type DriverMismatch struct {
@@ -225,6 +222,10 @@ type Device interface {
 	// device, one of "linear", "motor",
 	// "port" or "sensor".
 	Type() string
+
+	// Err returns and clears the
+	// error state of the Device.
+	Err() error
 
 	fmt.Stringer
 }
@@ -312,4 +313,77 @@ func devicesIn(path string) ([]string, error) {
 	}
 	defer f.Close()
 	return f.Readdirnames(0)
+}
+
+func attributeOf(d Device, attr string) (data string, _attr string, err error) {
+	err = d.Err()
+	if err != nil {
+		return "", "", err
+	}
+	path := filepath.Join(d.Path(), d.String(), attr)
+	b, err := ioutil.ReadFile(path)
+	if err != nil {
+		return "", "", fmt.Errorf("ev3dev: failed to read attribute %s: %v", path, err)
+	}
+	return string(chomp(b)), attr, nil
+}
+
+func chomp(b []byte) []byte {
+	if b[len(b)-1] == '\n' {
+		return b[:len(b)-1]
+	}
+	return b
+}
+
+func intFrom(data, attr string, err error) (int, error) {
+	if err != nil {
+		return -1, err
+	}
+	i, err := strconv.Atoi(data)
+	if err != nil {
+		return -1, fmt.Errorf("ev3dev: failed to parse %s: %v", attr, err)
+	}
+	return i, nil
+}
+
+func float64From(data, attr string, err error) (float64, error) {
+	if err != nil {
+		return math.NaN(), err
+	}
+	f, err := strconv.ParseFloat(data, 64)
+	if err != nil {
+		return math.NaN(), fmt.Errorf("ev3dev: failed to parse %s: %v", attr, err)
+	}
+	return f, nil
+}
+
+func durationFrom(data, attr string, err error) (time.Duration, error) {
+	if err != nil {
+		return -1, err
+	}
+	d, err := strconv.Atoi(data)
+	if err != nil {
+		return -1, fmt.Errorf("ev3dev: failed to parse %s: %v", attr, err)
+	}
+	return time.Duration(d) * time.Millisecond, nil
+}
+
+func stringFrom(data, _ string, err error) (string, error) {
+	return data, err
+}
+
+func stringSliceFrom(data, _ string, err error) ([]string, error) {
+	if err != nil {
+		return nil, err
+	}
+	return strings.Split(data, " "), nil
+}
+
+func setAttributeOf(d Device, attr, data string) error {
+	path := filepath.Join(d.Path(), d.String(), attr)
+	err := ioutil.WriteFile(path, []byte(data), 0)
+	if err != nil {
+		return fmt.Errorf("ev3dev: failed to set attribute %s: %v", path, attr, err)
+	}
+	return nil
 }

@@ -6,8 +6,6 @@ package ev3dev
 
 import (
 	"fmt"
-	"io/ioutil"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -52,10 +50,6 @@ func ServoMotorFor(port, driver string) (*ServoMotor, error) {
 	return &ServoMotor{id: id}, err
 }
 
-func (m *ServoMotor) writeFile(path, data string) error {
-	return ioutil.WriteFile(path, []byte(data), 0)
-}
-
 // Commands returns the available commands for the ServoMotor.
 func (m *ServoMotor) Commands() []string {
 	return []string{
@@ -81,119 +75,68 @@ func (m *ServoMotor) Command(comm string) *ServoMotor {
 		m.err = fmt.Errorf("ev3dev: command %q not available for %s (available:%q)", comm, m, avail)
 		return m
 	}
-	err := m.writeFile(fmt.Sprintf(ServoMotorPath+"/%s/"+command, m), comm)
-	if err != nil {
-		m.err = fmt.Errorf("ev3dev: failed to issue servo-motor command: %v", err)
-	}
+	m.err = setAttributeOf(m, command, comm)
 	return m
 }
 
-// MaxPulseSetpoint returns the current max pulse set point value for the ServoMotor.
+// MaxPulseSetpoint returns the current max pulse setpoint value for the ServoMotor.
 func (m *ServoMotor) MaxPulseSetpoint() (int, error) {
-	if m.err != nil {
-		return -1, m.Err()
-	}
-	b, err := ioutil.ReadFile(fmt.Sprintf(ServoMotorPath+"/%s/"+maxPulseSetpoint, m))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to read max pulse set point: %v", err)
-	}
-	sp, err := strconv.Atoi(string(chomp(b)))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to parse max pulse set point: %v", err)
-	}
-	return sp, nil
+	return intFrom(attributeOf(m, maxPulseSetpoint))
 }
 
-// SetMaxPulseSetpoint sets the max pulse set point value for the ServoMotor
+// SetMaxPulseSetpoint sets the max pulse setpoint value for the ServoMotor
 func (m *ServoMotor) SetMaxPulseSetpoint(sp int) *ServoMotor {
 	if m.err != nil {
 		return m
 	}
 	if sp < 2300 || sp > 2700 {
-		m.err = fmt.Errorf("ev3dev: invalid max pulse set point: %d (valid 2300-1700)", sp)
+		m.err = fmt.Errorf("ev3dev: invalid max pulse setpoint: %d (valid 2300-1700)", sp)
 		return m
 	}
-	err := m.writeFile(fmt.Sprintf(ServoMotorPath+"/%s/"+maxPulseSetpoint, m), fmt.Sprintln(sp))
-	if err != nil {
-		m.err = fmt.Errorf("ev3dev: failed to set max pulse set point: %v", err)
-	}
+	m.err = setAttributeOf(m, maxPulseSetpoint, string(sp))
 	return m
 }
 
-// MidPulseSetpoint returns the current mid pulse set point value for the ServoMotor.
+// MidPulseSetpoint returns the current mid pulse setpoint value for the ServoMotor.
 func (m *ServoMotor) MidPulseSetpoint() (int, error) {
-	if m.err != nil {
-		return -1, m.Err()
-	}
-	b, err := ioutil.ReadFile(fmt.Sprintf(ServoMotorPath+"/%s/"+midPulseSetpoint, m))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to read mid pulse set point: %v", err)
-	}
-	sp, err := strconv.Atoi(string(chomp(b)))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to parse mid pulse set point: %v", err)
-	}
-	return sp, nil
+	return intFrom(attributeOf(m, midPulseSetpoint))
 }
 
-// SetMidPulseSetpoint sets the mid pulse set point value for the ServoMotor
+// SetMidPulseSetpoint sets the mid pulse setpoint value for the ServoMotor
 func (m *ServoMotor) SetMidPulseSetpoint(sp int) *ServoMotor {
 	if m.err != nil {
 		return m
 	}
 	if sp < 1300 || sp > 1700 {
-		m.err = fmt.Errorf("ev3dev: invalid mid pulse set point: %d (valid 1300-1700)", sp)
+		m.err = fmt.Errorf("ev3dev: invalid mid pulse setpoint: %d (valid 1300-1700)", sp)
 		return m
 	}
-	err := m.writeFile(fmt.Sprintf(ServoMotorPath+"/%s/"+midPulseSetpoint, m), fmt.Sprintln(sp))
-	if err != nil {
-		m.err = fmt.Errorf("ev3dev: failed to set mid pulse set point: %v", err)
-	}
+	m.err = setAttributeOf(m, midPulseSetpoint, string(sp))
 	return m
 }
 
-// MinPulseSetpoint returns the current min pulse set point value for the ServoMotor.
+// MinPulseSetpoint returns the current min pulse setpoint value for the ServoMotor.
 func (m *ServoMotor) MinPulseSetpoint() (int, error) {
-	if m.err != nil {
-		return -1, m.Err()
-	}
-	b, err := ioutil.ReadFile(fmt.Sprintf(ServoMotorPath+"/%s/"+minPulseSetpoint, m))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to read min pulse set point: %v", err)
-	}
-	sp, err := strconv.Atoi(string(chomp(b)))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to parse min pulse set point: %v", err)
-	}
-	return sp, nil
+	return intFrom(attributeOf(m, minPulseSetpoint))
 }
 
-// SetMinPulseSetpoint sets the min pulse set point value for the ServoMotor
+// SetMinPulseSetpoint sets the min pulse setpoint value for the ServoMotor
 func (m *ServoMotor) SetMinPulseSetpoint(sp int) *ServoMotor {
 	if m.err != nil {
 		return m
 	}
 	if sp < 300 || sp > 700 {
-		m.err = fmt.Errorf("ev3dev: invalid min pulse set point: %d (valid 300 - 700)", sp)
+		m.err = fmt.Errorf("ev3dev: invalid min pulse setpoint: %d (valid 300 - 700)", sp)
 		return m
 	}
-	err := m.writeFile(fmt.Sprintf(ServoMotorPath+"/%s/"+minPulseSetpoint, m), fmt.Sprintln(sp))
-	if err != nil {
-		m.err = fmt.Errorf("ev3dev: failed to set min pulse set point: %v", err)
-	}
+	m.err = setAttributeOf(m, minPulseSetpoint, string(sp))
 	return m
 }
 
 // Polarity returns the current polarity of the ServoMotor.
-func (m *ServoMotor) Polarity() (string, error) {
-	if m.err != nil {
-		return "", m.Err()
-	}
-	b, err := ioutil.ReadFile(fmt.Sprintf(ServoMotorPath+"/%s/"+polarity, m))
-	if err != nil {
-		return "", fmt.Errorf("ev3dev: failed to read polarity: %v", err)
-	}
-	return string(b), nil
+func (m *ServoMotor) Polarity() (Polarity, error) {
+	p, err := stringFrom(attributeOf(m, polarity))
+	return Polarity(p), err
 }
 
 // SetPolarity sets the polarity of the ServoMotor
@@ -205,70 +148,44 @@ func (m *ServoMotor) SetPolarity(p Polarity) *ServoMotor {
 		m.err = fmt.Errorf("ev3dev: invalid polarity: %q (valid \"normal\" or \"inversed\")", p)
 		return m
 	}
-	err := m.writeFile(fmt.Sprintf(ServoMotorPath+"/%s/"+polarity, m), string(p))
-	if err != nil {
-		m.err = fmt.Errorf("ev3dev: failed to set polarity %v", err)
-	}
+	m.err = setAttributeOf(m, polarity, string(p))
 	return m
 }
 
-// Position returns the current position value for the ServoMotor.
-func (m *ServoMotor) Position() (int, error) {
-	if m.err != nil {
-		return -1, m.Err()
-	}
-	b, err := ioutil.ReadFile(fmt.Sprintf(ServoMotorPath+"/%s/"+position, m))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to read position: %v", err)
-	}
-	pos, err := strconv.Atoi(string(chomp(b)))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to parse position: %v", err)
-	}
-	return pos, nil
+// PositionSetpoint returns the current position setpoint value for
+// the ServoMotor.
+func (m *ServoMotor) PositionSetpoint() (int, error) {
+	return intFrom(attributeOf(m, positionSetpoint))
 }
 
-// SetPosition sets the position value for the ServoMotor.
-func (m *ServoMotor) SetPosition(pos int) *ServoMotor {
+// SetPositionSetpoint sets the position value for the ServoMotor.
+func (m *ServoMotor) SetPositionSetpoint(sp int) *ServoMotor {
 	if m.err != nil {
 		return m
 	}
-	if pos != int(int32(pos)) {
-		m.err = fmt.Errorf("ev3dev: invalid position: %d (valid in int32)", pos)
+	if sp != int(int32(sp)) {
+		m.err = fmt.Errorf("ev3dev: invalid position: %d (valid in int32)", sp)
 		return m
 	}
-	err := m.writeFile(fmt.Sprintf(ServoMotorPath+"/%s/"+position, m), fmt.Sprintln(pos))
-	if err != nil {
-		m.err = fmt.Errorf("ev3dev: failed to set position: %v", err)
-	}
+	m.err = setAttributeOf(m, positionSetpoint, fmt.Sprintln(sp))
 	return m
 }
 
-// RateSetpoint returns the current rate set point value for the ServoMotor.
+// RateSetpoint returns the current rate setpoint value for the ServoMotor.
 func (m *ServoMotor) RateSetpoint() (time.Duration, error) {
-	if m.err != nil {
-		return -1, m.Err()
-	}
-	b, err := ioutil.ReadFile(fmt.Sprintf(ServoMotorPath+"/%s/"+rateSetpoint, m))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to read rate set point: %v", err)
-	}
-	d, err := strconv.Atoi(string(chomp(b)))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to parse rate set point: %v", err)
-	}
-	return time.Duration(d) * time.Millisecond, nil
+	return durationFrom(attributeOf(m, rateSetpoint))
 }
 
-// SetRateSetpoint sets the rate set point value for the ServoMotor.
-func (m *ServoMotor) SetRateSetpoint(d time.Duration) *ServoMotor {
+// SetRateSetpoint sets the rate setpoint value for the ServoMotor.
+func (m *ServoMotor) SetRateSetpoint(sp time.Duration) *ServoMotor {
 	if m.err != nil {
 		return m
 	}
-	err := m.writeFile(fmt.Sprintf(ServoMotorPath+"/%s/"+rateSetpoint, m), fmt.Sprintln(int(d/time.Millisecond)))
-	if err != nil {
-		m.err = fmt.Errorf("ev3dev: failed to set rate set point: %v", err)
+	if sp < 0 {
+		m.err = fmt.Errorf("ev3dev: invalid ramp up setpoint: %v (must be positive)", sp)
+		return m
 	}
+	m.err = setAttributeOf(m, rateSetpoint, fmt.Sprintln(int(sp/time.Millisecond)))
 	return m
 }
 
@@ -277,13 +194,17 @@ func (m *ServoMotor) State() (MotorState, error) {
 	if m.err != nil {
 		return 0, m.Err()
 	}
-	b, err := ioutil.ReadFile(fmt.Sprintf(ServoMotorPath+"/%s/"+commands, m))
+	data, _, err := attributeOf(m, state)
 	if err != nil {
-		return 0, fmt.Errorf("ev3dev: failed to read servo-motor commands: %v", err)
+		return 0, err
 	}
 	var stat MotorState
-	for _, s := range strings.Split(string(chomp(b)), " ") {
-		stat |= motorStateTable[s]
+	for _, s := range strings.Split(data, " ") {
+		bit, ok := motorStateTable[s]
+		if !ok {
+			return 0, fmt.Errorf("ev3dev: unrecognized motor state value: %s in [%s]", s, data)
+		}
+		stat |= bit
 	}
 	return stat, nil
 }

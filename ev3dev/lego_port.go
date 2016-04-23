@@ -6,7 +6,6 @@ package ev3dev
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 )
@@ -46,68 +45,37 @@ func LegoPortFor(port, driver string) (*LegoPort, error) {
 	return &LegoPort{id: id}, err
 }
 
-func (p *LegoPort) writeFile(path, data string) error {
-	return ioutil.WriteFile(path, []byte(data), 0)
-}
-
 // Modes returns the available modes for the LegoPort.
 func (p *LegoPort) Modes() ([]string, error) {
-	if p.err != nil {
-		return nil, p.Err()
-	}
-	b, err := ioutil.ReadFile(fmt.Sprintf(LegoPortPath+"/%s/"+modes, p))
-	if err != nil {
-		return nil, fmt.Errorf("ev3dev: failed to read port modes: %v", err)
-	}
-	return strings.Split(string(chomp(b)), " "), err
+	return stringSliceFrom(attributeOf(p, modes))
 }
 
 // Mode returns the currently selected mode of the LegoPort.
 func (p *LegoPort) Mode() (string, error) {
-	if p.err != nil {
-		return "", p.Err()
-	}
-	b, err := ioutil.ReadFile(fmt.Sprintf(LegoPortPath+"/%s/"+mode, p))
-	if err != nil {
-		return "", fmt.Errorf("ev3dev: failed to read port mode: %v", err)
-	}
-	return string(chomp(b)), err
+	return stringFrom(attributeOf(p, mode))
 }
 
 // SetMode sets the mode of the LegoPort.
-func (p *LegoPort) SetMode(mode string) *LegoPort {
+func (p *LegoPort) SetMode(m string) *LegoPort {
 	if p.err != nil {
 		return p
 	}
-	err := p.writeFile(fmt.Sprintf(LegoPortPath+"/%s/"+mode, p), mode)
-	if err != nil {
-		p.err = fmt.Errorf("ev3dev: failed to set port mode: %v", err)
-	}
+	p.err = setAttributeOf(p, mode, m)
 	return p
 }
 
 // SetDevice sets the device of the LegoPort.
-func (p *LegoPort) SetDevice(dev string) *LegoPort {
+func (p *LegoPort) SetDevice(d string) *LegoPort {
 	if p.err != nil {
 		return p
 	}
-	err := p.writeFile(fmt.Sprintf(LegoPortPath+"/%s/"+setDevice, p), dev)
-	if err != nil {
-		p.err = fmt.Errorf("ev3dev: failed to set port device: %v", err)
-	}
+	p.err = setAttributeOf(p, setDevice, d)
 	return p
 }
 
 // Status returns the current status of the LegoPort.
 func (p *LegoPort) Status() (string, error) {
-	if p.err != nil {
-		return "", p.Err()
-	}
-	b, err := ioutil.ReadFile(fmt.Sprintf(LegoPortPath+"/%s/"+status, p))
-	if err != nil {
-		return "", fmt.Errorf("ev3dev: failed to read port status: %v", err)
-	}
-	return string(chomp(b)), err
+	return stringFrom(attributeOf(p, status))
 }
 
 // ConnectedTo returns a description of the device attached to p in the form

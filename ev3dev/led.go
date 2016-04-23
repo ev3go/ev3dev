@@ -5,10 +5,9 @@
 package ev3dev
 
 import (
+	"errors"
 	"fmt"
-	"io/ioutil"
-	"strconv"
-	"strings"
+	"time"
 )
 
 // LED represents a handle to an ev3 LED.
@@ -31,6 +30,17 @@ var (
 	RedRight   *LED = &LED{color: "red", side: "right"}
 )
 
+// ledDevice is used to fake a Device. The Type method do not
+// have meaningful semantics.
+type ledDevice struct {
+	*LED
+}
+
+// Path returns the LED sysfs path.
+func (l *LED) Path() string { return LEDPath }
+
+func (ledDevice) Type() string { panic("ev3dev: unexpected call of ledDevice Type") }
+
 // String satisfies the fmt.Stringer interface.
 func (l *LED) String() string { return fmt.Sprintf("ev3:%s:%s", l.side, l.color) }
 
@@ -41,40 +51,14 @@ func (l *LED) Err() error {
 	return err
 }
 
-func (l *LED) writeFile(path, data string) error {
-	return ioutil.WriteFile(path, []byte(data), 0)
-}
-
 // MaxBrightness returns the maximum brightness value for the LED.
 func (l *LED) MaxBrightness() (int, error) {
-	if l.err != nil {
-		return -1, l.Err()
-	}
-	b, err := ioutil.ReadFile(fmt.Sprintf(LEDPath+"/%s/"+maxBrightness, l))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to read maximum led brightness: %v", err)
-	}
-	bright, err := strconv.Atoi(string(chomp(b)))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to parse maximum led brightness: %v", err)
-	}
-	return bright, nil
+	return intFrom(attributeOf(ledDevice{l}, maxBrightness))
 }
 
 // Brightness returns the current brightness value for the LED.
 func (l *LED) Brightness() (int, error) {
-	if l.err != nil {
-		return -1, l.Err()
-	}
-	b, err := ioutil.ReadFile(fmt.Sprintf(LEDPath+"/%s/"+brightness, l))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to read led brightness: %v", err)
-	}
-	bright, err := strconv.Atoi(string(chomp(b)))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to parse led brightness: %v", err)
-	}
-	return bright, nil
+	return intFrom(attributeOf(ledDevice{l}, brightness))
 }
 
 // SetBrightness sets the brightness of the LED.
@@ -91,25 +75,26 @@ func (l *LED) SetBrightness(bright int) *LED {
 		l.err = fmt.Errorf("ev3dev: invalid led brightness: %d (valid 0-%d)", bright, max)
 		return l
 	}
-	err = l.writeFile(fmt.Sprintf(LEDPath+"/%s/"+brightness, l), fmt.Sprintln(bright))
-	if err != nil {
-		l.err = fmt.Errorf("ev3dev: failed to set led brightness: %v", err)
-	}
+	l.err = setAttributeOf(ledDevice{l}, brightness, fmt.Sprintln(bright))
 	return l
 }
 
 // Trigger returns the current and available triggers for the LED.
 func (l *LED) Trigger() (current string, available []string, err error) {
-	if l.err != nil {
-		return "", nil, l.Err()
-	}
-	b, err := ioutil.ReadFile(fmt.Sprintf(LEDPath+"/%s/"+trigger, l))
+	all, err := stringSliceFrom(attributeOf(ledDevice{l}, trigger))
 	if err != nil {
-		return "", nil, fmt.Errorf("ev3dev: failed to read led trigger: %v", err)
+		return "", nil, err
 	}
-	all := strings.Split(string(chomp(b)), " ")
-	current = strings.Trim(all[0], "[]")
-	return current, all[1:], err
+	for i, t := range all {
+		if t[0] == '[' && t[len(t)-1] == ']' {
+			all[i] = t[1 : len(t)-1]
+			current = all[i]
+		}
+	}
+	if current == "" {
+		return "", available, errors.New("ev3dev: could not find current trigger")
+	}
+	return current, all, err
 }
 
 // SetTrigger sets the trigger for the LED.
@@ -133,9 +118,34 @@ func (l *LED) SetTrigger(trig string) *LED {
 		l.err = fmt.Errorf("ev3dev: led trigger %q not available for %s (available:%q)", mode, l, avail)
 		return l
 	}
-	err = l.writeFile(fmt.Sprintf(LEDPath+"/%s/"+trigger, l), trig)
-	if err != nil {
-		l.err = fmt.Errorf("ev3dev: failed to set led trigger: %v", err)
+	l.err = setAttributeOf(ledDevice{l}, trigger, trig)
+	return l
+}
+
+// DelayOff returns the duration for which the LED is off when using the timer trigger.
+func (l *LED) DelayOff() (time.Duration, error) {
+	return durationFrom(attributeOf(ledDevice{l}, delayOff))
+}
+
+// SetDelayOff sets the duration for which the LED is off when using the timer trigger.
+func (l *LED) SetDelayOff(d time.Duration) *LED {
+	if l.err != nil {
+		return l
 	}
+	l.err = setAttributeOf(ledDevice{l}, delayOff, fmt.Sprintln(int(d/time.Millisecond)))
+	return l
+}
+
+// DelayOn returns the duration for which the LED is on when using the timer trigger.
+func (l *LED) DelayOn() (time.Duration, error) {
+	return durationFrom(attributeOf(ledDevice{l}, delayOn))
+}
+
+// SetDelayOn sets the duration for which the LED is on when using the timer trigger.
+func (l *LED) SetDelayOn(d time.Duration) *LED {
+	if l.err != nil {
+		return l
+	}
+	l.err = setAttributeOf(ledDevice{l}, delayOn, fmt.Sprintln(int(d/time.Millisecond)))
 	return l
 }

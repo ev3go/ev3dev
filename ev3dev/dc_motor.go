@@ -6,8 +6,6 @@ package ev3dev
 
 import (
 	"fmt"
-	"io/ioutil"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -52,20 +50,9 @@ func DCMotorFor(port, driver string) (*DCMotor, error) {
 	return &DCMotor{id: id}, err
 }
 
-func (m *DCMotor) writeFile(path, data string) error {
-	return ioutil.WriteFile(path, []byte(data), 0)
-}
-
 // Commands returns the available commands for the DCMotor.
 func (m *DCMotor) Commands() ([]string, error) {
-	if m.err != nil {
-		return nil, m.Err()
-	}
-	b, err := ioutil.ReadFile(fmt.Sprintf(DCMotorPath+"/%s/"+commands, m))
-	if err != nil {
-		return nil, fmt.Errorf("ev3dev: failed to read dc-motor commands: %v", err)
-	}
-	return strings.Split(string(chomp(b)), " "), nil
+	return stringSliceFrom(attributeOf(m, commands))
 }
 
 // Command issues a command to the DCMotor.
@@ -89,71 +76,37 @@ func (m *DCMotor) Command(comm string) *DCMotor {
 		m.err = fmt.Errorf("ev3dev: command %q not available for %s (available:%q)", comm, m, avail)
 		return m
 	}
-	err = m.writeFile(fmt.Sprintf(DCMotorPath+"/%s/"+command, m), comm)
-	if err != nil {
-		m.err = fmt.Errorf("ev3dev: failed to issue dc-motor command: %v", err)
-	}
+	m.err = setAttributeOf(m, command, comm)
 	return m
 }
 
 // DutyCycle returns the current duty cycle value for the DCMotor.
 func (m *DCMotor) DutyCycle() (int, error) {
-	if m.err != nil {
-		return -1, m.Err()
-	}
-	b, err := ioutil.ReadFile(fmt.Sprintf(DCMotorPath+"/%s/"+dutyCycle, m))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to read duty cycle: %v", err)
-	}
-	sp, err := strconv.Atoi(string(chomp(b)))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to parse duty cycle: %v", err)
-	}
-	return sp, nil
+	return intFrom(attributeOf(m, dutyCycle))
 }
 
-// DutyCycleSetpoint returns the current duty cycle set point value for the DCMotor.
+// DutyCycleSetpoint returns the current duty cycle setpoint value for the DCMotor.
 func (m *DCMotor) DutyCycleSetpoint() (int, error) {
-	if m.err != nil {
-		return -1, m.Err()
-	}
-	b, err := ioutil.ReadFile(fmt.Sprintf(DCMotorPath+"/%s/"+dutyCycleSetpoint, m))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to read duty cycle set point: %v", err)
-	}
-	sp, err := strconv.Atoi(string(chomp(b)))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to parse duty cycle set point: %v", err)
-	}
-	return sp, nil
+	return intFrom(attributeOf(m, dutyCycleSetpoint))
 }
 
-// SetDutyCycleSetpoint sets the duty cycle set point value for the DCMotor
+// SetDutyCycleSetpoint sets the duty cycle setpoint value for the DCMotor
 func (m *DCMotor) SetDutyCycleSetpoint(sp int) *DCMotor {
 	if m.err != nil {
 		return m
 	}
 	if sp < -100 || sp > 100 {
-		m.err = fmt.Errorf("ev3dev: invalid duty cycle set point: %d (valid -100 - 100)", sp)
+		m.err = fmt.Errorf("ev3dev: invalid duty cycle setpoint: %d (valid -100 - 100)", sp)
 		return m
 	}
-	err := m.writeFile(fmt.Sprintf(DCMotorPath+"/%s/"+dutyCycleSetpoint, m), fmt.Sprintln(sp))
-	if err != nil {
-		m.err = fmt.Errorf("ev3dev: failed to set duty cycle set point: %v", err)
-	}
+	m.err = setAttributeOf(m, dutyCycleSetpoint, fmt.Sprintln(sp))
 	return m
 }
 
 // Polarity returns the current polarity of the DCMotor.
-func (m *DCMotor) Polarity() (string, error) {
-	if m.err != nil {
-		return "", m.Err()
-	}
-	b, err := ioutil.ReadFile(fmt.Sprintf(DCMotorPath+"/%s/"+polarity, m))
-	if err != nil {
-		return "", fmt.Errorf("ev3dev: failed to read polarity: %v", err)
-	}
-	return string(b), nil
+func (m *DCMotor) Polarity() (Polarity, error) {
+	p, err := stringFrom(attributeOf(m, polarity))
+	return Polarity(p), err
 }
 
 // SetPolarity sets the polarity of the DCMotor
@@ -165,74 +118,43 @@ func (m *DCMotor) SetPolarity(p Polarity) *DCMotor {
 		m.err = fmt.Errorf("ev3dev: invalid polarity: %q (valid \"normal\" or \"inversed\")", p)
 		return m
 	}
-	err := m.writeFile(fmt.Sprintf(DCMotorPath+"/%s/"+polarity, m), string(p))
-	if err != nil {
-		m.err = fmt.Errorf("ev3dev: failed to set polarity %v", err)
-	}
+	m.err = setAttributeOf(m, polarity, string(p))
 	return m
 }
 
-// RampUpSetpoint returns the current ramp up set point value for the DCMotor.
+// RampUpSetpoint returns the current ramp up setpoint value for the DCMotor.
 func (m *DCMotor) RampUpSetpoint() (time.Duration, error) {
-	if m.err != nil {
-		return -1, m.Err()
-	}
-	b, err := ioutil.ReadFile(fmt.Sprintf(DCMotorPath+"/%s/"+rampUpSetpoint, m))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to read ramp up set point: %v", err)
-	}
-	d, err := strconv.Atoi(string(chomp(b)))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to parse ramp up set point: %v", err)
-	}
-	return time.Duration(d) * time.Millisecond, nil
+	return durationFrom(attributeOf(m, rampUpSetpoint))
 }
 
-// SetRampUpSetpoint sets the ramp up set point value for the DCMotor.
-func (m *DCMotor) SetRampUpSetpoint(d time.Duration) *DCMotor {
+// SetRampUpSetpoint sets the ramp up setpoint value for the DCMotor.
+func (m *DCMotor) SetRampUpSetpoint(sp time.Duration) *DCMotor {
 	if m.err != nil {
 		return m
 	}
-	if d < 0 || d > 10000 {
-		m.err = fmt.Errorf("ev3dev: invalid ramp up set point: %v (must be positive)", d)
+	if sp < 0 || sp > 10000 {
+		m.err = fmt.Errorf("ev3dev: invalid ramp up setpoint: %v (must be positive)", sp)
 		return m
 	}
-	err := m.writeFile(fmt.Sprintf(DCMotorPath+"/%s/"+rampUpSetpoint, m), fmt.Sprintln(int(d/time.Millisecond)))
-	if err != nil {
-		m.err = fmt.Errorf("ev3dev: failed to set ramp up set point: %v", err)
-	}
+	m.err = setAttributeOf(m, rampUpSetpoint, fmt.Sprintln(int(sp/time.Millisecond)))
 	return m
 }
 
-// RampDownSetpoint returns the current ramp down set point value for the DCMotor.
+// RampDownSetpoint returns the current ramp down setpoint value for the DCMotor.
 func (m *DCMotor) RampDownSetpoint() (time.Duration, error) {
-	if m.err != nil {
-		return -1, m.Err()
-	}
-	b, err := ioutil.ReadFile(fmt.Sprintf(DCMotorPath+"/%s/"+rampDownSetpoint, m))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to read ramp down set point: %v", err)
-	}
-	d, err := strconv.Atoi(string(chomp(b)))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to parse ramp down set point: %v", err)
-	}
-	return time.Duration(d) * time.Millisecond, nil
+	return durationFrom(attributeOf(m, rampDownSetpoint))
 }
 
-// SetRampDownSetpoint sets the ramp down set point value for the DCMotor.
-func (m *DCMotor) SetRampDownSetpoint(d time.Duration) *DCMotor {
+// SetRampDownSetpoint sets the ramp down setpoint value for the DCMotor.
+func (m *DCMotor) SetRampDownSetpoint(sp time.Duration) *DCMotor {
 	if m.err != nil {
 		return m
 	}
-	if d < 0 || d > 10000 {
-		m.err = fmt.Errorf("ev3dev: invalid ramp down set point: %v (must be positive)", d)
+	if sp < 0 || sp > 10000 {
+		m.err = fmt.Errorf("ev3dev: invalid ramp down setpoint: %v (must be positive)", sp)
 		return m
 	}
-	err := m.writeFile(fmt.Sprintf(DCMotorPath+"/%s/"+rampDownSetpoint, m), fmt.Sprintln(int(d/time.Millisecond)))
-	if err != nil {
-		m.err = fmt.Errorf("ev3dev: failed to set ramp down set point: %v", err)
-	}
+	m.err = setAttributeOf(m, rampDownSetpoint, fmt.Sprintln(int(sp/time.Millisecond)))
 	return m
 }
 
@@ -241,13 +163,17 @@ func (m *DCMotor) State() (MotorState, error) {
 	if m.err != nil {
 		return 0, m.Err()
 	}
-	b, err := ioutil.ReadFile(fmt.Sprintf(DCMotorPath+"/%s/"+commands, m))
+	data, _, err := attributeOf(m, state)
 	if err != nil {
-		return 0, fmt.Errorf("ev3dev: failed to read dc-motor commands: %v", err)
+		return 0, err
 	}
 	var stat MotorState
-	for _, s := range strings.Split(string(chomp(b)), " ") {
-		stat |= motorStateTable[s]
+	for _, s := range strings.Split(data, " ") {
+		bit, ok := motorStateTable[s]
+		if !ok {
+			return 0, fmt.Errorf("ev3dev: unrecognized motor state value: %s in [%s]", s, data)
+		}
+		stat |= bit
 	}
 	return stat, nil
 }
@@ -255,19 +181,12 @@ func (m *DCMotor) State() (MotorState, error) {
 // StopAction returns the stop action used when a stop command is issued
 // to the DCMotor.
 func (m *DCMotor) StopAction() (string, error) {
-	if m.err != nil {
-		return "", m.Err()
-	}
-	b, err := ioutil.ReadFile(fmt.Sprintf(DCMotorPath+"/%s/"+stopAction, m))
-	if err != nil {
-		return "", fmt.Errorf("ev3dev: failed to read stop command: %v", err)
-	}
-	return string(chomp(b)), err
+	return stringFrom(attributeOf(m, stopAction))
 }
 
 // SetStopAction sets the stop action to be used when a stop command is
 // issued to the DCMotor.
-func (m *DCMotor) SetStopAction(comm string) *DCMotor {
+func (m *DCMotor) SetStopAction(action string) *DCMotor {
 	if m.err != nil {
 		return m
 	}
@@ -277,59 +196,35 @@ func (m *DCMotor) SetStopAction(comm string) *DCMotor {
 		return m
 	}
 	ok := false
-	for _, c := range avail {
-		if c == comm {
+	for _, a := range avail {
+		if a == action {
 			ok = true
 			break
 		}
 	}
 	if !ok {
-		m.err = fmt.Errorf("ev3dev: stop command %q not available for %s (available:%q)", comm, m, avail)
+		m.err = fmt.Errorf("ev3dev: stop action %q not available for %s (available:%q)", action, m, avail)
 		return m
 	}
-	err = m.writeFile(fmt.Sprintf(DCMotorPath+"/%s/"+stopAction, m), comm)
-	if err != nil {
-		m.err = fmt.Errorf("ev3dev: failed to set dc-motor stop command: %v", err)
-	}
+	m.err = setAttributeOf(m, stopAction, action)
 	return m
 }
 
 // StopActions returns the available stop actions for the DCMotor.
 func (m *DCMotor) StopActions() ([]string, error) {
-	if m.err != nil {
-		return nil, m.Err()
-	}
-	b, err := ioutil.ReadFile(fmt.Sprintf(DCMotorPath+"/%s/"+stopActions, m))
-	if err != nil {
-		return nil, fmt.Errorf("ev3dev: failed to read dc-motor stop command: %v", err)
-	}
-	return strings.Split(string(chomp(b)), " "), nil
+	return stringSliceFrom(attributeOf(m, stopActions))
 }
 
-// TimeSetpoint returns the current time set point value for the DCMotor.
+// TimeSetpoint returns the current time setpoint value for the DCMotor.
 func (m *DCMotor) TimeSetpoint() (time.Duration, error) {
-	if m.err != nil {
-		return -1, m.Err()
-	}
-	b, err := ioutil.ReadFile(fmt.Sprintf(DCMotorPath+"/%s/"+timeSetpoint, m))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to read time set point: %v", err)
-	}
-	d, err := strconv.Atoi(string(chomp(b)))
-	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to parse time set point: %v", err)
-	}
-	return time.Duration(d) * time.Millisecond, nil
+	return durationFrom(attributeOf(m, timeSetpoint))
 }
 
-// SetTimeSetpoint sets the time set point value for the DCMotor.
-func (m *DCMotor) SetTimeSetpoint(d time.Duration) *DCMotor {
+// SetTimeSetpoint sets the time setpoint value for the DCMotor.
+func (m *DCMotor) SetTimeSetpoint(sp time.Duration) *DCMotor {
 	if m.err != nil {
 		return m
 	}
-	err := m.writeFile(fmt.Sprintf(DCMotorPath+"/%s/"+timeSetpoint, m), fmt.Sprintln(int(d/time.Millisecond)))
-	if err != nil {
-		m.err = fmt.Errorf("ev3dev: failed to set time set point: %v", err)
-	}
+	m.err = setAttributeOf(m, timeSetpoint, fmt.Sprintln(int(sp/time.Millisecond)))
 	return m
 }
