@@ -1,3 +1,4 @@
+<img alt="Gopherbrick" src="https://raw.githubusercontent.com/ev3go/ev3/logo/gopherbrick.png" width="200">
 # ev3 is an idiomatic Go interface to an ev3dev device
 
 [![Build Status](https://travis-ci.org/ev3go/ev3.svg?branch=master)](https://travis-ci.org/ev3go/ev3) [![Coverage Status](https://coveralls.io/repos/ev3go/ev3/badge.svg?branch=master&service=github)](https://coveralls.io/github/ev3go/ev3?branch=master) [![GoDoc](https://godoc.org/github.com/ev3go/ev3?status.svg)](https://godoc.org/github.com/ev3go/ev3)
