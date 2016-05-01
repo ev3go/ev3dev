@@ -154,7 +154,7 @@ func (s *Sensor) SetPollRate(d time.Duration) *Sensor {
 	if s.err != nil {
 		return s
 	}
-	s.err = setAttributeOf(s, pollRate, fmt.Sprintln(int(d/time.Millisecond)))
+	s.err = setAttributeOf(s, pollRate, fmt.Sprint(int(d/time.Millisecond)))
 	return s
 }
 

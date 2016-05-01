@@ -105,7 +105,7 @@ func (m *TachoMotor) SetDutyCycleSetpoint(sp int) *TachoMotor {
 		m.err = fmt.Errorf("ev3dev: invalid duty cycle setpoint: %d (valid -100 - 100)", sp)
 		return m
 	}
-	m.err = setAttributeOf(m, dutyCycleSetpoint, fmt.Sprintln(sp))
+	m.err = setAttributeOf(m, dutyCycleSetpoint, fmt.Sprint(sp))
 	return m
 }
 
@@ -142,7 +142,7 @@ func (m *TachoMotor) SetPosition(pos int) *TachoMotor {
 		m.err = fmt.Errorf("ev3dev: invalid position: %d (valid in int32)", pos)
 		return m
 	}
-	m.err = setAttributeOf(m, position, fmt.Sprintln(pos))
+	m.err = setAttributeOf(m, position, fmt.Sprint(pos))
 	return m
 }
 
@@ -156,7 +156,7 @@ func (m *TachoMotor) SetHoldPIDKd(k int) *TachoMotor {
 	if m.err != nil {
 		return m
 	}
-	m.err = setAttributeOf(m, holdPIDkd, fmt.Sprintln(k))
+	m.err = setAttributeOf(m, holdPIDkd, fmt.Sprint(k))
 	return m
 }
 
@@ -170,7 +170,7 @@ func (m *TachoMotor) SetHoldPIDKi(k int) *TachoMotor {
 	if m.err != nil {
 		return m
 	}
-	m.err = setAttributeOf(m, holdPIDki, fmt.Sprintln(k))
+	m.err = setAttributeOf(m, holdPIDki, fmt.Sprint(k))
 	return m
 }
 
@@ -184,7 +184,7 @@ func (m *TachoMotor) SetHoldPIDKp(k int) *TachoMotor {
 	if m.err != nil {
 		return m
 	}
-	m.err = setAttributeOf(m, holdPIDkp, fmt.Sprintln(k))
+	m.err = setAttributeOf(m, holdPIDkp, fmt.Sprint(k))
 	return m
 }
 
@@ -207,7 +207,7 @@ func (m *TachoMotor) SetPositionSetpoint(sp int) *TachoMotor {
 		m.err = fmt.Errorf("ev3dev: invalid position setpoint: %d (valid in int32)", sp)
 		return m
 	}
-	m.err = setAttributeOf(m, positionSetpoint, fmt.Sprintln(sp))
+	m.err = setAttributeOf(m, positionSetpoint, fmt.Sprint(sp))
 	return m
 }
 
@@ -226,7 +226,7 @@ func (m *TachoMotor) SetSpeedSetpoint(sp int) *TachoMotor {
 	if m.err != nil {
 		return m
 	}
-	m.err = setAttributeOf(m, speedSetpoint, fmt.Sprintln(sp))
+	m.err = setAttributeOf(m, speedSetpoint, fmt.Sprint(sp))
 	return m
 }
 
@@ -244,7 +244,7 @@ func (m *TachoMotor) SetRampUpSetpoint(sp time.Duration) *TachoMotor {
 		m.err = fmt.Errorf("ev3dev: invalid ramp up setpoint: %v (must be positive)", sp)
 		return m
 	}
-	m.err = setAttributeOf(m, rampUpSetpoint, fmt.Sprintln(int(sp/time.Millisecond)))
+	m.err = setAttributeOf(m, rampUpSetpoint, fmt.Sprint(int(sp/time.Millisecond)))
 	return m
 }
 
@@ -262,7 +262,7 @@ func (m *TachoMotor) SetRampDownSetpoint(sp time.Duration) *TachoMotor {
 		m.err = fmt.Errorf("ev3dev: invalid ramp down setpoint: %v (must be positive)", sp)
 		return m
 	}
-	m.err = setAttributeOf(m, rampDownSetpoint, fmt.Sprintln(int(sp/time.Millisecond)))
+	m.err = setAttributeOf(m, rampDownSetpoint, fmt.Sprint(int(sp/time.Millisecond)))
 	return m
 }
 
@@ -276,7 +276,7 @@ func (m *TachoMotor) SetSpeedPIDKd(k int) *TachoMotor {
 	if m.err != nil {
 		return m
 	}
-	m.err = setAttributeOf(m, speedPIDkd, fmt.Sprintln(k))
+	m.err = setAttributeOf(m, speedPIDkd, fmt.Sprint(k))
 	return m
 }
 
@@ -290,7 +290,7 @@ func (m *TachoMotor) SetSpeedPIDKi(k int) *TachoMotor {
 	if m.err != nil {
 		return m
 	}
-	m.err = setAttributeOf(m, speedPIDki, fmt.Sprintln(k))
+	m.err = setAttributeOf(m, speedPIDki, fmt.Sprint(k))
 	return m
 }
 
@@ -304,7 +304,7 @@ func (m *TachoMotor) SetSpeedPIDKp(k int) *TachoMotor {
 	if m.err != nil {
 		return m
 	}
-	m.err = setAttributeOf(m, speedPIDkp, fmt.Sprintln(k))
+	m.err = setAttributeOf(m, speedPIDkp, fmt.Sprint(k))
 	return m
 }
 
@@ -375,6 +375,6 @@ func (m *TachoMotor) SetTimeSetpoint(sp time.Duration) *TachoMotor {
 	if m.err != nil {
 		return m
 	}
-	m.err = setAttributeOf(m, timeSetpoint, fmt.Sprintln(int(sp/time.Millisecond)))
+	m.err = setAttributeOf(m, timeSetpoint, fmt.Sprint(int(sp/time.Millisecond)))
 	return m
 }

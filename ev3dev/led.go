@@ -75,7 +75,7 @@ func (l *LED) SetBrightness(bright int) *LED {
 		l.err = fmt.Errorf("ev3dev: invalid led brightness: %d (valid 0-%d)", bright, max)
 		return l
 	}
-	l.err = setAttributeOf(ledDevice{l}, brightness, fmt.Sprintln(bright))
+	l.err = setAttributeOf(ledDevice{l}, brightness, fmt.Sprint(bright))
 	return l
 }
 
@@ -132,7 +132,7 @@ func (l *LED) SetDelayOff(d time.Duration) *LED {
 	if l.err != nil {
 		return l
 	}
-	l.err = setAttributeOf(ledDevice{l}, delayOff, fmt.Sprintln(int(d/time.Millisecond)))
+	l.err = setAttributeOf(ledDevice{l}, delayOff, fmt.Sprint(int(d/time.Millisecond)))
 	return l
 }
 
@@ -146,6 +146,6 @@ func (l *LED) SetDelayOn(d time.Duration) *LED {
 	if l.err != nil {
 		return l
 	}
-	l.err = setAttributeOf(ledDevice{l}, delayOn, fmt.Sprintln(int(d/time.Millisecond)))
+	l.err = setAttributeOf(ledDevice{l}, delayOn, fmt.Sprint(int(d/time.Millisecond)))
 	return l
 }

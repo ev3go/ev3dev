@@ -167,7 +167,7 @@ func (m *ServoMotor) SetPositionSetpoint(sp int) *ServoMotor {
 		m.err = fmt.Errorf("ev3dev: invalid position: %d (valid in int32)", sp)
 		return m
 	}
-	m.err = setAttributeOf(m, positionSetpoint, fmt.Sprintln(sp))
+	m.err = setAttributeOf(m, positionSetpoint, fmt.Sprint(sp))
 	return m
 }
 
@@ -185,7 +185,7 @@ func (m *ServoMotor) SetRateSetpoint(sp time.Duration) *ServoMotor {
 		m.err = fmt.Errorf("ev3dev: invalid ramp up setpoint: %v (must be positive)", sp)
 		return m
 	}
-	m.err = setAttributeOf(m, rateSetpoint, fmt.Sprintln(int(sp/time.Millisecond)))
+	m.err = setAttributeOf(m, rateSetpoint, fmt.Sprint(int(sp/time.Millisecond)))
 	return m
 }
 

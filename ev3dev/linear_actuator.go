@@ -111,7 +111,7 @@ func (m *LinearActuator) SetDutyCycleSetpoint(sp int) *LinearActuator {
 		m.err = fmt.Errorf("ev3dev: invalid duty cycle setpoint: %d (valid -100 - 100)", sp)
 		return m
 	}
-	m.err = setAttributeOf(m, dutyCycleSetpoint, fmt.Sprintln(sp))
+	m.err = setAttributeOf(m, dutyCycleSetpoint, fmt.Sprint(sp))
 	return m
 }
 
@@ -148,7 +148,7 @@ func (m *LinearActuator) SetPosition(pos int) *LinearActuator {
 		m.err = fmt.Errorf("ev3dev: invalid position: %d (valid in int32)", pos)
 		return m
 	}
-	m.err = setAttributeOf(m, position, fmt.Sprintln(pos))
+	m.err = setAttributeOf(m, position, fmt.Sprint(pos))
 	return m
 }
 
@@ -162,7 +162,7 @@ func (m *LinearActuator) SetHoldPIDKd(k int) *LinearActuator {
 	if m.err != nil {
 		return m
 	}
-	m.err = setAttributeOf(m, holdPIDkd, fmt.Sprintln(k))
+	m.err = setAttributeOf(m, holdPIDkd, fmt.Sprint(k))
 	return m
 }
 
@@ -176,7 +176,7 @@ func (m *LinearActuator) SetHoldPIDKi(k int) *LinearActuator {
 	if m.err != nil {
 		return m
 	}
-	m.err = setAttributeOf(m, holdPIDki, fmt.Sprintln(k))
+	m.err = setAttributeOf(m, holdPIDki, fmt.Sprint(k))
 	return m
 }
 
@@ -190,7 +190,7 @@ func (m *LinearActuator) SetHoldPIDKp(k int) *LinearActuator {
 	if m.err != nil {
 		return m
 	}
-	m.err = setAttributeOf(m, holdPIDkp, fmt.Sprintln(k))
+	m.err = setAttributeOf(m, holdPIDkp, fmt.Sprint(k))
 	return m
 }
 
@@ -213,7 +213,7 @@ func (m *LinearActuator) SetPositionSetpoint(sp int) *LinearActuator {
 		m.err = fmt.Errorf("ev3dev: invalid position setpoint: %d (valid in int32)", sp)
 		return m
 	}
-	m.err = setAttributeOf(m, positionSetpoint, fmt.Sprintln(sp))
+	m.err = setAttributeOf(m, positionSetpoint, fmt.Sprint(sp))
 	return m
 }
 
@@ -232,7 +232,7 @@ func (m *LinearActuator) SetSpeedSetpoint(sp int) *LinearActuator {
 	if m.err != nil {
 		return m
 	}
-	m.err = setAttributeOf(m, speedSetpoint, fmt.Sprintln(sp))
+	m.err = setAttributeOf(m, speedSetpoint, fmt.Sprint(sp))
 	return m
 }
 
@@ -250,7 +250,7 @@ func (m *LinearActuator) SetRampUpSetpoint(sp time.Duration) *LinearActuator {
 		m.err = fmt.Errorf("ev3dev: invalid ramp up setpoint: %v (must be positive)", sp)
 		return m
 	}
-	m.err = setAttributeOf(m, rampUpSetpoint, fmt.Sprintln(int(sp/time.Millisecond)))
+	m.err = setAttributeOf(m, rampUpSetpoint, fmt.Sprint(int(sp/time.Millisecond)))
 	return m
 }
 
@@ -268,7 +268,7 @@ func (m *LinearActuator) SetRampDownSetpoint(sp time.Duration) *LinearActuator {
 		m.err = fmt.Errorf("ev3dev: invalid ramp down setpoint: %v (must be positive)", sp)
 		return m
 	}
-	m.err = setAttributeOf(m, rampDownSetpoint, fmt.Sprintln(int(sp/time.Millisecond)))
+	m.err = setAttributeOf(m, rampDownSetpoint, fmt.Sprint(int(sp/time.Millisecond)))
 	return m
 }
 
@@ -282,7 +282,7 @@ func (m *LinearActuator) SetSpeedPIDKd(sp int) *LinearActuator {
 	if m.err != nil {
 		return m
 	}
-	m.err = setAttributeOf(m, speedPIDkd, fmt.Sprintln(sp))
+	m.err = setAttributeOf(m, speedPIDkd, fmt.Sprint(sp))
 	return m
 }
 
@@ -296,7 +296,7 @@ func (m *LinearActuator) SetSpeedPIDKi(sp int) *LinearActuator {
 	if m.err != nil {
 		return m
 	}
-	m.err = setAttributeOf(m, speedPIDki, fmt.Sprintln(sp))
+	m.err = setAttributeOf(m, speedPIDki, fmt.Sprint(sp))
 	return m
 }
 
@@ -310,7 +310,7 @@ func (m *LinearActuator) SetSpeedPIDKp(sp int) *LinearActuator {
 	if m.err != nil {
 		return m
 	}
-	m.err = setAttributeOf(m, speedPIDkp, fmt.Sprintln(sp))
+	m.err = setAttributeOf(m, speedPIDkp, fmt.Sprint(sp))
 	return m
 }
 
@@ -381,6 +381,6 @@ func (m *LinearActuator) SetTimeSetpoint(sp time.Duration) *LinearActuator {
 	if m.err != nil {
 		return m
 	}
-	m.err = setAttributeOf(m, timeSetpoint, fmt.Sprintln(int(sp/time.Millisecond)))
+	m.err = setAttributeOf(m, timeSetpoint, fmt.Sprint(int(sp/time.Millisecond)))
 	return m
 }
