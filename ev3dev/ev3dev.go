@@ -231,6 +231,18 @@ type Device interface {
 	fmt.Stringer
 }
 
+// IsConnected returns whether the Device is connected.
+func IsConnected(d Device) (ok bool, err error) {
+	_, err = os.Stat(fmt.Sprintf(d.Path()+"/%s", d))
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		err = nil
+	}
+	return false, err
+}
+
 // AddressOf returns the port address of the Device.
 func AddressOf(d Device) (string, error) {
 	b, err := ioutil.ReadFile(fmt.Sprintf(d.Path()+"/%s/"+address, d))
