@@ -208,3 +208,8 @@ func (m *ServoMotor) State() (MotorState, error) {
 	}
 	return stat, nil
 }
+
+// Uevent returns the current uevent state for the ServoMotor.
+func (m *ServoMotor) Uevent() (map[string]string, error) {
+	return ueventFrom(attributeOf(m, uevent))
+}

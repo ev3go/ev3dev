@@ -64,3 +64,8 @@ func (p PowerSupply) Technology() (string, error) {
 func (p PowerSupply) Type() (string, error) {
 	return stringFrom(attributeOf(powerDevice{p}, batteryType))
 }
+
+// Uevent returns the current uevent state for the power supply.
+func (p PowerSupply) Uevent() (map[string]string, error) {
+	return ueventFrom(attributeOf(powerDevice{p}, uevent))
+}

@@ -384,3 +384,8 @@ func (m *LinearActuator) SetTimeSetpoint(sp time.Duration) *LinearActuator {
 	m.err = setAttributeOf(m, timeSetpoint, fmt.Sprint(int(sp/time.Millisecond)))
 	return m
 }
+
+// Uevent returns the current uevent state for the LinearActuator.
+func (m *LinearActuator) Uevent() (map[string]string, error) {
+	return ueventFrom(attributeOf(m, uevent))
+}

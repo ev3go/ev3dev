@@ -228,3 +228,8 @@ func (m *DCMotor) SetTimeSetpoint(sp time.Duration) *DCMotor {
 	m.err = setAttributeOf(m, timeSetpoint, fmt.Sprint(int(sp/time.Millisecond)))
 	return m
 }
+
+// Uevent returns the current uevent state for the DCMotor.
+func (m *DCMotor) Uevent() (map[string]string, error) {
+	return ueventFrom(attributeOf(m, uevent))
+}

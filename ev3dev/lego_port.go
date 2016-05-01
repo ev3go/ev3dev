@@ -78,6 +78,11 @@ func (p *LegoPort) Status() (string, error) {
 	return stringFrom(attributeOf(p, status))
 }
 
+// Uevent returns the current uevent state for the LegoPort.
+func (p *LegoPort) Uevent() (map[string]string, error) {
+	return ueventFrom(attributeOf(p, uevent))
+}
+
 // ConnectedTo returns a description of the device attached to p in the form
 // {inX,outY}:DEVICE-NAME, where X is in {1-4} and Y is in {A-D}.
 func ConnectedTo(p *LegoPort) (string, error) {

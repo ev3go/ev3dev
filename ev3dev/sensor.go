@@ -173,3 +173,8 @@ func (s *Sensor) Value(n int) (string, error) {
 func (s *Sensor) TextValues() ([]string, error) {
 	return stringSliceFrom(attributeOf(s, textValues))
 }
+
+// Uevent returns the current uevent state for the Sensor.
+func (s *Sensor) Uevent() (map[string]string, error) {
+	return ueventFrom(attributeOf(s, uevent))
+}

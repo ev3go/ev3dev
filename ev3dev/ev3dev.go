@@ -129,6 +129,7 @@ const (
 	textValues                = "text_values"
 	timeSetpoint              = "time_sp"
 	trigger                   = "trigger"
+	uevent                    = "uevent"
 	units                     = "units"
 	value                     = "value"
 	voltageMaxDesign          = "voltage_max_design"
@@ -377,6 +378,21 @@ func stringSliceFrom(data, _ string, err error) ([]string, error) {
 		return nil, err
 	}
 	return strings.Split(data, " "), nil
+}
+
+func ueventFrom(data, attr string, err error) (map[string]string, error) {
+	if err != nil {
+		return nil, err
+	}
+	uevent := make(map[string]string)
+	for _, l := range strings.Split(data, "\n") {
+		parts := strings.Split(l, "=")
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("ev3dev: failed to parse %s: unexpected line %q", attr, l)
+		}
+		uevent[parts[0]] = parts[1]
+	}
+	return uevent, nil
 }
 
 func setAttributeOf(d Device, attr, data string) error {

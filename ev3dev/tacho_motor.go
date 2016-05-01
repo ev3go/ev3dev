@@ -378,3 +378,8 @@ func (m *TachoMotor) SetTimeSetpoint(sp time.Duration) *TachoMotor {
 	m.err = setAttributeOf(m, timeSetpoint, fmt.Sprint(int(sp/time.Millisecond)))
 	return m
 }
+
+// Uevent returns the current uevent state for the TachoMotor.
+func (m *TachoMotor) Uevent() (map[string]string, error) {
+	return ueventFrom(attributeOf(m, uevent))
+}

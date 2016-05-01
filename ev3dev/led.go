@@ -149,3 +149,8 @@ func (l *LED) SetDelayOn(d time.Duration) *LED {
 	l.err = setAttributeOf(ledDevice{l}, delayOn, fmt.Sprint(int(d/time.Millisecond)))
 	return l
 }
+
+// Uevent returns the current uevent state for the LED.
+func (l *LED) Uevent() (map[string]string, error) {
+	return ueventFrom(attributeOf(ledDevice{l}, uevent))
+}
