@@ -10,6 +10,8 @@ import (
 	"time"
 )
 
+var _ idSetter = (*ServoMotor)(nil)
+
 // ServoMotor represents a handle to a servo-motor.
 type ServoMotor struct {
 	id int
@@ -36,6 +38,11 @@ func (m *ServoMotor) Err() error {
 	err := m.err
 	m.err = nil
 	return err
+}
+
+// setID satisfies the idSetter interface.
+func (m *ServoMotor) setID(id int) {
+	*m = ServoMotor{id: id}
 }
 
 // ServoMotorFor returns a ServoMotor for the given ev3 port name and driver.

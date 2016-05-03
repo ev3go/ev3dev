@@ -10,6 +10,8 @@ import (
 	"time"
 )
 
+var _ idSetter = (*DCMotor)(nil)
+
 // DCMotor represents a handle to a dc-motor.
 type DCMotor struct {
 	id int
@@ -36,6 +38,11 @@ func (m *DCMotor) Err() error {
 	err := m.err
 	m.err = nil
 	return err
+}
+
+// setID satisfies the idSetter interface.
+func (m *DCMotor) setID(id int) {
+	*m = DCMotor{id: id}
 }
 
 // DCMotorFor returns a DCMotor for the given ev3 port name and driver. If the

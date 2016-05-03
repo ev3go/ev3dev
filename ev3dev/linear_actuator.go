@@ -10,6 +10,8 @@ import (
 	"time"
 )
 
+var _ idSetter = (*LinearActuator)(nil)
+
 // LinearActuator represents a handle to a linear actuator tacho-motor.
 type LinearActuator struct {
 	id int
@@ -36,6 +38,11 @@ func (m *LinearActuator) Err() error {
 	err := m.err
 	m.err = nil
 	return err
+}
+
+// setID satisfies the idSetter interface.
+func (m *LinearActuator) setID(id int) {
+	*m = LinearActuator{id: id}
 }
 
 // LinearActuatorFor returns a LinearActuator for the given ev3 port name and driver.

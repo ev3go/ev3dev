@@ -10,6 +10,8 @@ import (
 	"time"
 )
 
+var _ idSetter = (*TachoMotor)(nil)
+
 // TachoMotor represents a handle to a tacho-motor.
 type TachoMotor struct {
 	id int
@@ -36,6 +38,11 @@ func (m *TachoMotor) Err() error {
 	err := m.err
 	m.err = nil
 	return err
+}
+
+// setID satisfies the idSetter interface.
+func (m *TachoMotor) setID(id int) {
+	*m = TachoMotor{id: id}
 }
 
 // TachoMotorFor returns a TachoMotor for the given ev3 port name and driver. If the

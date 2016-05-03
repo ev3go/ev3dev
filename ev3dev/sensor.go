@@ -10,6 +10,8 @@ import (
 	"time"
 )
 
+var _ idSetter = (*Sensor)(nil)
+
 // Sensor represents a handle to a lego-sensor.
 type Sensor struct {
 	id int
@@ -36,6 +38,11 @@ func (s *Sensor) Err() error {
 	err := s.err
 	s.err = nil
 	return err
+}
+
+// setID satisfies the idSetter interface.
+func (s *Sensor) setID(id int) {
+	*s = Sensor{id: id}
 }
 
 // SensorFor returns a Sensor for the given ev3 port name and driver. If the

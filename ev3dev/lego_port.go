@@ -10,6 +10,8 @@ import (
 	"strings"
 )
 
+var _ idSetter = (*LegoPort)(nil)
+
 // Path returns the lego-port sysfs path.
 func (*LegoPort) Path() string { return LegoPortPath }
 
@@ -31,6 +33,11 @@ func (p *LegoPort) Err() error {
 	err := p.err
 	p.err = nil
 	return err
+}
+
+// setID satisfies the idSetter interface.
+func (p *LegoPort) setID(id int) {
+	*p = LegoPort{id: id}
 }
 
 // LegoPortFor returns a LegoPort for the given ev3 port name and driver. If the
