@@ -30,7 +30,7 @@ func main() {
 
 	s := &ev3dev.Sensor{}
 
-	err := ev3dev.Find(s, *driver)
+	err := ev3dev.FindAfter(nil, s, *driver)
 	if err != nil {
 		log.Fatalf("failed to find sensor: %v", err)
 	}

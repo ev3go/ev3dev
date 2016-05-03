@@ -243,80 +243,37 @@ type idSetter interface {
 	setID(id int)
 }
 
-// Find finds the first device matching the class of the dst Device
-// with the given driver name, or returns an error. On return with
-// a nil error, dst is usable as a handle for the device.
-//
-// Only ev3dev.Device implementations are supported.
-func Find(dst Device, driver string) error {
-	_, ok := dst.(idSetter)
-	if !ok {
-		return fmt.Errorf("ev3dev: device type %T not supported", dst)
-	}
-
-	driverBytes := []byte(driver)
-
-	fis, err := ioutil.ReadDir(dst.Path())
-	if err != nil {
-		return fmt.Errorf("ev3dev: failed to read %s directory %s: %v", dst.Type(), dst.Path(), err)
-	}
-	for _, fi := range fis {
-		b, err := ioutil.ReadFile(filepath.Join(dst.Path(), fi.Name(), driverName))
-		if os.IsNotExist(err) {
-			// If the device disappeared
-			// try the next one.
-			continue
-		}
-		if err != nil {
-			return fmt.Errorf("ev3dev: failed to read %s driver name: %v", dst.Type(), err)
-		}
-		if bytes.Equal(driverBytes, chomp(b)) {
-			device := fi.Name()
-			id, err := strconv.Atoi(strings.TrimPrefix(device, dst.Type()))
-			if err != nil {
-				return fmt.Errorf("ev3dev: could not parse id from device name %q: %v", device, err)
-			}
-			dst.(idSetter).setID(id)
-			return nil
-		}
-	}
-	return fmt.Errorf("ev3dev: could find device with driver name %q", driver)
-}
-
-// Find finds the first device after d matching the class of the
+// FindAfter finds the first device after d matching the class of the
 // dst Device with the given driver name, or returns an error. The
 // concrete types of d and dst must match. On return with a nil
 // error, dst is usable as a handle for the device.
-// If d is nil, FindAfter is equivalent to Find.
+// If d is nil, FindAfter finds the first matching device.
 //
 // Only ev3dev.Device implementations are supported.
 func FindAfter(d, dst Device, driver string) error {
-	rd := reflect.ValueOf(d)
-	if rd.IsNil() {
-		return Find(dst, driver)
-	}
-
 	_, ok := dst.(idSetter)
 	if !ok {
 		return fmt.Errorf("ev3dev: device type %T not supported", dst)
 	}
-	if rd.Type() != reflect.TypeOf(dst) {
+	if d != nil && reflect.TypeOf(d) != reflect.TypeOf(dst) {
 		return fmt.Errorf("ev3dev: device types do not match %T != %T", d, dst)
 	}
 
 	driverBytes := []byte(driver)
 
-	fis, err := ioutil.ReadDir(dst.Path())
+	devices, err := devicesIn(dst.Path())
 	if err != nil {
 		return fmt.Errorf("ev3dev: failed to read %s directory %s: %v", dst.Type(), dst.Path(), err)
 	}
-	target := d.String()
-	for _, fi := range fis {
-		device := fi.Name()
+	var target string
+	if d != nil {
+		target = d.String()
+	}
+	for _, device := range devices {
 		if device <= target {
 			continue
 		}
-		b, err := ioutil.ReadFile(filepath.Join(dst.Path(), fi.Name(), driverName))
+		b, err := ioutil.ReadFile(filepath.Join(dst.Path(), device, driverName))
 		if os.IsNotExist(err) {
 			// If the device disappeared
 			// try the next one.
