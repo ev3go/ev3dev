@@ -166,7 +166,7 @@ func (s *Sensor) Units() (string, error) {
 // Value returns tthe value or values measured by the Sensor. Value will return
 // and error if n is greater than or equal to the value returned by NumValues.
 func (s *Sensor) Value(n int) (string, error) {
-	return stringFrom(attributeOf(s, value))
+	return stringFrom(attributeOf(s, fmt.Sprint(value, n)))
 }
 
 // TextValues returns slice of strings string representing sensor-specific text values.
