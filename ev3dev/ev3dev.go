@@ -348,6 +348,11 @@ func deviceIDFor(port, driver string, d Device) (int, error) {
 		if port == "" {
 			path := filepath.Join(d.Path(), device, driverName)
 			b, err := ioutil.ReadFile(path)
+			if os.IsNotExist(err) {
+				// If the device disappeared
+				// try the next one.
+				continue
+			}
 			if err != nil {
 				return -1, fmt.Errorf("ev3dev: could not read driver name %s: %v", path, err)
 			}
