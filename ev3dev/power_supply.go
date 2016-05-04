@@ -5,7 +5,8 @@
 package ev3dev
 
 // PowerSupply represents a handle to a the ev3 power supply controller.
-// The zero value is usable, reading from the legoev3-battery driver.
+// The zero value is usable, reading from the first available device in
+// the power supply file system, falling back to the legoev3-battery driver.
 // Using another string value will read from the device of that name.
 type PowerSupply string
 
@@ -21,9 +22,17 @@ func (p PowerSupply) Path() string { return PowerSupplyPath }
 func (powerDevice) Type() string { panic("ev3dev: unexpected call of powerDevice Type") }
 
 // String satisfies the fmt.Stringer interface.
+//
+// String scans the PowerSupplyPath directory if p is the zero value.
+// To avoid this the user should set p to the returned value on the first
+// use.
 func (p PowerSupply) String() string {
 	if p == "" {
-		return "legoev3-battery"
+		cand, err := devicesIn(p.Path())
+		if err != nil || len(cand) == 0 {
+			return "legoev3-battery"
+		}
+		return cand[0]
 	}
 	return string(p)
 }
