@@ -36,12 +36,12 @@ func main() {
 
 	vMax, err := p.VoltageMax()
 	if err != nil {
-		log.Fatalf("could not read voltage: %v", err)
+		log.Fatalf("could not read max design voltage: %v", err)
 	}
 
 	vMin, err := p.VoltageMin()
 	if err != nil {
-		log.Fatalf("could not read voltage: %v", err)
+		log.Fatalf("could not read min design voltage: %v", err)
 	}
 
 	fmt.Printf("current power stats: V=%.2fV I=%.0fmA P=%.3fW (designed voltage range:%.2fV-%.2fV)\n", v, i, i*v/1000, vMin, vMax)
