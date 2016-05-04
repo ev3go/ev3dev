@@ -61,6 +61,20 @@ func ServoMotorFor(port, driver string) (*ServoMotor, error) {
 	return &ServoMotor{id: id}, err
 }
 
+// Next returns a ServoMotor for the next motor with the same device driver as
+// the receiver.
+func (m *ServoMotor) Next() (*ServoMotor, error) {
+	driver, err := DriverFor(m)
+	if err != nil {
+		return nil, err
+	}
+	id, err := deviceIDFor("", driver, (*ServoMotor)(nil), m.id)
+	if id == -1 {
+		return nil, err
+	}
+	return &ServoMotor{id: id}, err
+}
+
 // Commands returns the available commands for the ServoMotor.
 func (m *ServoMotor) Commands() []string {
 	return []string{

@@ -61,6 +61,20 @@ func LinearActuatorFor(port, driver string) (*LinearActuator, error) {
 	return &LinearActuator{id: id}, err
 }
 
+// Next returns a LinearActuator for the next motor with the same device driver as
+// the receiver.
+func (m *LinearActuator) Next() (*LinearActuator, error) {
+	driver, err := DriverFor(m)
+	if err != nil {
+		return nil, err
+	}
+	id, err := deviceIDFor("", driver, (*LinearActuator)(nil), m.id)
+	if id == -1 {
+		return nil, err
+	}
+	return &LinearActuator{id: id}, err
+}
+
 // Commands returns the available commands for the LinearActuator.
 func (m *LinearActuator) Commands() ([]string, error) {
 	return stringSliceFrom(attributeOf(m, commands))

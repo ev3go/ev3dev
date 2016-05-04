@@ -61,6 +61,20 @@ func DCMotorFor(port, driver string) (*DCMotor, error) {
 	return &DCMotor{id: id}, err
 }
 
+// Next returns a DCMotor for the next motor with the same device driver as
+// the receiver.
+func (m *DCMotor) Next() (*DCMotor, error) {
+	driver, err := DriverFor(m)
+	if err != nil {
+		return nil, err
+	}
+	id, err := deviceIDFor("", driver, (*DCMotor)(nil), m.id)
+	if id == -1 {
+		return nil, err
+	}
+	return &DCMotor{id: id}, err
+}
+
 // Commands returns the available commands for the DCMotor.
 func (m *DCMotor) Commands() ([]string, error) {
 	return stringSliceFrom(attributeOf(m, commands))

@@ -61,6 +61,20 @@ func TachoMotorFor(port, driver string) (*TachoMotor, error) {
 	return &TachoMotor{id: id}, err
 }
 
+// Next returns a TachoMotor for the next motor with the same device driver as
+// the receiver.
+func (m *TachoMotor) Next() (*TachoMotor, error) {
+	driver, err := DriverFor(m)
+	if err != nil {
+		return nil, err
+	}
+	id, err := deviceIDFor("", driver, (*TachoMotor)(nil), m.id)
+	if id == -1 {
+		return nil, err
+	}
+	return &TachoMotor{id: id}, err
+}
+
 // Commands returns the available commands for the TachoMotor.
 func (m *TachoMotor) Commands() ([]string, error) {
 	return stringSliceFrom(attributeOf(m, commands))

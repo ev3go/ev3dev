@@ -56,6 +56,20 @@ func LegoPortFor(port, driver string) (*LegoPort, error) {
 	return &LegoPort{id: id}, err
 }
 
+// Next returns a LegoPort for the next port with the same device driver as
+// the receiver.
+func (p *LegoPort) Next() (*LegoPort, error) {
+	driver, err := DriverFor(p)
+	if err != nil {
+		return nil, err
+	}
+	id, err := deviceIDFor("", driver, (*LegoPort)(nil), p.id)
+	if id == -1 {
+		return nil, err
+	}
+	return &LegoPort{id: id}, err
+}
+
 // Modes returns the available modes for the LegoPort.
 func (p *LegoPort) Modes() ([]string, error) {
 	return stringSliceFrom(attributeOf(p, modes))

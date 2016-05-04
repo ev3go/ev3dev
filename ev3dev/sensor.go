@@ -61,6 +61,20 @@ func SensorFor(port, driver string) (*Sensor, error) {
 	return &Sensor{id: id}, err
 }
 
+// Next returns a Sensor for the next sensor with the same device driver as
+// the receiver.
+func (s *Sensor) Next() (*Sensor, error) {
+	driver, err := DriverFor(s)
+	if err != nil {
+		return nil, err
+	}
+	id, err := deviceIDFor("", driver, (*Sensor)(nil), s.id)
+	if id == -1 {
+		return nil, err
+	}
+	return &Sensor{id: id}, err
+}
+
 // BinData returns the unscaled raw values from the Sensor.
 func (s *Sensor) BinData() (string, error) {
 	return stringFrom(attributeOf(s, binData))
