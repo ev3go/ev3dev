@@ -40,9 +40,13 @@ func (m *DCMotor) Err() error {
 	return err
 }
 
-// setID satisfies the idSetter interface.
-func (m *DCMotor) setID(id int) {
-	*m = DCMotor{id: id}
+// idInt and setID satisfy the idSetter interface.
+func (m *DCMotor) setID(id int) { *m = DCMotor{id: id} }
+func (m *DCMotor) idInt() int {
+	if m == nil {
+		return -1
+	}
+	return m.id
 }
 
 // DCMotorFor returns a DCMotor for the given ev3 port name and driver. If the
@@ -50,7 +54,7 @@ func (m *DCMotor) setID(id int) {
 // returned with a DriverMismatch error.
 // If port is empty, the first dc-motor satisfying the driver name is returned.
 func DCMotorFor(port, driver string) (*DCMotor, error) {
-	id, err := deviceIDFor(port, driver, (*DCMotor)(nil))
+	id, err := deviceIDFor(port, driver, (*DCMotor)(nil), -1)
 	if id == -1 {
 		return nil, err
 	}

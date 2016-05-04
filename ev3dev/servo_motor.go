@@ -40,9 +40,13 @@ func (m *ServoMotor) Err() error {
 	return err
 }
 
-// setID satisfies the idSetter interface.
-func (m *ServoMotor) setID(id int) {
-	*m = ServoMotor{id: id}
+// idInt and setID satisfy the idSetter interface.
+func (m *ServoMotor) setID(id int) { *m = ServoMotor{id: id} }
+func (m *ServoMotor) idInt() int {
+	if m == nil {
+		return -1
+	}
+	return m.id
 }
 
 // ServoMotorFor returns a ServoMotor for the given ev3 port name and driver.
@@ -50,7 +54,7 @@ func (m *ServoMotor) setID(id int) {
 // is returned with a DriverMismatch error.
 // If port is empty, the first servo-motor satisfying the driver name is returned.
 func ServoMotorFor(port, driver string) (*ServoMotor, error) {
-	id, err := deviceIDFor(port, driver, (*ServoMotor)(nil))
+	id, err := deviceIDFor(port, driver, (*ServoMotor)(nil), -1)
 	if id == -1 {
 		return nil, err
 	}

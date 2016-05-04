@@ -40,9 +40,13 @@ func (m *LinearActuator) Err() error {
 	return err
 }
 
-// setID satisfies the idSetter interface.
-func (m *LinearActuator) setID(id int) {
-	*m = LinearActuator{id: id}
+// idInt and setID satisfy the idSetter interface.
+func (m *LinearActuator) setID(id int) { *m = LinearActuator{id: id} }
+func (m *LinearActuator) idInt() int {
+	if m == nil {
+		return -1
+	}
+	return m.id
 }
 
 // LinearActuatorFor returns a LinearActuator for the given ev3 port name and driver.
@@ -50,7 +54,7 @@ func (m *LinearActuator) setID(id int) {
 // is returned with a DriverMismatch error.
 // If port is empty, the first tacho-motor satisfying the driver name is returned.
 func LinearActuatorFor(port, driver string) (*LinearActuator, error) {
-	id, err := deviceIDFor(port, driver, (*LinearActuator)(nil))
+	id, err := deviceIDFor(port, driver, (*LinearActuator)(nil), -1)
 	if id == -1 {
 		return nil, err
 	}

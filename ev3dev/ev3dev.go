@@ -237,6 +237,11 @@ type Device interface {
 type idSetter interface {
 	Device
 
+	// idInt returns the id integer value of
+	// the device.
+	// A nil idSetter must return -1.
+	idInt() int
+
 	// setID sets the device id to the given id
 	// and clears the error field to allow an
 	// already used Device to be reused.
@@ -255,43 +260,21 @@ func FindAfter(d, dst Device, driver string) error {
 	if !ok {
 		return fmt.Errorf("ev3dev: device type %T not supported", dst)
 	}
-	if d != nil && reflect.TypeOf(d) != reflect.TypeOf(dst) {
-		return fmt.Errorf("ev3dev: device types do not match %T != %T", d, dst)
-	}
 
-	driverBytes := []byte(driver)
-
-	devices, err := devicesIn(dst.Path())
-	if err != nil {
-		return fmt.Errorf("ev3dev: failed to read %s directory %s: %v", dst.Type(), dst.Path(), err)
-	}
-	var target string
+	after := -1
 	if d != nil {
-		target = d.String()
+		if reflect.TypeOf(d) != reflect.TypeOf(dst) {
+			return fmt.Errorf("ev3dev: device types do not match %T != %T", d, dst)
+		}
+		after = d.(idSetter).idInt()
 	}
-	for _, device := range devices {
-		if device <= target {
-			continue
-		}
-		b, err := ioutil.ReadFile(filepath.Join(dst.Path(), device, driverName))
-		if os.IsNotExist(err) {
-			// If the device disappeared
-			// try the next one.
-			continue
-		}
-		if err != nil {
-			return fmt.Errorf("ev3dev: failed to read %s driver name: %v", dst.Type(), err)
-		}
-		if bytes.Equal(driverBytes, chomp(b)) {
-			id, err := strconv.Atoi(strings.TrimPrefix(device, dst.Type()))
-			if err != nil {
-				return fmt.Errorf("ev3dev: could not parse id from device name %q: %v", device, err)
-			}
-			dst.(idSetter).setID(id)
-			return nil
-		}
+
+	id, err := deviceIDFor("", driver, dst, after)
+	if err != nil {
+		return err
 	}
-	return fmt.Errorf("ev3dev: could find device with driver name %q after %s", driver, d)
+	dst.(idSetter).setID(id)
+	return nil
 }
 
 // IsConnected returns whether the Device is connected.
@@ -327,8 +310,9 @@ func DriverFor(d Device) (string, error) {
 // deviceIDFor returns the id for the given ev3 port name and driver of the Device.
 // If the driver does not match the driver string, an id for the device is returned
 // with a DriverMismatch error.
-// If port is empty, the first device satisfying the driver name is returned.
-func deviceIDFor(port, driver string, d Device) (int, error) {
+// If port is empty, the first device satisfying the driver name with an id after the
+// specified after parameter is returned.
+func deviceIDFor(port, driver string, d Device, after int) (int, error) {
 	devices, err := devicesIn(d.Path())
 	if err != nil {
 		return -1, fmt.Errorf("ev3dev: could not get devices for %s: %v", d.Path(), err)
@@ -346,6 +330,9 @@ func deviceIDFor(port, driver string, d Device) (int, error) {
 		}
 
 		if port == "" {
+			if id <= after {
+				continue
+			}
 			path := filepath.Join(d.Path(), device, driverName)
 			b, err := ioutil.ReadFile(path)
 			if os.IsNotExist(err) {
@@ -384,7 +371,10 @@ func deviceIDFor(port, driver string, d Device) (int, error) {
 	if port != "" {
 		return -1, fmt.Errorf("ev3dev: could not find device for driver %q on port %s", driver, port)
 	}
-	return -1, fmt.Errorf("ev3dev: could not find device for driver %q", driver)
+	if after < 0 {
+		return -1, fmt.Errorf("ev3dev: could not find device for driver %q", driver)
+	}
+	return -1, fmt.Errorf("ev3dev: could find device with driver name %q after %s%d", driver, d.Type(), after)
 }
 
 func devicesIn(path string) ([]string, error) {

@@ -40,9 +40,13 @@ func (s *Sensor) Err() error {
 	return err
 }
 
-// setID satisfies the idSetter interface.
-func (s *Sensor) setID(id int) {
-	*s = Sensor{id: id}
+// idInt and setID satisfy the idSetter interface.
+func (s *Sensor) setID(id int) { *s = Sensor{id: id} }
+func (s *Sensor) idInt() int {
+	if s == nil {
+		return -1
+	}
+	return s.id
 }
 
 // SensorFor returns a Sensor for the given ev3 port name and driver. If the
@@ -50,7 +54,7 @@ func (s *Sensor) setID(id int) {
 // is returned with a DriverMismatch error.
 // If port is empty, the first sensor satisfying the driver name is returned.
 func SensorFor(port, driver string) (*Sensor, error) {
-	id, err := deviceIDFor(port, driver, (*Sensor)(nil))
+	id, err := deviceIDFor(port, driver, (*Sensor)(nil), -1)
 	if id == -1 {
 		return nil, err
 	}

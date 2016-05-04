@@ -40,9 +40,13 @@ func (m *TachoMotor) Err() error {
 	return err
 }
 
-// setID satisfies the idSetter interface.
-func (m *TachoMotor) setID(id int) {
-	*m = TachoMotor{id: id}
+// idInt and setID satisfy the idSetter interface.
+func (m *TachoMotor) setID(id int) { *m = TachoMotor{id: id} }
+func (m *TachoMotor) idInt() int {
+	if m == nil {
+		return -1
+	}
+	return m.id
 }
 
 // TachoMotorFor returns a TachoMotor for the given ev3 port name and driver. If the
@@ -50,7 +54,7 @@ func (m *TachoMotor) setID(id int) {
 // returned with a DriverMismatch error.
 // If port is empty, the first tacho-motor satisfying the driver name is returned.
 func TachoMotorFor(port, driver string) (*TachoMotor, error) {
-	id, err := deviceIDFor(port, driver, (*TachoMotor)(nil))
+	id, err := deviceIDFor(port, driver, (*TachoMotor)(nil), -1)
 	if id == -1 {
 		return nil, err
 	}

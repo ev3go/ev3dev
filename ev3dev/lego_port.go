@@ -35,9 +35,13 @@ func (p *LegoPort) Err() error {
 	return err
 }
 
-// setID satisfies the idSetter interface.
-func (p *LegoPort) setID(id int) {
-	*p = LegoPort{id: id}
+// idInt and setID satisfy the idSetter interface.
+func (p *LegoPort) setID(id int) { *p = LegoPort{id: id} }
+func (p *LegoPort) idInt() int {
+	if p == nil {
+		return -1
+	}
+	return p.id
 }
 
 // LegoPortFor returns a LegoPort for the given ev3 port name and driver. If the
@@ -45,7 +49,7 @@ func (p *LegoPort) setID(id int) {
 // is returned with a DriverMismatch error.
 // If port is empty, the first port satisfying the driver name is returned.
 func LegoPortFor(port, driver string) (*LegoPort, error) {
-	id, err := deviceIDFor(port, driver, (*LegoPort)(nil))
+	id, err := deviceIDFor(port, driver, (*LegoPort)(nil), -1)
 	if id == -1 {
 		return nil, err
 	}
