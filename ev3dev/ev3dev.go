@@ -363,7 +363,7 @@ func deviceIDFor(port, driver string, d Device, after int) (int, error) {
 			return -1, fmt.Errorf("ev3dev: could not read driver name %s: %v", path, err)
 		}
 		if !bytes.Equal(driverBytes, chomp(b)) {
-			err = DriverMismatch{Want: driver, Have: string(b)}
+			err = DriverMismatch{Want: driver, Have: string(chomp(b))}
 		}
 		return id, err
 	}
