@@ -63,7 +63,7 @@ func main() {
 		}
 		f, err := strconv.ParseFloat(v, 64)
 		if err != nil {
-			log.Fatalf("failed to parse value %d: %v", err)
+			log.Fatalf("failed to parse value: %v", err)
 		}
 		fmt.Printf("value%d = %v %s\n", i, f/math.Pow10(d), u)
 	}
