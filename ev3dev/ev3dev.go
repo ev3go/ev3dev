@@ -469,7 +469,7 @@ func setAttributeOf(d Device, attr, data string) error {
 	path := filepath.Join(d.Path(), d.String(), attr)
 	err := ioutil.WriteFile(path, []byte(data), 0)
 	if err != nil {
-		return fmt.Errorf("ev3dev: failed to set attribute %s %s: %v", path, attr, err)
+		return fmt.Errorf("ev3dev: failed to set attribute %s: %v", path, err)
 	}
 	return nil
 }
