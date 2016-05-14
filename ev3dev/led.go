@@ -17,18 +17,10 @@ import (
 // which is not provided here. If concurrent access to LEDs is
 // needed, the user is required to establish this model.
 type LED struct {
-	color string
-	side  string
+	Name fmt.Stringer
 
 	err error
 }
-
-var (
-	GreenLeft  *LED = &LED{color: "green", side: "left"}
-	GreenRight *LED = &LED{color: "green", side: "right"}
-	RedLeft    *LED = &LED{color: "red", side: "left"}
-	RedRight   *LED = &LED{color: "red", side: "right"}
-)
 
 // ledDevice is used to fake a Device. The Type method do not
 // have meaningful semantics.
@@ -42,7 +34,7 @@ func (l *LED) Path() string { return LEDPath }
 func (ledDevice) Type() string { panic("ev3dev: unexpected call of ledDevice Type") }
 
 // String satisfies the fmt.Stringer interface.
-func (l *LED) String() string { return fmt.Sprintf("ev3:%s:%s", l.side, l.color) }
+func (l *LED) String() string { return l.Name.String() }
 
 // Err returns the error state of the LED and clears it.
 func (l *LED) Err() error {
