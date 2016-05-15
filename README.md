@@ -1,11 +1,11 @@
 ![Gopherbrick](gopherbrick.png)
-# ev3 is an idiomatic Go interface to an ev3dev device
+# ev3dev is an idiomatic Go interface to an ev3dev device
 
-[![Build Status](https://travis-ci.org/ev3go/ev3.svg?branch=master)](https://travis-ci.org/ev3go/ev3) [![Coverage Status](https://coveralls.io/repos/ev3go/ev3/badge.svg?branch=master&service=github)](https://coveralls.io/github/ev3go/ev3?branch=master) [![GoDoc](https://godoc.org/github.com/ev3go/ev3?status.svg)](https://godoc.org/github.com/ev3go/ev3)
+[![Build Status](https://travis-ci.org/ev3go/ev3dev.svg?branch=master)](https://travis-ci.org/ev3go/ev3dev) [![Coverage Status](https://coveralls.io/repos/ev3go/ev3/badge.svg?branch=master&service=github)](https://coveralls.io/github/ev3go/ev3?branch=master) [![GoDoc](https://godoc.org/github.com/ev3go/ev3?status.svg)](https://godoc.org/github.com/ev3go/ev3)
 
 The goal is to implement a simple Go style ev3dev API and helpers for common tasks.
 
-github.com/ev3go/ev3/ev3dev depends on an ev3dev kernel v3.16.7-ckt26-10-ev3dev-ev3 or better (See http://www.ev3dev.org/news/2016/04/11/Kernel-Release-Cycle-10/)
+github.com/ev3go/ev3dev depends on an ev3dev kernel v3.16.7-ckt26-10-ev3dev-ev3 or better (See http://www.ev3dev.org/news/2016/04/11/Kernel-Release-Cycle-10/)
 
 ## Currently supported:
 
