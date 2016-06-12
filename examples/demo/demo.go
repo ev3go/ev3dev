@@ -17,12 +17,13 @@ import (
 	"log"
 	"time"
 
+	"github.com/ev3go/ev3"
 	"github.com/ev3go/ev3dev"
 )
 
 func main() {
-	ev3dev.LCD.Init(true)
-	defer ev3dev.LCD.Close()
+	ev3.LCD.Init(true)
+	defer ev3.LCD.Close()
 
 	// Get the handle for the medium motor on outA.
 	outA, err := ev3dev.TachoMotorFor("outA", "lego-ev3-m-motor")
@@ -64,7 +65,7 @@ func main() {
 
 	for i := 0; i < 2; i++ {
 		// Render the gopher to the screen.
-		draw.Draw(ev3dev.LCD, ev3dev.LCD.Bounds(), gopher, gopher.Bounds().Min, draw.Src)
+		draw.Draw(ev3.LCD, ev3.LCD.Bounds(), gopher, gopher.Bounds().Min, draw.Src)
 
 		// Run medium motor on outA at speed 50, wait for 0.5 second and then brake.
 		outA.SetSpeedSetpoint(50 * maxMedium / 100).Command("run-forever")
@@ -88,7 +89,7 @@ func main() {
 		checkErrors(outA)
 
 		// Render the gopher to the screen.
-		draw.Draw(ev3dev.LCD, ev3dev.LCD.Bounds(), gopherSquint, gopherSquint.Bounds().Min, draw.Src)
+		draw.Draw(ev3.LCD, ev3.LCD.Bounds(), gopherSquint, gopherSquint.Bounds().Min, draw.Src)
 
 		// Run large motors on B at speed -50 and C at speed 50, wait for 1 second and then brake.
 		outB.SetSpeedSetpoint(-50 * maxLarge / 100).Command("run-forever")
@@ -118,7 +119,7 @@ func checkErrors(devs ...ev3dev.Device) {
 	}
 }
 
-var gopherSquint = &ev3dev.Monochrome{
+var gopherSquint = &ev3.Monochrome{
 	Pix: []uint8{
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -326,7 +327,7 @@ var gopherSquint = &ev3dev.Monochrome{
 	},
 }
 
-var gopher = &ev3dev.Monochrome{
+var gopher = &ev3.Monochrome{
 	Pix: []uint8{
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
