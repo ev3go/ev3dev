@@ -31,6 +31,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"golang.org/x/sys/unix"
 )
 
 const (
@@ -196,6 +198,69 @@ func (f MotorState) String() string {
 	}
 
 	return string(b)
+}
+
+type staterDevice interface {
+	Device
+	State() (MotorState, error)
+}
+
+// wait blocks until the wanted motor state under the motor state mask is
+// reached, or the timeout is reached.
+// The last unmasked motor state is returned unless the timeout was reached
+// before the motor state was read.
+// When the any parameter is false, wait will return ok as true if
+//  (stat^not) & mask == want
+// and when any is true wait return false if
+//  (stat^not) & mask != 0.
+// Otherwise ok will return false indicating that the returned state did
+// not match the request.
+func wait(d staterDevice, mask, want, not MotorState, any bool, timeout time.Duration) (stat MotorState, ok bool, err error) {
+	path := filepath.Join(d.Path(), d.String(), state)
+	f, err := os.Open(path)
+	if err != nil {
+		return 0, false, err
+	}
+	defer f.Close()
+
+	// If any state in the mask is wanted, we just
+	// need to check that (stat^not)&mask is not zero.
+	if any {
+		want = 0
+	}
+
+	end := time.Now().Add(timeout)
+	for timeout < 0 || time.Since(end) < 0 {
+		fds := []unix.PollFd{{Fd: int32(f.Fd()), Events: unix.POLLIN}}
+		_timeout := timeout
+		if timeout >= 0 {
+			if remain := end.Sub(time.Now()); remain < timeout {
+				_timeout = remain
+			}
+		}
+		n, err := unix.Poll(fds, int(_timeout/time.Millisecond))
+		if n == 0 {
+			return 0, false, err
+		}
+
+		stat, err = d.State()
+		if err != nil {
+			return stat, false, err
+		}
+
+		// Check that we have the wanted state.
+		if ((stat^not)&mask == want) != any {
+			return stat, true, nil
+		}
+
+		relax := 50 * time.Millisecond
+		if remain := end.Sub(time.Now()); remain < relax {
+			relax = remain / 2
+		}
+		time.Sleep(relax)
+	}
+
+	return stat, false, nil
 }
 
 // DriverMismatch errors are returned when a device is found that
