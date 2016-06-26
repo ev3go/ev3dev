@@ -223,6 +223,9 @@ func (m *ServoMotor) State() (MotorState, error) {
 	if err != nil {
 		return 0, err
 	}
+	if data == "" {
+		return 0, nil
+	}
 	var stat MotorState
 	for _, s := range strings.Split(data, " ") {
 		bit, ok := motorStateTable[s]
