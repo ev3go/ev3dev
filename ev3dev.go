@@ -196,7 +196,9 @@ func (f MotorState) String() string {
 			b = append(b, s...)
 		}
 	}
-
+	if b == nil {
+		return "none"
+	}
 	return string(b)
 }
 
