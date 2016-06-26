@@ -190,7 +190,7 @@ func (f MotorState) String() string {
 	var b []byte
 	for i, s := range motorStates {
 		if f&(1<<uint(i)) != 0 {
-			if i != 0 {
+			if len(b) != 0 {
 				b = append(b, '|')
 			}
 			b = append(b, s...)
