@@ -202,12 +202,13 @@ func (f MotorState) String() string {
 	return string(b)
 }
 
-type staterDevice interface {
+// StaterDevice is a device that can return a motor state.
+type StaterDevice interface {
 	Device
 	State() (MotorState, error)
 }
 
-// wait blocks until the wanted motor state under the motor state mask is
+// Wait blocks until the wanted motor state under the motor state mask is
 // reached, or the timeout is reached.
 // The last unmasked motor state is returned unless the timeout was reached
 // before the motor state was read.
@@ -217,7 +218,7 @@ type staterDevice interface {
 //  (stat^not) & mask != 0.
 // Otherwise ok will return false indicating that the returned state did
 // not match the request.
-func wait(d staterDevice, mask, want, not MotorState, any bool, timeout time.Duration) (stat MotorState, ok bool, err error) {
+func Wait(d StaterDevice, mask, want, not MotorState, any bool, timeout time.Duration) (stat MotorState, ok bool, err error) {
 	path := filepath.Join(d.Path(), d.String(), state)
 	f, err := os.Open(path)
 	if err != nil {
