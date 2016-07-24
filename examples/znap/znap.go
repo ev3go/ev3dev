@@ -15,8 +15,6 @@ import (
 	"log"
 	"math"
 	"math/rand"
-	"os"
-	"path/filepath"
 	"strconv"
 	"sync/atomic"
 	"time"
@@ -134,7 +132,7 @@ func znap() {
 
 				time.Sleep(time.Second)
 
-				stat, ok, err := wait(jaw, ev3dev.Running, 0, 0, false, 10*time.Second)
+				stat, ok, err := ev3dev.Wait(jaw, ev3dev.Running, 0, 0, false, 10*time.Second)
 				if err != nil {
 					log.Fatalf("failed to wait for jaw motor to return: %v", err)
 				}
@@ -163,7 +161,7 @@ func znap() {
 
 				// play snake sound
 
-				stat, ok, err := wait(jaw, ev3dev.Running, 0, 0, false, 10*time.Second)
+				stat, ok, err := ev3dev.Wait(jaw, ev3dev.Running, 0, 0, false, 10*time.Second)
 				if err != nil {
 					log.Fatalf("failed to wait for jaw motor to threaten: %v", err)
 				}
@@ -180,7 +178,7 @@ func znap() {
 					log.Fatalf("failed to run jaw motor: %v", err)
 				}
 			}
-			stat, ok, err := wait(jaw, ev3dev.Running, 0, 0, false, 10*time.Second)
+			stat, ok, err := ev3dev.Wait(jaw, ev3dev.Running, 0, 0, false, 10*time.Second)
 			if err != nil {
 				log.Fatalf("failed to wait for jaw motor to return: %v", err)
 			}
@@ -205,7 +203,7 @@ func wander() {
 		SetPolarity(ev3dev.Inversed).
 		SetRampUpSetpoint(200 * time.Millisecond).
 		SetRampDownSetpoint(200 * time.Millisecond).
-		SetStopAction("brake").
+		SetStopAction("hold").
 		Err()
 	if err != nil {
 		log.Fatalf("failed to set initialize left track: %v", err)
@@ -220,7 +218,7 @@ func wander() {
 		SetPolarity(ev3dev.Inversed).
 		SetRampUpSetpoint(200 * time.Millisecond).
 		SetRampDownSetpoint(200 * time.Millisecond).
-		SetStopAction("brake").
+		SetStopAction("hold").
 		Err()
 	if err != nil {
 		log.Fatalf("failed to set initialize right track: %v", err)
@@ -330,14 +328,14 @@ func (s steering) steer(speed, counts int, dir float64) error {
 	}
 	var stat ev3dev.MotorState
 	var ok bool
-	stat, ok, err = wait(s.left, ev3dev.Running, 0, 0, false, 5*time.Second)
+	stat, ok, err = ev3dev.Wait(s.left, ev3dev.Running, 0, 0, false, 5*time.Second)
 	if err != nil {
 		log.Fatalf("failed to wait for left motor to stop: %v", err)
 	}
 	if !ok {
 		log.Fatalf("failed to wait for left motor to stop: %v", stat)
 	}
-	stat, ok, err = wait(s.right, ev3dev.Running, 0, 0, false, 5*time.Second)
+	stat, ok, err = ev3dev.Wait(s.right, ev3dev.Running, 0, 0, false, 5*time.Second)
 	if err != nil {
 		log.Fatalf("failed to wait for right motor to stop: %v", err)
 	}
@@ -345,58 +343,4 @@ func (s steering) steer(speed, counts int, dir float64) error {
 		log.Fatalf("failed to wait for right motor to stop: %v", stat)
 	}
 	return nil
-}
-
-type staterDevice interface {
-	ev3dev.Device
-	State() (ev3dev.MotorState, error)
-}
-
-// TODO(kortschak) Replace wait with the ev3dev wait function when the
-// kernel supports polling on motors states.
-//
-// wait blocks until the wanted motor state under the motor state mask is
-// reached, or the timeout is reached.
-// The last unmasked motor state is returned unless the timeout was reached
-// before the motor state was read.
-// When the any parameter is false, wait will return ok as true if
-//  (stat^not) & mask == want
-// and when any is true wait return false if
-//  (stat^not) & mask != 0.
-// Otherwise ok will return false indicating that the returned state did
-// not match the request.
-func wait(d staterDevice, mask, want, not ev3dev.MotorState, any bool, timeout time.Duration) (stat ev3dev.MotorState, ok bool, err error) {
-	path := filepath.Join(d.Path(), d.String(), "state")
-	f, err := os.Open(path)
-	if err != nil {
-		return 0, false, err
-	}
-	defer f.Close()
-
-	// If any state in the mask is wanted, we just
-	// need to check that (stat^not)&mask is not zero.
-	if any {
-		want = 0
-	}
-
-	end := time.Now().Add(timeout)
-	for timeout < 0 || time.Since(end) < 0 {
-		stat, err = d.State()
-		if err != nil {
-			return stat, false, err
-		}
-
-		// Check that we have the wanted state.
-		if ((stat^not)&mask == want) != any {
-			return stat, true, nil
-		}
-
-		relax := 50 * time.Millisecond
-		if remain := end.Sub(time.Now()); remain < relax {
-			relax = remain / 2
-		}
-		time.Sleep(relax)
-	}
-
-	return stat, false, nil
 }
