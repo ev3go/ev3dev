@@ -6,6 +6,7 @@ package ev3dev
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
@@ -77,8 +78,17 @@ func (s *Sensor) Next() (*Sensor, error) {
 }
 
 // BinData returns the unscaled raw values from the Sensor.
-func (s *Sensor) BinData() (string, error) {
-	return stringFrom(attributeOf(s, binData))
+func (s *Sensor) BinData() ([]byte, error) {
+	err := s.Err()
+	if err != nil {
+		return nil, err
+	}
+	path := filepath.Join(s.Path(), s.String(), binData)
+	b, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("ev3dev: failed to read attribute %s: %v", path, err)
+	}
+	return b, nil
 }
 
 // BinDataFormat returns the format of the values returned by BinData for the

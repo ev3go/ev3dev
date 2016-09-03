@@ -30,6 +30,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -508,27 +509,23 @@ func DriverFor(d Device) (string, error) {
 // If port is empty, the first device satisfying the driver name with an id after the
 // specified after parameter is returned.
 func deviceIDFor(port, driver string, d Device, after int) (int, error) {
-	devices, err := devicesIn(d.Path())
+	devNames, err := devicesIn(d.Path())
 	if err != nil {
 		return -1, fmt.Errorf("ev3dev: could not get devices for %s: %v", d.Path(), err)
+	}
+	devices, err := sortedDevices(devNames, d.Type())
+	if err != nil {
+		return -1, err
 	}
 
 	portBytes := []byte(port)
 	driverBytes := []byte(driver)
 	for _, device := range devices {
-		if !strings.HasPrefix(device, d.Type()) {
-			continue
-		}
-		id, err := strconv.Atoi(strings.TrimPrefix(device, d.Type()))
-		if err != nil {
-			return -1, fmt.Errorf("ev3dev: could not parse id from device name %q: %v", device, err)
-		}
-
 		if port == "" {
-			if id <= after {
+			if device.id <= after {
 				continue
 			}
-			path := filepath.Join(d.Path(), device, driverName)
+			path := filepath.Join(d.Path(), device.name, driverName)
 			b, err := ioutil.ReadFile(path)
 			if os.IsNotExist(err) {
 				// If the device disappeared
@@ -541,10 +538,10 @@ func deviceIDFor(port, driver string, d Device, after int) (int, error) {
 			if !bytes.Equal(driverBytes, chomp(b)) {
 				continue
 			}
-			return id, nil
+			return device.id, nil
 		}
 
-		path := filepath.Join(d.Path(), device, address)
+		path := filepath.Join(d.Path(), device.name, address)
 		b, err := ioutil.ReadFile(path)
 		if err != nil {
 			return -1, fmt.Errorf("ev3dev: could not read address %s: %v", path, err)
@@ -552,7 +549,7 @@ func deviceIDFor(port, driver string, d Device, after int) (int, error) {
 		if !bytes.Equal(portBytes, chomp(b)) {
 			continue
 		}
-		path = filepath.Join(d.Path(), device, driverName)
+		path = filepath.Join(d.Path(), device.name, driverName)
 		b, err = ioutil.ReadFile(path)
 		if err != nil {
 			return -1, fmt.Errorf("ev3dev: could not read driver name %s: %v", path, err)
@@ -560,7 +557,7 @@ func deviceIDFor(port, driver string, d Device, after int) (int, error) {
 		if !bytes.Equal(driverBytes, chomp(b)) {
 			err = DriverMismatch{Want: driver, Have: string(chomp(b))}
 		}
-		return id, err
+		return device.id, err
 	}
 
 	if port != "" {
@@ -580,6 +577,33 @@ func devicesIn(path string) ([]string, error) {
 	defer f.Close()
 	return f.Readdirnames(0)
 }
+
+func sortedDevices(names []string, prefix string) ([]idDevice, error) {
+	devices := make([]idDevice, 0, len(names))
+	for _, n := range names {
+		if !strings.HasPrefix(n, prefix) {
+			continue
+		}
+		id, err := strconv.Atoi(n[len(prefix):])
+		if err != nil {
+			return nil, fmt.Errorf("ev3dev: could not parse id from device name %q: %v", n, err)
+		}
+		devices = append(devices, idDevice{id: id, name: n})
+	}
+	sort.Sort(byID(devices))
+	return devices, nil
+}
+
+type idDevice struct {
+	id   int
+	name string
+}
+
+type byID []idDevice
+
+func (d byID) Len() int           { return len(d) }
+func (d byID) Less(i, j int) bool { return d[i].id < d[j].id }
+func (d byID) Swap(i, j int)      { d[i], d[j] = d[j], d[i] }
 
 func attributeOf(d Device, attr string) (data string, _attr string, err error) {
 	err = d.Err()
