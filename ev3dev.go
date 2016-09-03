@@ -638,6 +638,9 @@ func stringSliceFrom(data, _ string, err error) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	if len(data) == 0 {
+		return nil, nil
+	}
 	return strings.Split(data, " "), nil
 }
 
@@ -662,6 +665,9 @@ func stateFrom(data, _ string, err error) (MotorState, error) {
 func ueventFrom(data, attr string, err error) (map[string]string, error) {
 	if err != nil {
 		return nil, err
+	}
+	if len(data) == 0 {
+		return nil, nil
 	}
 	uevent := make(map[string]string)
 	for _, l := range strings.Split(data, "\n") {
