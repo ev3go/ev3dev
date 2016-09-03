@@ -125,6 +125,10 @@ func (l *LED) SetDelayOff(d time.Duration) *LED {
 	if l.err != nil {
 		return l
 	}
+	if d < 0 {
+		l.err = fmt.Errorf("ev3dev: invalid delay off duration: %v (must be positive)", d)
+		return l
+	}
 	l.err = setAttributeOf(ledDevice{l}, delayOff, fmt.Sprint(int(d/time.Millisecond)))
 	return l
 }
@@ -137,6 +141,10 @@ func (l *LED) DelayOn() (time.Duration, error) {
 // SetDelayOn sets the duration for which the LED is on when using the timer trigger.
 func (l *LED) SetDelayOn(d time.Duration) *LED {
 	if l.err != nil {
+		return l
+	}
+	if d < 0 {
+		l.err = fmt.Errorf("ev3dev: invalid delay on duration: %v (must be positive)", d)
 		return l
 	}
 	l.err = setAttributeOf(ledDevice{l}, delayOn, fmt.Sprint(int(d/time.Millisecond)))
