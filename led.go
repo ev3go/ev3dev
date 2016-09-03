@@ -7,6 +7,7 @@ package ev3dev
 import (
 	"errors"
 	"fmt"
+	"path/filepath"
 	"time"
 )
 
@@ -29,7 +30,7 @@ type ledDevice struct {
 }
 
 // Path returns the LED sysfs path.
-func (l *LED) Path() string { return LEDPath }
+func (l *LED) Path() string { return filepath.Join(prefix, LEDPath) }
 
 func (ledDevice) Type() string { panic("ev3dev: unexpected call of ledDevice Type") }
 

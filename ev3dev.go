@@ -44,6 +44,10 @@ const (
 	sensorPrefix = "sensor"
 )
 
+// prefix is the filesystem root prefix.
+// Currently it is used only for testing.
+var prefix = ""
+
 const (
 	// LEDPath is the path to the ev3 LED file system.
 	LEDPath = "/sys/class/leds"

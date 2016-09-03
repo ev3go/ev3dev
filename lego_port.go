@@ -7,13 +7,14 @@ package ev3dev
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
 var _ idSetter = (*LegoPort)(nil)
 
 // Path returns the lego-port sysfs path.
-func (*LegoPort) Path() string { return LegoPortPath }
+func (*LegoPort) Path() string { return filepath.Join(prefix, LegoPortPath) }
 
 // Type returns "port".
 func (*LegoPort) Type() string { return portPrefix }

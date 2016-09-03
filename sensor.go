@@ -7,6 +7,7 @@ package ev3dev
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -20,7 +21,7 @@ type Sensor struct {
 }
 
 // Path returns the lego-sensor sysfs path.
-func (*Sensor) Path() string { return SensorPath }
+func (*Sensor) Path() string { return filepath.Join(prefix, SensorPath) }
 
 // Type returns "sensor".
 func (*Sensor) Type() string { return sensorPrefix }
@@ -136,7 +137,7 @@ func (s *Sensor) Direct(flag int) (*os.File, error) {
 	if s.err != nil {
 		return nil, s.Err()
 	}
-	return os.OpenFile(fmt.Sprintf(SensorPath+"/%s/"+direct, s), flag, 0)
+	return os.OpenFile(filepath.Join(s.Path(), s.String(), direct), flag, 0)
 }
 
 // Decimals returns the number of decimal places for the values in the

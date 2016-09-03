@@ -6,6 +6,7 @@ package ev3dev
 
 import (
 	"fmt"
+	"path/filepath"
 	"time"
 )
 
@@ -19,7 +20,7 @@ type TachoMotor struct {
 }
 
 // Path returns the tacho-motor sysfs path.
-func (*TachoMotor) Path() string { return TachoMotorPath }
+func (*TachoMotor) Path() string { return filepath.Join(prefix, TachoMotorPath) }
 
 // Type returns "motor".
 func (*TachoMotor) Type() string { return motorPrefix }

@@ -6,6 +6,7 @@ package ev3dev
 
 import (
 	"fmt"
+	"path/filepath"
 	"time"
 )
 
@@ -19,7 +20,7 @@ type LinearActuator struct {
 }
 
 // Path returns the tacho-motor sysfs path.
-func (*LinearActuator) Path() string { return TachoMotorPath }
+func (*LinearActuator) Path() string { return filepath.Join(prefix, TachoMotorPath) }
 
 // Type returns "linear".
 func (*LinearActuator) Type() string { return linearPrefix }

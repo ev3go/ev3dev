@@ -4,6 +4,8 @@
 
 package ev3dev
 
+import "path/filepath"
+
 // PowerSupply represents a handle to a the ev3 power supply controller.
 // The zero value is usable, reading from the first available device in
 // the power supply file system, falling back to the legoev3-battery driver.
@@ -17,7 +19,7 @@ type powerDevice struct {
 }
 
 // Path returns the power-supply sysfs path.
-func (p PowerSupply) Path() string { return PowerSupplyPath }
+func (p PowerSupply) Path() string { return filepath.Join(prefix, PowerSupplyPath) }
 
 func (powerDevice) Type() string { panic("ev3dev: unexpected call of powerDevice Type") }
 

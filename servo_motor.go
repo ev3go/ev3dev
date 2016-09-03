@@ -6,6 +6,7 @@ package ev3dev
 
 import (
 	"fmt"
+	"path/filepath"
 	"time"
 )
 
@@ -19,7 +20,7 @@ type ServoMotor struct {
 }
 
 // Path returns the servo-motor sysfs path.
-func (*ServoMotor) Path() string { return ServoMotorPath }
+func (*ServoMotor) Path() string { return filepath.Join(prefix, ServoMotorPath) }
 
 // Type returns "motor".
 func (*ServoMotor) Type() string { return motorPrefix }

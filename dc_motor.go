@@ -6,6 +6,7 @@ package ev3dev
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -20,7 +21,7 @@ type DCMotor struct {
 }
 
 // Path returns the dc-motor sysfs path.
-func (*DCMotor) Path() string { return DCMotorPath }
+func (*DCMotor) Path() string { return filepath.Join(prefix, DCMotorPath) }
 
 // Type returns "motor".
 func (*DCMotor) Type() string { return motorPrefix }
