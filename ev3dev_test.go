@@ -53,6 +53,13 @@ func readAt(b []byte, offset int64, val interface{}) (int, error) {
 	return n, nil
 }
 
+func abs(i int) int {
+	if i < 0 {
+		return -i
+	}
+	return i
+}
+
 func size(val interface{}) int64 {
 	return int64(len(fmt.Sprintln(val)))
 }

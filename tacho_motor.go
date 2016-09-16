@@ -126,7 +126,7 @@ func (m *TachoMotor) SetDutyCycleSetpoint(sp int) *TachoMotor {
 	if m.err != nil {
 		return m
 	}
-	if sp < -100 || sp > 100 {
+	if sp < -100 || 100 < sp {
 		m.err = fmt.Errorf("ev3dev: invalid duty cycle setpoint: %d (valid -100 - 100)", sp)
 		return m
 	}
@@ -386,6 +386,10 @@ func (m *TachoMotor) TimeSetpoint() (time.Duration, error) {
 // SetTimeSetpoint sets the time setpoint value for the TachoMotor.
 func (m *TachoMotor) SetTimeSetpoint(sp time.Duration) *TachoMotor {
 	if m.err != nil {
+		return m
+	}
+	if sp < 0 {
+		m.err = fmt.Errorf("ev3dev: invalid time setpoint: %v (must be positive)", sp)
 		return m
 	}
 	m.err = setAttributeOf(m, timeSetpoint, fmt.Sprint(int(sp/time.Millisecond)))
