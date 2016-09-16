@@ -208,14 +208,75 @@ type StaterDevice interface {
 	State() (MotorState, error)
 }
 
+// TODO(kortschak) Remove this when pre-poll kernels are not supported.
+func init() {
+	b, err := ioutil.ReadFile("/proc/version")
+	if err != nil {
+		return
+	}
+	pollIsSupported = kernelSatisfies(minKernelVersion, string(chomp(b)))
+}
+
+var (
+	minKernelVersion = [4]int{4, 4, 19, 15}
+	pollIsSupported  bool
+)
+
+func kernelSatisfies(min [4]int, kernel string) bool {
+	const prefix = "Linux version "
+	if !strings.HasPrefix(kernel, prefix) {
+		return false
+	}
+	kernel = kernel[len(prefix):]
+	version := strings.SplitN(kernel, " ", 2)[0]
+	if !strings.Contains(version, "ev3dev") {
+		return false
+	}
+
+	// TODO(kortschak) Remove this when poll support PR is merged in ev3dev.
+	if !strings.Contains(version, "kortschak") {
+		return false
+	}
+
+	parts := strings.FieldsFunc(version, func(r rune) bool { return r == '.' || r == '-' })
+	if len(parts) < 3 {
+		return false
+	}
+
+	const (
+		major = iota
+		minor
+		patch
+		revision
+	)
+	var semver [4]int
+	for i, p := range parts[:len(semver)] {
+		var err error
+		semver[i], err = strconv.Atoi(p)
+		if err != nil {
+			return false
+		}
+	}
+
+	var ok bool
+	for i, v := range semver {
+		min := minKernelVersion[i]
+		if v != min {
+			return v > min
+		}
+		ok = true
+	}
+	return ok
+}
+
 // Wait blocks until the wanted motor state under the motor state mask is
 // reached, or the timeout is reached.
 // The last unmasked motor state is returned unless the timeout was reached
 // before the motor state was read.
 // When the any parameter is false, wait will return ok as true if
-//  (stat^not) & mask == want
+//  (state&mask)^not == want|not
 // and when any is true wait return false if
-//  (stat^not) & mask != 0.
+//  (state&mask)^not != 0.
 // Otherwise ok will return false indicating that the returned state did
 // not match the request.
 func Wait(d StaterDevice, mask, want, not MotorState, any bool, timeout time.Duration) (stat MotorState, ok bool, err error) {
@@ -226,33 +287,55 @@ func Wait(d StaterDevice, mask, want, not MotorState, any bool, timeout time.Dur
 	}
 	defer f.Close()
 
-	// If any state in the mask is wanted, we just
-	// need to check that (stat^not)&mask is not zero.
-	if any {
-		want = 0
+	// See if we can exit early.
+	stat, err = d.State()
+	if err != nil {
+		return stat, false, err
+	}
+	if stateIsOK(stat, mask, want, not, any) {
+		return stat, true, nil
+	}
+
+	// The sysfs_notify hooks in the motor drivers
+	// do not monitor stalled or overloaded states,
+	// so if the user wants to wait on these, we
+	// cannot use poll.
+	var canPoll bool
+	if pollIsSupported {
+		noPollMask := mask & (Stalled | Overloaded)
+		if !any {
+			noPollMask &= want | not
+		}
+		canPoll = noPollMask == 0
+	}
+	var fds []unix.PollFd
+	if canPoll {
+		fds = []unix.PollFd{{Fd: int32(f.Fd()), Events: unix.POLLIN}}
+
+		// Read a single byte to mark f as unchanged.
+		f.ReadAt([]byte{0}, 0)
 	}
 
 	end := time.Now().Add(timeout)
 	for timeout < 0 || time.Since(end) < 0 {
-		fds := []unix.PollFd{{Fd: int32(f.Fd()), Events: unix.POLLIN}}
-		_timeout := timeout
-		if timeout >= 0 {
-			if remain := end.Sub(time.Now()); remain < timeout {
-				_timeout = remain
+		if canPoll {
+			_timeout := timeout
+			if timeout >= 0 {
+				if remain := end.Sub(time.Now()); remain < timeout {
+					_timeout = remain
+				}
 			}
-		}
-		n, err := unix.Poll(fds, int(_timeout/time.Millisecond))
-		if n == 0 {
-			return 0, false, err
+			n, err := unix.Poll(fds, int(_timeout/time.Millisecond))
+			if n == 0 {
+				return 0, false, err
+			}
 		}
 
 		stat, err = d.State()
 		if err != nil {
 			return stat, false, err
 		}
-
-		// Check that we have the wanted state.
-		if ((stat^not)&mask == want) != any {
+		if stateIsOK(stat, mask, want, not, any) {
 			return stat, true, nil
 		}
 
@@ -264,6 +347,13 @@ func Wait(d StaterDevice, mask, want, not MotorState, any bool, timeout time.Dur
 	}
 
 	return stat, false, nil
+}
+
+func stateIsOK(stat, mask, want, not MotorState, any bool) bool {
+	if any {
+		return (stat&mask)^not != 0
+	}
+	return (stat&mask)^not == want|not
 }
 
 // DriverMismatch errors are returned when a device is found that
