@@ -115,7 +115,7 @@ func ConnectedTo(p *LegoPort) (string, error) {
 	if p.id < 0 {
 		return "", fmt.Errorf("ev3dev: invalid lego port number: %d", p.id)
 	}
-	f, err := os.Open(fmt.Sprintf(LegoPortPath+"/%s", p))
+	f, err := os.Open(filepath.Join(p.Path(), p.String()))
 	if err != nil {
 		return "", err
 	}
