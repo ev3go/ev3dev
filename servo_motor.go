@@ -105,56 +105,56 @@ func (m *ServoMotor) Command(comm string) *ServoMotor {
 }
 
 // MaxPulseSetpoint returns the current max pulse setpoint value for the ServoMotor.
-func (m *ServoMotor) MaxPulseSetpoint() (int, error) {
-	return intFrom(attributeOf(m, maxPulseSetpoint))
+func (m *ServoMotor) MaxPulseSetpoint() (time.Duration, error) {
+	return durationFrom(attributeOf(m, maxPulseSetpoint))
 }
 
 // SetMaxPulseSetpoint sets the max pulse setpoint value for the ServoMotor
-func (m *ServoMotor) SetMaxPulseSetpoint(sp int) *ServoMotor {
+func (m *ServoMotor) SetMaxPulseSetpoint(sp time.Duration) *ServoMotor {
 	if m.err != nil {
 		return m
 	}
-	if sp < 2300 || sp > 2700 {
-		m.err = fmt.Errorf("ev3dev: invalid max pulse setpoint: %d (valid 2300-1700)", sp)
+	if sp < 2300*time.Millisecond || 2700*time.Millisecond < sp {
+		m.err = fmt.Errorf("ev3dev: invalid max pulse setpoint: %d (valid 2300ms-1700ms)", sp)
 		return m
 	}
-	m.err = setAttributeOf(m, maxPulseSetpoint, string(sp))
+	m.err = setAttributeOf(m, maxPulseSetpoint, fmt.Sprint(int(sp/time.Millisecond)))
 	return m
 }
 
 // MidPulseSetpoint returns the current mid pulse setpoint value for the ServoMotor.
-func (m *ServoMotor) MidPulseSetpoint() (int, error) {
-	return intFrom(attributeOf(m, midPulseSetpoint))
+func (m *ServoMotor) MidPulseSetpoint() (time.Duration, error) {
+	return durationFrom(attributeOf(m, midPulseSetpoint))
 }
 
 // SetMidPulseSetpoint sets the mid pulse setpoint value for the ServoMotor
-func (m *ServoMotor) SetMidPulseSetpoint(sp int) *ServoMotor {
+func (m *ServoMotor) SetMidPulseSetpoint(sp time.Duration) *ServoMotor {
 	if m.err != nil {
 		return m
 	}
-	if sp < 1300 || sp > 1700 {
-		m.err = fmt.Errorf("ev3dev: invalid mid pulse setpoint: %d (valid 1300-1700)", sp)
+	if sp < 1300*time.Millisecond || 1700*time.Millisecond < sp {
+		m.err = fmt.Errorf("ev3dev: invalid mid pulse setpoint: %d (valid 1300ms-1700ms)", sp)
 		return m
 	}
-	m.err = setAttributeOf(m, midPulseSetpoint, string(sp))
+	m.err = setAttributeOf(m, midPulseSetpoint, fmt.Sprint(int(sp/time.Millisecond)))
 	return m
 }
 
 // MinPulseSetpoint returns the current min pulse setpoint value for the ServoMotor.
-func (m *ServoMotor) MinPulseSetpoint() (int, error) {
-	return intFrom(attributeOf(m, minPulseSetpoint))
+func (m *ServoMotor) MinPulseSetpoint() (time.Duration, error) {
+	return durationFrom(attributeOf(m, minPulseSetpoint))
 }
 
 // SetMinPulseSetpoint sets the min pulse setpoint value for the ServoMotor
-func (m *ServoMotor) SetMinPulseSetpoint(sp int) *ServoMotor {
+func (m *ServoMotor) SetMinPulseSetpoint(sp time.Duration) *ServoMotor {
 	if m.err != nil {
 		return m
 	}
-	if sp < 300 || sp > 700 {
-		m.err = fmt.Errorf("ev3dev: invalid min pulse setpoint: %d (valid 300 - 700)", sp)
+	if sp < 300*time.Millisecond || 700*time.Millisecond < sp {
+		m.err = fmt.Errorf("ev3dev: invalid min pulse setpoint: %d (valid 300ms-700ms)", sp)
 		return m
 	}
-	m.err = setAttributeOf(m, minPulseSetpoint, string(sp))
+	m.err = setAttributeOf(m, minPulseSetpoint, fmt.Sprint(int(sp/time.Millisecond)))
 	return m
 }
 
@@ -188,8 +188,8 @@ func (m *ServoMotor) SetPositionSetpoint(sp int) *ServoMotor {
 	if m.err != nil {
 		return m
 	}
-	if sp != int(int32(sp)) {
-		m.err = fmt.Errorf("ev3dev: invalid position: %d (valid in int32)", sp)
+	if sp < -100 || 100 < sp {
+		m.err = fmt.Errorf("ev3dev: invalid position: %d (valid in -100 - 100)", sp)
 		return m
 	}
 	m.err = setAttributeOf(m, positionSetpoint, fmt.Sprint(sp))
