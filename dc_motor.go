@@ -121,7 +121,7 @@ func (m *DCMotor) SetDutyCycleSetpoint(sp int) *DCMotor {
 	if m.err != nil {
 		return m
 	}
-	if sp < -100 || sp > 100 {
+	if sp < -100 || 100 < sp {
 		m.err = fmt.Errorf("ev3dev: invalid duty cycle setpoint: %d (valid -100 - 100)", sp)
 		return m
 	}
@@ -158,8 +158,8 @@ func (m *DCMotor) SetRampUpSetpoint(sp time.Duration) *DCMotor {
 	if m.err != nil {
 		return m
 	}
-	if sp < 0 || sp > 10000 {
-		m.err = fmt.Errorf("ev3dev: invalid ramp up setpoint: %v (must be positive)", sp)
+	if sp < 0 || 10*time.Second < sp {
+		m.err = fmt.Errorf("ev3dev: invalid ramp up setpoint: %v (must be within 0-10s)", sp)
 		return m
 	}
 	m.err = setAttributeOf(m, rampUpSetpoint, fmt.Sprint(int(sp/time.Millisecond)))
@@ -176,8 +176,8 @@ func (m *DCMotor) SetRampDownSetpoint(sp time.Duration) *DCMotor {
 	if m.err != nil {
 		return m
 	}
-	if sp < 0 || sp > 10000 {
-		m.err = fmt.Errorf("ev3dev: invalid ramp down setpoint: %v (must be positive)", sp)
+	if sp < 0 || 10*time.Second < sp {
+		m.err = fmt.Errorf("ev3dev: invalid ramp down setpoint: %v (must be within 0-10s)", sp)
 		return m
 	}
 	m.err = setAttributeOf(m, rampDownSetpoint, fmt.Sprint(int(sp/time.Millisecond)))
@@ -252,6 +252,10 @@ func (m *DCMotor) TimeSetpoint() (time.Duration, error) {
 // SetTimeSetpoint sets the time setpoint value for the DCMotor.
 func (m *DCMotor) SetTimeSetpoint(sp time.Duration) *DCMotor {
 	if m.err != nil {
+		return m
+	}
+	if sp < 0 {
+		m.err = fmt.Errorf("ev3dev: invalid time setpoint: %v (must be positive)", sp)
 		return m
 	}
 	m.err = setAttributeOf(m, timeSetpoint, fmt.Sprint(int(sp/time.Millisecond)))
