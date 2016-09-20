@@ -22,7 +22,9 @@ package ev3dev
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"math"
 	"os"
@@ -273,13 +275,30 @@ func kernelSatisfies(min [4]int, kernel string) bool {
 // reached, or the timeout is reached.
 // The last unmasked motor state is returned unless the timeout was reached
 // before the motor state was read.
-// When the any parameter is false, wait will return ok as true if
+// When the any parameter is false, Wait will return ok as true if
 //  (state&mask)^not == want|not
-// and when any is true wait return false if
+// and when any is true Wait return false if
 //  (state&mask)^not != 0.
 // Otherwise ok will return false indicating that the returned state did
 // not match the request.
+// Wait will not set the error state of the StaterDevice, but will clear and
+// return it if it is not nil.
 func Wait(d StaterDevice, mask, want, not MotorState, any bool, timeout time.Duration) (stat MotorState, ok bool, err error) {
+	// We use a direct implementation of the State method here
+	// to ensure we are polling on the same file as we are reading
+	// from. Also, since we are potentially probing the state
+	// repeatedly, we save file opens.
+	//
+	// This also allows us to test the code, which would not
+	// otherwise be possible since sysiphus cannot do POLLPRI
+	// polling, due to limitations in FUSE.
+
+	// Check if we can proceed.
+	err = d.Err()
+	if err != nil {
+		return 0, false, err
+	}
+
 	path := filepath.Join(d.Path(), d.String(), state)
 	f, err := os.Open(path)
 	if err != nil {
@@ -288,7 +307,7 @@ func Wait(d StaterDevice, mask, want, not MotorState, any bool, timeout time.Dur
 	defer f.Close()
 
 	// See if we can exit early.
-	stat, err = d.State()
+	stat, err = motorState(f)
 	if err != nil {
 		return stat, false, err
 	}
@@ -330,8 +349,7 @@ func Wait(d StaterDevice, mask, want, not MotorState, any bool, timeout time.Dur
 				return 0, false, err
 			}
 		}
-
-		stat, err = d.State()
+		stat, err = motorState(f)
 		if err != nil {
 			return stat, false, err
 		}
@@ -347,6 +365,21 @@ func Wait(d StaterDevice, mask, want, not MotorState, any bool, timeout time.Dur
 	}
 
 	return stat, false, nil
+}
+
+func motorState(f *os.File) (MotorState, error) {
+	var b [4096]byte
+	n, err := f.ReadAt(b[:], 0)
+	if n == len(b) && err == nil {
+		// This is more strict that justified by the
+		// io.ReaderAt docs, but we prefer failure
+		// and a short buffer is extremely unlikely.
+		return 0, errors.New("ev3dev: buffer full")
+	}
+	if err == io.EOF {
+		err = nil
+	}
+	return stateFrom(string(chomp(b[:n])), "", err)
 }
 
 func stateIsOK(stat, mask, want, not MotorState, any bool) bool {
@@ -606,6 +639,24 @@ func stringSliceFrom(data, _ string, err error) ([]string, error) {
 		return nil, err
 	}
 	return strings.Split(data, " "), nil
+}
+
+func stateFrom(data, _ string, err error) (MotorState, error) {
+	if err != nil {
+		return 0, err
+	}
+	if data == "" {
+		return 0, nil
+	}
+	var stat MotorState
+	for _, s := range strings.Split(data, " ") {
+		bit, ok := motorStateTable[s]
+		if !ok {
+			return 0, fmt.Errorf("ev3dev: unrecognized motor state value: %s in [%s]", s, data)
+		}
+		stat |= bit
+	}
+	return stat, nil
 }
 
 func ueventFrom(data, attr string, err error) (map[string]string, error) {
