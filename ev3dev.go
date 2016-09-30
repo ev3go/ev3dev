@@ -312,7 +312,7 @@ func Wait(d StaterDevice, mask, want, not MotorState, any bool, timeout time.Dur
 	defer f.Close()
 
 	// See if we can exit early.
-	stat, err = motorState(f)
+	stat, err = motorState(d, f)
 	if err != nil {
 		return stat, false, err
 	}
@@ -354,7 +354,7 @@ func Wait(d StaterDevice, mask, want, not MotorState, any bool, timeout time.Dur
 				return 0, false, err
 			}
 		}
-		stat, err = motorState(f)
+		stat, err = motorState(d, f)
 		if err != nil {
 			return stat, false, err
 		}
@@ -372,7 +372,7 @@ func Wait(d StaterDevice, mask, want, not MotorState, any bool, timeout time.Dur
 	return stat, false, nil
 }
 
-func motorState(f *os.File) (MotorState, error) {
+func motorState(d Device, f *os.File) (MotorState, error) {
 	var b [4096]byte
 	n, err := f.ReadAt(b[:], 0)
 	if n == len(b) && err == nil {
@@ -384,7 +384,7 @@ func motorState(f *os.File) (MotorState, error) {
 	if err == io.EOF {
 		err = nil
 	}
-	return stateFrom(string(chomp(b[:n])), "", err)
+	return stateFrom(d, string(chomp(b[:n])), "", err)
 }
 
 func stateIsOK(stat, mask, want, not MotorState, any bool) bool {
@@ -605,17 +605,17 @@ func (d byID) Len() int           { return len(d) }
 func (d byID) Less(i, j int) bool { return d[i].id < d[j].id }
 func (d byID) Swap(i, j int)      { d[i], d[j] = d[j], d[i] }
 
-func attributeOf(d Device, attr string) (data string, _attr string, err error) {
+func attributeOf(d Device, attr string) (dev Device, data string, _attr string, err error) {
 	err = d.Err()
 	if err != nil {
-		return "", "", err
+		return d, "", "", err
 	}
 	path := filepath.Join(d.Path(), d.String(), attr)
 	b, err := ioutil.ReadFile(path)
 	if err != nil {
-		return "", "", fmt.Errorf("ev3dev: failed to read attribute %s: %v", path, err)
+		return d, "", "", newAttrOpError(d, attr, string(b), "read", err)
 	}
-	return string(chomp(b)), attr, nil
+	return d, string(chomp(b)), attr, nil
 }
 
 func chomp(b []byte) []byte {
@@ -625,44 +625,44 @@ func chomp(b []byte) []byte {
 	return b
 }
 
-func intFrom(data, attr string, err error) (int, error) {
+func intFrom(d Device, data, attr string, err error) (int, error) {
 	if err != nil {
 		return -1, err
 	}
 	i, err := strconv.Atoi(data)
 	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to parse %s: %v", attr, err)
+		return -1, newParseError(d, attr, err)
 	}
 	return i, nil
 }
 
-func float64From(data, attr string, err error) (float64, error) {
+func float64From(d Device, data, attr string, err error) (float64, error) {
 	if err != nil {
 		return math.NaN(), err
 	}
 	f, err := strconv.ParseFloat(data, 64)
 	if err != nil {
-		return math.NaN(), fmt.Errorf("ev3dev: failed to parse %s: %v", attr, err)
+		return math.NaN(), newParseError(d, attr, err)
 	}
 	return f, nil
 }
 
-func durationFrom(data, attr string, err error) (time.Duration, error) {
+func durationFrom(dev Device, data, attr string, err error) (time.Duration, error) {
 	if err != nil {
 		return -1, err
 	}
 	d, err := strconv.Atoi(data)
 	if err != nil {
-		return -1, fmt.Errorf("ev3dev: failed to parse %s: %v", attr, err)
+		return -1, newParseError(dev, attr, err)
 	}
 	return time.Duration(d) * time.Millisecond, nil
 }
 
-func stringFrom(data, _ string, err error) (string, error) {
+func stringFrom(_ Device, data, _ string, err error) (string, error) {
 	return data, err
 }
 
-func stringSliceFrom(data, _ string, err error) ([]string, error) {
+func stringSliceFrom(_ Device, data, _ string, err error) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
@@ -672,7 +672,7 @@ func stringSliceFrom(data, _ string, err error) ([]string, error) {
 	return strings.Split(data, " "), nil
 }
 
-func stateFrom(data, _ string, err error) (MotorState, error) {
+func stateFrom(d Device, data, _ string, err error) (MotorState, error) {
 	if err != nil {
 		return 0, err
 	}
@@ -683,14 +683,14 @@ func stateFrom(data, _ string, err error) (MotorState, error) {
 	for _, s := range strings.Split(data, " ") {
 		bit, ok := motorStateTable[s]
 		if !ok {
-			return 0, fmt.Errorf("ev3dev: unrecognized motor state value: %s in [%s]", s, data)
+			return 0, newInvalidValueError(d, state, "unrecognized motor state", s, motorStates)
 		}
 		stat |= bit
 	}
 	return stat, nil
 }
 
-func ueventFrom(data, attr string, err error) (map[string]string, error) {
+func ueventFrom(d Device, data, attr string, err error) (map[string]string, error) {
 	if err != nil {
 		return nil, err
 	}
@@ -701,7 +701,7 @@ func ueventFrom(data, attr string, err error) (map[string]string, error) {
 	for _, l := range strings.Split(data, "\n") {
 		parts := strings.Split(l, "=")
 		if len(parts) != 2 {
-			return nil, fmt.Errorf("ev3dev: failed to parse %s: unexpected line %q", attr, l)
+			return nil, newParseError(d, attr, syntaxError(l))
 		}
 		uevent[parts[0]] = parts[1]
 	}
@@ -712,7 +712,7 @@ func setAttributeOf(d Device, attr, data string) error {
 	path := filepath.Join(d.Path(), d.String(), attr)
 	err := ioutil.WriteFile(path, []byte(data), 0)
 	if err != nil {
-		return fmt.Errorf("ev3dev: failed to set attribute %s: %v", path, err)
+		return newAttrOpError(d, attr, data, "set", err)
 	}
 	return nil
 }

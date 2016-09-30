@@ -11,6 +11,13 @@ func init() {
 	Prefix = prefix
 }
 
+type mockDevice struct{}
+
+func (d mockDevice) Path() string   { return "path" }
+func (d mockDevice) Type() string   { return "mock" }
+func (d mockDevice) Err() error     { return nil }
+func (d mockDevice) String() string { return "mock" }
+
 const (
 	AddressName                   = address
 	BinDataName                   = binData

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"math"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 )
@@ -20,7 +21,7 @@ var intFromTest = []struct {
 	wantInt int
 	wantErr error
 }{
-	{data: "", attr: "empty", err: nil, wantInt: -1, wantErr: errors.New(`ev3dev: failed to parse empty: strconv.ParseInt: parsing "": invalid syntax`)},
+	{data: "", attr: "empty", err: nil, wantInt: -1, wantErr: errors.New(`ev3dev: failed to parse mock empty attribute path/mock/empty: strconv.ParseInt: parsing "": invalid syntax at ev3dev_conv_test.go:`)},
 	{data: "1", attr: "one", err: nil, wantInt: 1, wantErr: nil},
 	{data: "0", attr: "zero", err: nil, wantInt: 0, wantErr: nil},
 	{data: "-1", attr: "minus_one", err: nil, wantInt: -1, wantErr: nil},
@@ -29,10 +30,10 @@ var intFromTest = []struct {
 
 func TestIntFrom(t *testing.T) {
 	for _, test := range intFromTest {
-		gotInt, gotErr := intFrom(test.data, test.attr, test.err)
+		gotInt, gotErr := intFrom(mockDevice{}, test.data, test.attr, test.err)
 
-		if fmt.Sprint(gotErr) != fmt.Sprint(test.wantErr) {
-			t.Errorf("unexpected error: got:%v want:%v", gotErr, test.wantErr)
+		if !strings.HasPrefix(fmt.Sprint(gotErr), fmt.Sprint(test.wantErr)) {
+			t.Errorf("unexpected error:\ngot:\n\t%v\nwant prefix:\n\t%v", gotErr, test.wantErr)
 		}
 		if gotInt != test.wantInt {
 			t.Errorf("unexpected integer result: got:%d want:%d", gotInt, test.wantInt)
@@ -51,7 +52,7 @@ var float64FromTest = []struct {
 	wantFloat64 float64
 	wantErr     error
 }{
-	{data: "", attr: "empty", err: nil, wantFloat64: math.NaN(), wantErr: errors.New(`ev3dev: failed to parse empty: strconv.ParseFloat: parsing "": invalid syntax`)},
+	{data: "", attr: "empty", err: nil, wantFloat64: math.NaN(), wantErr: errors.New(`ev3dev: failed to parse mock empty attribute path/mock/empty: strconv.ParseFloat: parsing "": invalid syntax at ev3dev_conv_test.go:`)},
 	{data: "1", attr: "one", err: nil, wantFloat64: 1, wantErr: nil},
 	{data: "0", attr: "zero", err: nil, wantFloat64: 0, wantErr: nil},
 	{data: "-1", attr: "minus_one", err: nil, wantFloat64: -1, wantErr: nil},
@@ -60,10 +61,10 @@ var float64FromTest = []struct {
 
 func TestFloat64From(t *testing.T) {
 	for _, test := range float64FromTest {
-		gotFloat64, gotErr := float64From(test.data, test.attr, test.err)
+		gotFloat64, gotErr := float64From(mockDevice{}, test.data, test.attr, test.err)
 
-		if fmt.Sprint(gotErr) != fmt.Sprint(test.wantErr) {
-			t.Errorf("unexpected error: got:%v want:%v", gotErr, test.wantErr)
+		if !strings.HasPrefix(fmt.Sprint(gotErr), fmt.Sprint(test.wantErr)) {
+			t.Errorf("unexpected error:\ngot:\n\t%v\nwant prefix:\n\t%v", gotErr, test.wantErr)
 		}
 		if !isSame(gotFloat64, test.wantFloat64) {
 			t.Errorf("unexpected float64 result: got:%f want:%f", gotFloat64, test.wantFloat64)
@@ -78,7 +79,7 @@ var durationFromTest = []struct {
 	wantDuration time.Duration
 	wantErr      error
 }{
-	{data: "", attr: "empty", err: nil, wantDuration: -1, wantErr: errors.New(`ev3dev: failed to parse empty: strconv.ParseInt: parsing "": invalid syntax`)},
+	{data: "", attr: "empty", err: nil, wantDuration: -1, wantErr: errors.New(`ev3dev: failed to parse mock empty attribute path/mock/empty: strconv.ParseInt: parsing "": invalid syntax at ev3dev_conv_test.go:`)},
 	{data: "1", attr: "one", err: nil, wantDuration: 1 * time.Millisecond, wantErr: nil},
 	{data: "0", attr: "zero", err: nil, wantDuration: 0, wantErr: nil},
 	{data: "-1", attr: "minus_one", err: nil, wantDuration: -1 * time.Millisecond, wantErr: nil},
@@ -87,10 +88,10 @@ var durationFromTest = []struct {
 
 func TestDurationFrom(t *testing.T) {
 	for _, test := range durationFromTest {
-		gotDuration, gotErr := durationFrom(test.data, test.attr, test.err)
+		gotDuration, gotErr := durationFrom(mockDevice{}, test.data, test.attr, test.err)
 
-		if fmt.Sprint(gotErr) != fmt.Sprint(test.wantErr) {
-			t.Errorf("unexpected error: got:%v want:%v", gotErr, test.wantErr)
+		if !strings.HasPrefix(fmt.Sprint(gotErr), fmt.Sprint(test.wantErr)) {
+			t.Errorf("unexpected error:\ngot:\n\t%v\nwant prefix:\n\t%v", gotErr, test.wantErr)
 		}
 		if gotDuration != test.wantDuration {
 			t.Errorf("unexpected duration result: got:%v want:%v", gotDuration, test.wantDuration)
@@ -114,10 +115,10 @@ var stringSliceFromTest = []struct {
 
 func TestStringSliceFrom(t *testing.T) {
 	for _, test := range stringSliceFromTest {
-		gotStrings, gotErr := stringSliceFrom(test.data, test.attr, test.err)
+		gotStrings, gotErr := stringSliceFrom(mockDevice{}, test.data, test.attr, test.err)
 
 		if fmt.Sprint(gotErr) != fmt.Sprint(test.wantErr) {
-			t.Errorf("unexpected error: got:%v want:%v", gotErr, test.wantErr)
+			t.Errorf("unexpected error:\ngot:\n\t%v\nwant prefix:\n\t%v", gotErr, test.wantErr)
 		}
 		if !reflect.DeepEqual(gotStrings, test.wantStrings) {
 			t.Errorf("unexpected strings result: got:%v want:%v", gotStrings, test.wantStrings)
@@ -137,16 +138,16 @@ var ueventFromTest = []struct {
 	{data: "", attr: "empty", err: nil, wantUevents: nil, wantErr: nil},
 	{data: "one=1", attr: "one", err: nil, wantUevents: ue{"one": "1"}, wantErr: nil},
 	{data: "zero=0\none=1", attr: "two", err: nil, wantUevents: ue{"zero": "0", "one": "1"}, wantErr: nil},
-	{data: "0", attr: "zero", err: nil, wantUevents: nil, wantErr: errors.New(`ev3dev: failed to parse zero: unexpected line "0"`)},
+	{data: "0", attr: "zero", err: nil, wantUevents: nil, wantErr: errors.New(`ev3dev: failed to parse mock zero attribute path/mock/zero: unexpected line: "0" at ev3dev_conv_test.go:`)},
 	{data: "0", attr: "prior", err: errors.New("prior error"), wantUevents: nil, wantErr: errors.New("prior error")},
 }
 
 func TestUeventFrom(t *testing.T) {
 	for _, test := range ueventFromTest {
-		gotUevents, gotErr := ueventFrom(test.data, test.attr, test.err)
+		gotUevents, gotErr := ueventFrom(mockDevice{}, test.data, test.attr, test.err)
 
-		if fmt.Sprint(gotErr) != fmt.Sprint(test.wantErr) {
-			t.Errorf("unexpected error: got:%v want:%v", gotErr, test.wantErr)
+		if !strings.HasPrefix(fmt.Sprint(gotErr), fmt.Sprint(test.wantErr)) {
+			t.Errorf("unexpected error:\ngot:\n\t%v\nwant prefix:\n\t%v", gotErr, test.wantErr)
 		}
 		if !reflect.DeepEqual(gotUevents, test.wantUevents) {
 			t.Errorf("unexpected uevent result: got:%v want:%v", gotUevents, test.wantUevents)

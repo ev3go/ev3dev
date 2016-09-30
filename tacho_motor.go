@@ -6,6 +6,7 @@ package ev3dev
 
 import (
 	"fmt"
+	"math"
 	"path/filepath"
 	"time"
 )
@@ -98,7 +99,7 @@ func (m *TachoMotor) Command(comm string) *TachoMotor {
 		}
 	}
 	if !ok {
-		m.err = fmt.Errorf("ev3dev: command %q not available for %s (available:%q)", comm, m, avail)
+		m.err = newInvalidValueError(m, command, "", comm, avail)
 		return m
 	}
 	m.err = setAttributeOf(m, command, comm)
@@ -127,7 +128,7 @@ func (m *TachoMotor) SetDutyCycleSetpoint(sp int) *TachoMotor {
 		return m
 	}
 	if sp < -100 || 100 < sp {
-		m.err = fmt.Errorf("ev3dev: invalid duty cycle setpoint: %d (valid -100 - 100)", sp)
+		m.err = newValueOutOfRangeError(m, dutyCycleSetpoint, sp, -100, 100)
 		return m
 	}
 	m.err = setAttributeOf(m, dutyCycleSetpoint, fmt.Sprint(sp))
@@ -146,7 +147,7 @@ func (m *TachoMotor) SetPolarity(p Polarity) *TachoMotor {
 		return m
 	}
 	if p != Normal && p != Inversed {
-		m.err = fmt.Errorf("ev3dev: invalid polarity: %q (valid \"normal\" or \"inversed\")", p)
+		m.err = newInvalidValueError(m, polarity, "", string(p), []string{string(Normal), string(Inversed)})
 		return m
 	}
 	m.err = setAttributeOf(m, polarity, string(p))
@@ -164,7 +165,7 @@ func (m *TachoMotor) SetPosition(pos int) *TachoMotor {
 		return m
 	}
 	if pos != int(int32(pos)) {
-		m.err = fmt.Errorf("ev3dev: invalid position: %d (valid in int32)", pos)
+		m.err = newValueOutOfRangeError(m, position, pos, math.MinInt32, math.MaxInt32)
 		return m
 	}
 	m.err = setAttributeOf(m, position, fmt.Sprint(pos))
@@ -229,7 +230,7 @@ func (m *TachoMotor) SetPositionSetpoint(sp int) *TachoMotor {
 		return m
 	}
 	if sp != int(int32(sp)) {
-		m.err = fmt.Errorf("ev3dev: invalid position setpoint: %d (valid in int32)", sp)
+		m.err = newValueOutOfRangeError(m, positionSetpoint, sp, math.MinInt32, math.MaxInt32)
 		return m
 	}
 	m.err = setAttributeOf(m, positionSetpoint, fmt.Sprint(sp))
@@ -266,7 +267,7 @@ func (m *TachoMotor) SetRampUpSetpoint(sp time.Duration) *TachoMotor {
 		return m
 	}
 	if sp < 0 {
-		m.err = fmt.Errorf("ev3dev: invalid ramp up setpoint: %v (must be positive)", sp)
+		m.err = newNegativeDurationError(m, rampUpSetpoint, sp)
 		return m
 	}
 	m.err = setAttributeOf(m, rampUpSetpoint, fmt.Sprint(int(sp/time.Millisecond)))
@@ -284,7 +285,7 @@ func (m *TachoMotor) SetRampDownSetpoint(sp time.Duration) *TachoMotor {
 		return m
 	}
 	if sp < 0 {
-		m.err = fmt.Errorf("ev3dev: invalid ramp down setpoint: %v (must be positive)", sp)
+		m.err = newNegativeDurationError(m, rampDownSetpoint, sp)
 		return m
 	}
 	m.err = setAttributeOf(m, rampDownSetpoint, fmt.Sprint(int(sp/time.Millisecond)))
@@ -366,7 +367,7 @@ func (m *TachoMotor) SetStopAction(action string) *TachoMotor {
 		}
 	}
 	if !ok {
-		m.err = fmt.Errorf("ev3dev: stop action %q not available for %s (available:%q)", action, m, avail)
+		m.err = newInvalidValueError(m, stopAction, "", action, avail)
 		return m
 	}
 	m.err = setAttributeOf(m, stopAction, action)
@@ -389,7 +390,7 @@ func (m *TachoMotor) SetTimeSetpoint(sp time.Duration) *TachoMotor {
 		return m
 	}
 	if sp < 0 {
-		m.err = fmt.Errorf("ev3dev: invalid time setpoint: %v (must be positive)", sp)
+		m.err = newNegativeDurationError(m, timeSetpoint, sp)
 		return m
 	}
 	m.err = setAttributeOf(m, timeSetpoint, fmt.Sprint(int(sp/time.Millisecond)))

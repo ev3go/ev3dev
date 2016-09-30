@@ -97,7 +97,7 @@ func (m *ServoMotor) Command(comm string) *ServoMotor {
 		}
 	}
 	if !ok {
-		m.err = fmt.Errorf("ev3dev: command %q not available for %s (available:%q)", comm, m, avail)
+		m.err = newInvalidValueError(m, command, "", comm, avail)
 		return m
 	}
 	m.err = setAttributeOf(m, command, comm)
@@ -115,7 +115,7 @@ func (m *ServoMotor) SetMaxPulseSetpoint(sp time.Duration) *ServoMotor {
 		return m
 	}
 	if sp < 2300*time.Millisecond || 2700*time.Millisecond < sp {
-		m.err = fmt.Errorf("ev3dev: invalid max pulse setpoint: %d (valid 2300ms-1700ms)", sp)
+		m.err = newDurationOutOfRangeError(m, maxPulseSetpoint, sp, 2300*time.Millisecond, 2700*time.Millisecond)
 		return m
 	}
 	m.err = setAttributeOf(m, maxPulseSetpoint, fmt.Sprint(int(sp/time.Millisecond)))
@@ -133,7 +133,7 @@ func (m *ServoMotor) SetMidPulseSetpoint(sp time.Duration) *ServoMotor {
 		return m
 	}
 	if sp < 1300*time.Millisecond || 1700*time.Millisecond < sp {
-		m.err = fmt.Errorf("ev3dev: invalid mid pulse setpoint: %d (valid 1300ms-1700ms)", sp)
+		m.err = newDurationOutOfRangeError(m, midPulseSetpoint, sp, 1300*time.Millisecond, 1700*time.Millisecond)
 		return m
 	}
 	m.err = setAttributeOf(m, midPulseSetpoint, fmt.Sprint(int(sp/time.Millisecond)))
@@ -151,7 +151,7 @@ func (m *ServoMotor) SetMinPulseSetpoint(sp time.Duration) *ServoMotor {
 		return m
 	}
 	if sp < 300*time.Millisecond || 700*time.Millisecond < sp {
-		m.err = fmt.Errorf("ev3dev: invalid min pulse setpoint: %d (valid 300ms-700ms)", sp)
+		m.err = newDurationOutOfRangeError(m, minPulseSetpoint, sp, 300*time.Millisecond, 700*time.Millisecond)
 		return m
 	}
 	m.err = setAttributeOf(m, minPulseSetpoint, fmt.Sprint(int(sp/time.Millisecond)))
@@ -170,7 +170,7 @@ func (m *ServoMotor) SetPolarity(p Polarity) *ServoMotor {
 		return m
 	}
 	if p != Normal && p != Inversed {
-		m.err = fmt.Errorf("ev3dev: invalid polarity: %q (valid \"normal\" or \"inversed\")", p)
+		m.err = newInvalidValueError(m, polarity, "", string(p), []string{string(Normal), string(Inversed)})
 		return m
 	}
 	m.err = setAttributeOf(m, polarity, string(p))
@@ -189,7 +189,7 @@ func (m *ServoMotor) SetPositionSetpoint(sp int) *ServoMotor {
 		return m
 	}
 	if sp < -100 || 100 < sp {
-		m.err = fmt.Errorf("ev3dev: invalid position: %d (valid in -100 - 100)", sp)
+		m.err = newValueOutOfRangeError(m, positionSetpoint, sp, -100, 100)
 		return m
 	}
 	m.err = setAttributeOf(m, positionSetpoint, fmt.Sprint(sp))
@@ -207,7 +207,7 @@ func (m *ServoMotor) SetRateSetpoint(sp time.Duration) *ServoMotor {
 		return m
 	}
 	if sp < 0 {
-		m.err = fmt.Errorf("ev3dev: invalid ramp up setpoint: %v (must be positive)", sp)
+		m.err = newNegativeDurationError(m, rateSetpoint, sp)
 		return m
 	}
 	m.err = setAttributeOf(m, rateSetpoint, fmt.Sprint(int(sp/time.Millisecond)))
