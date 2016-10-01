@@ -7,7 +7,6 @@ package ev3dev
 import (
 	"fmt"
 	"path/filepath"
-	"strings"
 	"time"
 )
 
@@ -189,22 +188,7 @@ func (m *DCMotor) State() (MotorState, error) {
 	if m.err != nil {
 		return 0, m.Err()
 	}
-	data, _, err := attributeOf(m, state)
-	if err != nil {
-		return 0, err
-	}
-	if data == "" {
-		return 0, nil
-	}
-	var stat MotorState
-	for _, s := range strings.Split(data, " ") {
-		bit, ok := motorStateTable[s]
-		if !ok {
-			return 0, fmt.Errorf("ev3dev: unrecognized motor state value: %s in [%s]", s, data)
-		}
-		stat |= bit
-	}
-	return stat, nil
+	return stateFrom(attributeOf(m, state))
 }
 
 // StopAction returns the stop action used when a stop command is issued
