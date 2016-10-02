@@ -126,6 +126,37 @@ func TestStringSliceFrom(t *testing.T) {
 	}
 }
 
+var stateFromTest = []struct {
+	data      string
+	attr      string
+	err       error
+	wantState MotorState
+	wantErr   error
+}{
+	{data: "", attr: "empty", err: nil, wantState: 0, wantErr: nil},
+	{data: running, attr: running, err: nil, wantState: Running, wantErr: nil},
+	{data: ramping, attr: ramping, err: nil, wantState: Ramping, wantErr: nil},
+	{data: holding, attr: holding, err: nil, wantState: Holding, wantErr: nil},
+	{data: overloaded, attr: overloaded, err: nil, wantState: Overloaded, wantErr: nil},
+	{data: stalled, attr: stalled, err: nil, wantState: Stalled, wantErr: nil},
+	{data: running + " " + stalled, attr: running + " " + stalled, err: nil, wantState: Running | Stalled, wantErr: nil},
+	{data: "invalid", attr: "invalid", err: nil, wantState: 0, wantErr: errors.New(`ev3dev: unrecognized motor state for mock state: "invalid" (valid:["running" "ramping" "holding" "overloaded" "stalled"]) at ev3dev.go:`)},
+	{data: "0", attr: "prior", err: errors.New("prior error"), wantState: 0, wantErr: errors.New("prior error")},
+}
+
+func TestStateFrom(t *testing.T) {
+	for _, test := range stateFromTest {
+		gotState, gotErr := stateFrom(mockDevice{}, test.data, test.attr, test.err)
+
+		if !strings.HasPrefix(fmt.Sprint(gotErr), fmt.Sprint(test.wantErr)) {
+			t.Errorf("unexpected error:\ngot:\n\t%v\nwant prefix:\n\t%v", gotErr, test.wantErr)
+		}
+		if gotState != test.wantState {
+			t.Errorf("unexpected state result: got:%v want:%v", gotState, test.wantState)
+		}
+	}
+}
+
 type ue map[string]string
 
 var ueventFromTest = []struct {
