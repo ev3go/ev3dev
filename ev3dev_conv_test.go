@@ -140,7 +140,7 @@ var stateFromTest = []struct {
 	{data: overloaded, attr: overloaded, err: nil, wantState: Overloaded, wantErr: nil},
 	{data: stalled, attr: stalled, err: nil, wantState: Stalled, wantErr: nil},
 	{data: running + " " + stalled, attr: running + " " + stalled, err: nil, wantState: Running | Stalled, wantErr: nil},
-	{data: "invalid", attr: "invalid", err: nil, wantState: 0, wantErr: errors.New(`ev3dev: unrecognized motor state for mock state: "invalid" (valid:["running" "ramping" "holding" "overloaded" "stalled"]) at ev3dev.go:`)},
+	{data: "invalid", attr: "invalid", err: nil, wantState: 0, wantErr: errors.New(`ev3dev: unrecognized motor state for mock state: "invalid" (valid:["holding" "overloaded" "ramping" "running" "stalled"]) at ev3dev.go:`)},
 	{data: "0", attr: "prior", err: errors.New("prior error"), wantState: 0, wantErr: errors.New("prior error")},
 }
 

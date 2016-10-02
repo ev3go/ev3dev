@@ -182,6 +182,15 @@ var motorStateTable = map[string]MotorState{
 	stalled:    Stalled,
 }
 
+func keys(states map[string]MotorState) []string {
+	l := make([]string, 0, len(states))
+	for k := range states {
+		l = append(l, k)
+	}
+	sort.Strings(l)
+	return l
+}
+
 var motorStates = []string{
 	running,
 	ramping,
@@ -683,7 +692,7 @@ func stateFrom(d Device, data, _ string, err error) (MotorState, error) {
 	for _, s := range strings.Split(data, " ") {
 		bit, ok := motorStateTable[s]
 		if !ok {
-			return 0, newInvalidValueError(d, state, "unrecognized motor state", s, motorStates)
+			return 0, newInvalidValueError(d, state, "unrecognized motor state", s, keys(motorStateTable))
 		}
 		stat |= bit
 	}
