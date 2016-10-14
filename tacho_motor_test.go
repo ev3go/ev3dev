@@ -746,7 +746,7 @@ func tachomotorsysfs(m ...tachoMotorConn) *sisyphus.FileSystem {
 }
 
 func TestTachoMotor(t *testing.T) {
-	const driver = "lego-ev3-gyro"
+	const driver = "lego-ev3-l-motor"
 	conn := []tachoMotorConn{
 		{
 			id: 5,
@@ -773,7 +773,7 @@ func TestTachoMotor(t *testing.T) {
 
 				uevent: map[string]string{
 					"LEGO_ADDRESS":     "outA",
-					"LEGO_DRIVER_NAME": "lego-ev3-l-motor",
+					"LEGO_DRIVER_NAME": driver,
 				},
 
 				t: t,

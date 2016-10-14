@@ -447,7 +447,7 @@ func TestSensor(t *testing.T) {
 
 				uevent: map[string]string{
 					"LEGO_ADDRESS":     "in2",
-					"LEGO_DRIVER_NAME": "lego-ev3-gyro",
+					"LEGO_DRIVER_NAME": driver,
 				},
 
 				t: t,

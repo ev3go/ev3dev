@@ -193,7 +193,7 @@ func legoportsysfs(p ...legoPortConn) *sisyphus.FileSystem {
 }
 
 func TestLegoPort(t *testing.T) {
-	const driver = "lego-ev3-gyro"
+	const driver = "legoev3-input-port"
 	conn := []legoPortConn{
 		{
 			id: 5,
@@ -206,7 +206,7 @@ func TestLegoPort(t *testing.T) {
 
 				uevent: map[string]string{
 					"DEVTYPE":          "legoev3-input-port",
-					"LEGO_DRIVER_NAME": "legoev3-input-port",
+					"LEGO_DRIVER_NAME": driver,
 					"LEGO_ADDRESS":     "in1",
 				},
 

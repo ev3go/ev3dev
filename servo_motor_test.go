@@ -390,7 +390,7 @@ func servomotorsysfs(m ...servoMotorConn) *sisyphus.FileSystem {
 }
 
 func TestServoMotor(t *testing.T) {
-	const driver = "lego-ev3-gyro"
+	const driver = "lego-nxt-motor"
 	conn := []servoMotorConn{
 		{
 			id: 5,
@@ -400,7 +400,7 @@ func TestServoMotor(t *testing.T) {
 
 				uevent: map[string]string{
 					"LEGO_ADDRESS":     "outD",
-					"LEGO_DRIVER_NAME": "lego-nxt-motor",
+					"LEGO_DRIVER_NAME": driver,
 				},
 
 				t: t,

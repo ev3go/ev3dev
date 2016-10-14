@@ -746,7 +746,7 @@ func linearactuatorsysfs(m ...linearActuatorConn) *sisyphus.FileSystem {
 }
 
 func TestLinearActuator(t *testing.T) {
-	const driver = "lego-ev3-gyro"
+	const driver = "lact-l12-ev3-100"
 	conn := []linearActuatorConn{
 		{
 			id: 5,
@@ -773,7 +773,7 @@ func TestLinearActuator(t *testing.T) {
 
 				uevent: map[string]string{
 					"LEGO_ADDRESS":     "outA",
-					"LEGO_DRIVER_NAME": "lact-l12-ev3-100",
+					"LEGO_DRIVER_NAME": driver,
 				},
 
 				t: t,
