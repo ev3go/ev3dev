@@ -11,6 +11,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"testing"
 	"time"
@@ -25,27 +26,85 @@ type dcMotor struct {
 	address string
 	driver  string
 
-	lastCommand string
-	commands    []string
+	// mu protects the underscore
+	// prefix attributes below.
+	mu sync.Mutex
 
-	rampUpSet   time.Duration
-	rampDownSet time.Duration
+	_lastCommand string
+	_commands    []string
 
-	timeSet time.Duration
+	_rampUpSet   time.Duration
+	_rampDownSet time.Duration
 
-	dutyCycle    int
-	dutyCycleSet int
+	_timeSet time.Duration
 
-	polarity Polarity
+	_dutyCycle    int
+	_dutyCycleSet int
 
-	state MotorState
+	_polarity Polarity
 
-	lastStopAction string
-	stopActions    []string
+	_state MotorState
 
-	uevent map[string]string
+	_lastStopAction string
+	_stopActions    []string
+
+	_uevent map[string]string
 
 	t *testing.T
+}
+
+func (m *dcMotor) commands() []string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m._commands
+}
+
+func (m *dcMotor) lastCommand() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m._lastCommand
+}
+
+func (m *dcMotor) dutyCycle() int {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m._dutyCycle
+}
+
+func (m *dcMotor) setDutyCycle(sp int) {
+	m.mu.Lock()
+	m._dutyCycle = sp
+	m.mu.Unlock()
+}
+
+func (m *dcMotor) state() MotorState {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m._state
+}
+
+func (m *dcMotor) setState(s MotorState) {
+	m.mu.Lock()
+	m._state = s
+	m.mu.Unlock()
+}
+
+func (m *dcMotor) lastStopAction() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m._lastStopAction
+}
+
+func (m *dcMotor) stopActions() []string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m._stopActions
+}
+
+func (m *dcMotor) uevent() map[string]string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m._uevent
 }
 
 // dcMotorAddress is the address attribute.
@@ -79,7 +138,7 @@ type dcMotorCommands dcMotor
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *dcMotorCommands) ReadAt(b []byte, offset int64) (int, error) {
-	if len(m.commands) == 0 {
+	if len((*dcMotor)(m).commands()) == 0 {
 		return len(b), syscall.ENOTSUP
 	}
 	return readAt(b, offset, m)
@@ -90,9 +149,12 @@ func (m *dcMotorCommands) Size() (int64, error) {
 	return size(m), nil
 }
 
+// String returns a string representation of the attribute.
 func (m *dcMotorCommands) String() string {
-	sort.Strings(m.commands)
-	return strings.Join(m.commands, " ")
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	sort.Strings(m._commands)
+	return strings.Join(m._commands, " ")
 }
 
 // dcMotorCommand is the command attribute.
@@ -103,13 +165,15 @@ func (m *dcMotorCommand) Truncate(_ int64) error { return nil }
 
 // WriteAt satisfies the io.WriterAt interface.
 func (m *dcMotorCommand) WriteAt(b []byte, off int64) (int, error) {
-	if len(m.commands) == 0 {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if len(m._commands) == 0 {
 		return len(b), syscall.ENOTSUP
 	}
 	command := string(chomp(b))
-	for _, c := range m.commands {
+	for _, c := range m._commands {
 		if command == c {
-			m.lastCommand = command
+			m._lastCommand = command
 			return len(b), nil
 		}
 	}
@@ -118,7 +182,14 @@ func (m *dcMotorCommand) WriteAt(b []byte, off int64) (int, error) {
 
 // Size returns the length of the backing data and a nil error.
 func (m *dcMotorCommand) Size() (int64, error) {
-	return size(m.lastCommand), nil
+	return size(m), nil
+}
+
+// String returns a string representation of the attribute.
+func (m *dcMotorCommand) String() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m._lastCommand
 }
 
 // dcMotorStopActions is the stop_actions attribute.
@@ -126,7 +197,7 @@ type dcMotorStopActions dcMotor
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *dcMotorStopActions) ReadAt(b []byte, offset int64) (int, error) {
-	if len(m.stopActions) == 0 {
+	if len((*dcMotor)(m).stopActions()) == 0 {
 		return len(b), syscall.ENOTSUP
 	}
 	return readAt(b, offset, m)
@@ -137,9 +208,12 @@ func (m *dcMotorStopActions) Size() (int64, error) {
 	return size(m), nil
 }
 
+// String returns a string representation of the attribute.
 func (m *dcMotorStopActions) String() string {
-	sort.Strings(m.stopActions)
-	return strings.Join(m.stopActions, " ")
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	sort.Strings(m._stopActions)
+	return strings.Join(m._stopActions, " ")
 }
 
 // dcMotorDutyCycle is the duty_cycle attribute.
@@ -147,12 +221,19 @@ type dcMotorDutyCycle dcMotor
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *dcMotorDutyCycle) ReadAt(b []byte, offset int64) (int, error) {
-	return readAt(b, offset, m.dutyCycle)
+	return readAt(b, offset, m)
 }
 
 // Size returns the length of the backing data and a nil error.
 func (m *dcMotorDutyCycle) Size() (int64, error) {
-	return size(m.dutyCycle), nil
+	return size(m), nil
+}
+
+// String returns a string representation of the attribute.
+func (m *dcMotorDutyCycle) String() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return fmt.Sprint(m._dutyCycle)
 }
 
 // dcMotorDutyCycleSet is the duty_cycle_sp attribute.
@@ -160,7 +241,7 @@ type dcMotorDutyCycleSet dcMotor
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *dcMotorDutyCycleSet) ReadAt(b []byte, offset int64) (int, error) {
-	return readAt(b, offset, m.dutyCycleSet)
+	return readAt(b, offset, m)
 }
 
 // Truncate is a no-op.
@@ -168,18 +249,27 @@ func (m *dcMotorDutyCycleSet) Truncate(_ int64) error { return nil }
 
 // WriteAt satisfies the io.WriterAt interface.
 func (m *dcMotorDutyCycleSet) WriteAt(b []byte, off int64) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	i, err := strconv.Atoi(string(chomp(b)))
 	if err != nil {
 		m.t.Errorf("unexpected error: %v", err)
 		return len(b), syscall.EINVAL
 	}
-	m.dutyCycleSet = i
+	m._dutyCycleSet = i
 	return len(b), nil
 }
 
 // Size returns the length of the backing data and a nil error.
 func (m *dcMotorDutyCycleSet) Size() (int64, error) {
-	return size(m.dutyCycleSet), nil
+	return size(m), nil
+}
+
+// String returns a string representation of the attribute.
+func (m *dcMotorDutyCycleSet) String() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return fmt.Sprint(m._dutyCycleSet)
 }
 
 // dcMotorPolarity is the polarity attribute.
@@ -187,7 +277,7 @@ type dcMotorPolarity dcMotor
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *dcMotorPolarity) ReadAt(b []byte, offset int64) (int, error) {
-	return readAt(b, offset, m.polarity)
+	return readAt(b, offset, m)
 }
 
 // Truncate is a no-op.
@@ -195,10 +285,12 @@ func (m *dcMotorPolarity) Truncate(_ int64) error { return nil }
 
 // WriteAt satisfies the io.WriterAt interface.
 func (m *dcMotorPolarity) WriteAt(b []byte, off int64) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	p := Polarity(b)
 	switch p {
 	case "normal", "inversed":
-		m.polarity = p
+		m._polarity = p
 	default:
 		m.t.Errorf("unexpected error: %q", b)
 		return len(b), syscall.EINVAL
@@ -208,7 +300,14 @@ func (m *dcMotorPolarity) WriteAt(b []byte, off int64) (int, error) {
 
 // Size returns the length of the backing data and a nil error.
 func (m *dcMotorPolarity) Size() (int64, error) {
-	return size(m.polarity), nil
+	return size(m), nil
+}
+
+// String returns a string representation of the attribute.
+func (m *dcMotorPolarity) String() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return string(m._polarity)
 }
 
 // dcMotorRampUpSet is the ramp_up_sp attribute.
@@ -224,6 +323,8 @@ func (m *dcMotorRampUpSet) Truncate(_ int64) error { return nil }
 
 // WriteAt satisfies the io.WriterAt interface.
 func (m *dcMotorRampUpSet) WriteAt(b []byte, off int64) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	i, err := strconv.Atoi(string(chomp(b)))
 	if i < 0 {
 		err = errors.New("ev3dev: negative duration")
@@ -235,7 +336,7 @@ func (m *dcMotorRampUpSet) WriteAt(b []byte, off int64) (int, error) {
 		m.t.Errorf("unexpected error: %v", err)
 		return len(b), syscall.EINVAL
 	}
-	m.rampUpSet = time.Duration(i) * time.Millisecond
+	m._rampUpSet = time.Duration(i) * time.Millisecond
 	return len(b), nil
 }
 
@@ -244,8 +345,11 @@ func (m *dcMotorRampUpSet) Size() (int64, error) {
 	return size(m), nil
 }
 
+// String returns a string representation of the attribute.
 func (m *dcMotorRampUpSet) String() string {
-	return fmt.Sprint(int(m.rampUpSet / time.Millisecond))
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return fmt.Sprint(int(m._rampUpSet / time.Millisecond))
 }
 
 // dcMotorRampDownSet is the ramp_down_sp attribute.
@@ -261,6 +365,8 @@ func (m *dcMotorRampDownSet) Truncate(_ int64) error { return nil }
 
 // WriteAt satisfies the io.WriterAt interface.
 func (m *dcMotorRampDownSet) WriteAt(b []byte, off int64) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	i, err := strconv.Atoi(string(chomp(b)))
 	if i < 0 {
 		err = errors.New("ev3dev: negative duration")
@@ -272,7 +378,7 @@ func (m *dcMotorRampDownSet) WriteAt(b []byte, off int64) (int, error) {
 		m.t.Errorf("unexpected error: %v", err)
 		return len(b), syscall.EINVAL
 	}
-	m.rampDownSet = time.Duration(i) * time.Millisecond
+	m._rampDownSet = time.Duration(i) * time.Millisecond
 	return len(b), nil
 }
 
@@ -281,8 +387,11 @@ func (m *dcMotorRampDownSet) Size() (int64, error) {
 	return size(m), nil
 }
 
+// String returns a string representation of the attribute.
 func (m *dcMotorRampDownSet) String() string {
-	return fmt.Sprint(int(m.rampDownSet / time.Millisecond))
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return fmt.Sprint(int(m._rampDownSet / time.Millisecond))
 }
 
 // dcMotorState is the state attribute.
@@ -298,8 +407,11 @@ func (m *dcMotorState) Size() (int64, error) {
 	return size(m), nil
 }
 
+// String returns a string representation of the attribute.
 func (m *dcMotorState) String() string {
-	s := strings.Replace(m.state.String(), "|", " ", -1)
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	s := strings.Replace(m._state.String(), "|", " ", -1)
 	if s == MotorState(0).String() {
 		return ""
 	}
@@ -311,10 +423,10 @@ type dcMotorStopAction dcMotor
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *dcMotorStopAction) ReadAt(b []byte, offset int64) (int, error) {
-	if len(m.stopActions) == 0 {
+	if len((*dcMotor)(m).stopActions()) == 0 {
 		return len(b), syscall.ENOTSUP
 	}
-	return readAt(b, offset, m.lastStopAction)
+	return readAt(b, offset, m)
 }
 
 // Truncate is a no-op.
@@ -322,13 +434,15 @@ func (m *dcMotorStopAction) Truncate(_ int64) error { return nil }
 
 // WriteAt satisfies the io.WriterAt interface.
 func (m *dcMotorStopAction) WriteAt(b []byte, off int64) (int, error) {
-	if len(m.stopActions) == 0 {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if len(m._stopActions) == 0 {
 		return len(b), syscall.ENOTSUP
 	}
 	stopAction := string(chomp(b))
-	for _, c := range m.stopActions {
+	for _, c := range m._stopActions {
 		if stopAction == c {
-			m.lastStopAction = stopAction
+			m._lastStopAction = stopAction
 			return len(b), nil
 		}
 	}
@@ -337,7 +451,14 @@ func (m *dcMotorStopAction) WriteAt(b []byte, off int64) (int, error) {
 
 // Size returns the length of the backing data and a nil error.
 func (m *dcMotorStopAction) Size() (int64, error) {
-	return size(m.lastStopAction), nil
+	return size(m), nil
+}
+
+// String returns a string representation of the attribute.
+func (m *dcMotorStopAction) String() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m._lastStopAction
 }
 
 // dcMotorTimeSet is the time_sp attribute.
@@ -353,6 +474,8 @@ func (m *dcMotorTimeSet) Truncate(_ int64) error { return nil }
 
 // WriteAt satisfies the io.WriterAt interface.
 func (m *dcMotorTimeSet) WriteAt(b []byte, off int64) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	i, err := strconv.Atoi(string(chomp(b)))
 	if i < 0 {
 		err = errors.New("ev3dev: negative duration")
@@ -361,7 +484,7 @@ func (m *dcMotorTimeSet) WriteAt(b []byte, off int64) (int, error) {
 		m.t.Errorf("unexpected error: %v", err)
 		return len(b), syscall.EINVAL
 	}
-	m.timeSet = time.Duration(i) * time.Millisecond
+	m._timeSet = time.Duration(i) * time.Millisecond
 	return len(b), nil
 }
 
@@ -370,8 +493,11 @@ func (m *dcMotorTimeSet) Size() (int64, error) {
 	return size(m), nil
 }
 
+// String returns a string representation of the attribute.
 func (m *dcMotorTimeSet) String() string {
-	return fmt.Sprint(int(m.timeSet / time.Millisecond))
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return fmt.Sprint(int(m._timeSet / time.Millisecond))
 }
 
 // dcMotorUevent is the uevent attribute.
@@ -387,9 +513,12 @@ func (m *dcMotorUevent) Size() (int64, error) {
 	return size(m), nil
 }
 
+// String returns a string representation of the attribute.
 func (m *dcMotorUevent) String() string {
-	e := make([]string, 0, len(m.uevent))
-	for k, v := range m.uevent {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	e := make([]string, 0, len(m._uevent))
+	for k, v := range m._uevent {
 		e = append(e, fmt.Sprintf("%s=%s", k, v))
 	}
 	sort.Strings(e)
@@ -445,20 +574,20 @@ func TestDCMotor(t *testing.T) {
 				address: "outC",
 				driver:  driver,
 
-				commands: []string{
+				_commands: []string{
 					"run-forever",
 					"run-timed",
 					"run-direct",
 					"stop",
 				},
 
-				lastStopAction: "coast",
-				stopActions: []string{
+				_lastStopAction: "coast",
+				_stopActions: []string{
 					"coast",
 					"brake",
 				},
 
-				uevent: map[string]string{
+				_uevent: map[string]string{
 					"LEGO_ADDRESS":     "outC",
 					"LEGO_DRIVER_NAME": driver,
 				},
@@ -603,7 +732,8 @@ func TestDCMotor(t *testing.T) {
 				t.Fatalf("unexpected error: %v", err)
 			}
 			commands, err := m.Commands()
-			if len(c.dcMotor.commands) == 0 {
+			want := c.dcMotor.commands()
+			if len(want) == 0 {
 				if err == nil {
 					t.Error("expected error getting commands from non-commandable dcMotor")
 				}
@@ -612,8 +742,8 @@ func TestDCMotor(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error getting commands: %v", err)
 			}
-			if !reflect.DeepEqual(commands, c.dcMotor.commands) {
-				t.Errorf("unexpected commands value: got:%q want:%q", commands, c.dcMotor.commands)
+			if !reflect.DeepEqual(commands, want) {
+				t.Errorf("unexpected commands value: got:%q want:%q", commands, want)
 			}
 			for _, command := range commands {
 				err := m.Command(command).Err()
@@ -621,7 +751,7 @@ func TestDCMotor(t *testing.T) {
 					t.Errorf("unexpected error for command %q: %v", command, err)
 				}
 
-				got := c.dcMotor.lastCommand
+				got := c.dcMotor.lastCommand()
 				want := command
 				if got != want {
 					t.Errorf("unexpected command value: got:%q want:%q", got, want)
@@ -633,7 +763,7 @@ func TestDCMotor(t *testing.T) {
 					t.Errorf("expected error for command %q", command)
 				}
 
-				got := c.dcMotor.lastCommand
+				got := c.dcMotor.lastCommand()
 				dontwant := command
 				if got == dontwant {
 					t.Errorf("unexpected invalid command value: got:%q don't want:%q", got, dontwant)
@@ -648,12 +778,13 @@ func TestDCMotor(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			for _, c.dcMotor.dutyCycle = range []int{0, 64, 128, 192, 255} {
+			for _, sp := range []int{0, 64, 128, 192, 255} {
+				c.dcMotor.setDutyCycle(sp)
 				got, err := m.DutyCycle()
 				if err != nil {
 					t.Errorf("unexpected error: %v", err)
 				}
-				want := c.dcMotor.dutyCycle
+				want := c.dcMotor.dutyCycle()
 				if got != want {
 					t.Errorf("unexpected duty cycle value: got:%d want:%d", got, want)
 				}
@@ -796,7 +927,7 @@ func TestDCMotor(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			for _, c.dcMotor.state = range []MotorState{
+			for _, s := range []MotorState{
 				0,
 				Running,
 				Running | Ramping,
@@ -805,11 +936,12 @@ func TestDCMotor(t *testing.T) {
 				Running | Stalled | Overloaded,
 				Holding,
 			} {
+				c.dcMotor.setState(s)
 				got, err := m.State()
 				if err != nil {
 					t.Errorf("unexpected error: %v", err)
 				}
-				want := c.dcMotor.state
+				want := c.dcMotor.state()
 				if got != want {
 					t.Errorf("unexpected state value: got:%v want:%v", got, want)
 				}
@@ -824,7 +956,7 @@ func TestDCMotor(t *testing.T) {
 				t.Fatalf("unexpected error: %v", err)
 			}
 			stopActions, err := m.StopActions()
-			if len(c.dcMotor.stopActions) == 0 {
+			if len(c.dcMotor.stopActions()) == 0 {
 				if err == nil {
 					t.Error("expected error getting stop actions from non-stop action dcMotor")
 				}
@@ -833,8 +965,9 @@ func TestDCMotor(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error getting stop actions: %v", err)
 			}
-			if !reflect.DeepEqual(stopActions, c.dcMotor.stopActions) {
-				t.Errorf("unexpected stop actions value: got:%q want:%q", stopActions, c.dcMotor.stopActions)
+			want := c.dcMotor.stopActions()
+			if !reflect.DeepEqual(stopActions, want) {
+				t.Errorf("unexpected stop actions value: got:%q want:%q", stopActions, want)
 			}
 			for _, stopAction := range stopActions {
 				err := m.SetStopAction(stopAction).Err()
@@ -842,7 +975,7 @@ func TestDCMotor(t *testing.T) {
 					t.Errorf("unexpected error for set stop action %q: %v", stopAction, err)
 				}
 
-				got := c.dcMotor.lastStopAction
+				got := c.dcMotor.lastStopAction()
 				want := stopAction
 				if got != want {
 					t.Errorf("unexpected stop action value: got:%q want:%q", got, want)
@@ -862,7 +995,7 @@ func TestDCMotor(t *testing.T) {
 					t.Errorf("expected error for set stop action %q", stopAction)
 				}
 
-				got := c.dcMotor.lastStopAction
+				got := c.dcMotor.lastStopAction()
 				dontwant := stopAction
 				if got == dontwant {
 					t.Errorf("unexpected invalid stop action value: got:%q don't want:%q", got, dontwant)
@@ -911,7 +1044,7 @@ func TestDCMotor(t *testing.T) {
 			if err != nil {
 				t.Errorf("unexpected error getting uevent: %v", err)
 			}
-			want := c.dcMotor.uevent
+			want := c.dcMotor.uevent()
 			if !reflect.DeepEqual(got, want) {
 				t.Errorf("unexpected uevent value: got:%v want:%v", got, want)
 			}

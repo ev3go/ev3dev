@@ -14,6 +14,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"testing"
 	"time"
@@ -28,26 +29,90 @@ type sensor struct {
 	address string
 	driver  string
 
-	lastCommand string
-	commands    []string
+	// mu protects the underscore
+	// prefix attributes below.
+	mu sync.Mutex
 
-	direct []byte
+	_lastCommand string
+	_commands    []string
 
-	mode     string
-	modes    []string
-	units    map[string]string
-	decimals map[string]int
+	_direct []byte
 
-	binData       []byte
-	binDataFormat string
+	_mode     string
+	_modes    []string
+	_units    map[string]string
+	_decimals map[string]int
 
-	values []string
+	_binData       []byte
+	_binDataFormat string
 
-	pollRate int
+	_values []string
 
-	uevent map[string]string
+	_pollRate int
+
+	_uevent map[string]string
 
 	t *testing.T
+}
+
+func (s *sensor) commands() []string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s._commands
+}
+
+func (s *sensor) lastCommand() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s._lastCommand
+}
+
+func (s *sensor) direct() []byte {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s._direct
+}
+
+func (s *sensor) modes() []string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s._modes
+}
+
+func (s *sensor) units() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s._units[s._mode]
+}
+
+func (s *sensor) decimals() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s._decimals[s._mode]
+}
+
+func (s *sensor) binData() []byte {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s._binData
+}
+
+func (s *sensor) binDataFormat() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s._binDataFormat
+}
+
+func (s *sensor) values() []string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s._values
+}
+
+func (s *sensor) uevent() map[string]string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s._uevent
 }
 
 // sensorAddress is the address attribute.
@@ -81,7 +146,7 @@ type sensorCommands sensor
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (s *sensorCommands) ReadAt(b []byte, offset int64) (int, error) {
-	if len(s.commands) == 0 {
+	if len(s._commands) == 0 {
 		return len(b), syscall.ENOTSUP
 	}
 	return readAt(b, offset, s)
@@ -92,9 +157,12 @@ func (s *sensorCommands) Size() (int64, error) {
 	return size(s), nil
 }
 
+// String returns a string representation of the attribute.
 func (s *sensorCommands) String() string {
-	sort.Strings(s.commands)
-	return strings.Join(s.commands, " ")
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	sort.Strings(s._commands)
+	return strings.Join(s._commands, " ")
 }
 
 // sensorCommand is the command attribute.
@@ -105,13 +173,15 @@ func (s *sensorCommand) Truncate(_ int64) error { return nil }
 
 // WriteAt satisfies the io.WriterAt interface.
 func (s *sensorCommand) WriteAt(b []byte, off int64) (int, error) {
-	if len(s.commands) == 0 {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if len(s._commands) == 0 {
 		return len(b), syscall.ENOTSUP
 	}
 	command := string(chomp(b))
-	for _, c := range s.commands {
+	for _, c := range s._commands {
 		if command == c {
-			s.lastCommand = command
+			s._lastCommand = command
 			return len(b), nil
 		}
 	}
@@ -120,7 +190,7 @@ func (s *sensorCommand) WriteAt(b []byte, off int64) (int, error) {
 
 // Size returns the length of the backing data and a nil error.
 func (s *sensorCommand) Size() (int64, error) {
-	return size(s.lastCommand), nil
+	return size(s._lastCommand), nil
 }
 
 // sensorModes is the modes attribute.
@@ -136,9 +206,12 @@ func (s *sensorModes) Size() (int64, error) {
 	return size(s), nil
 }
 
+// String returns a string representation of the attribute.
 func (s *sensorModes) String() string {
-	sort.Strings(s.modes)
-	return strings.Join(s.modes, " ")
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	sort.Strings(s._modes)
+	return strings.Join(s._modes, " ")
 }
 
 // sensorMode is the mode attribute.
@@ -146,7 +219,7 @@ type sensorMode sensor
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (s *sensorMode) ReadAt(b []byte, offset int64) (int, error) {
-	return readAt(b, offset, s.mode)
+	return readAt(b, offset, s)
 }
 
 // Truncate is a no-op.
@@ -154,10 +227,12 @@ func (s *sensorMode) Truncate(_ int64) error { return nil }
 
 // WriteAt satisfies the io.WriterAt interface.
 func (s *sensorMode) WriteAt(b []byte, off int64) (int, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	mode := string(chomp(b))
-	for _, c := range s.modes {
+	for _, c := range s._modes {
 		if mode == c {
-			s.mode = mode
+			s._mode = mode
 			return len(b), nil
 		}
 	}
@@ -166,7 +241,14 @@ func (s *sensorMode) WriteAt(b []byte, off int64) (int, error) {
 
 // Size returns the length of the backing data and a nil error.
 func (s *sensorMode) Size() (int64, error) {
-	return size(s.mode), nil
+	return size(s), nil
+}
+
+// String returns a string representation of the attribute.
+func (s *sensorMode) String() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s._mode
 }
 
 // sensorBinDataFormat is the bin_data_format attribute.
@@ -174,12 +256,19 @@ type sensorBinDataFormat sensor
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (s *sensorBinDataFormat) ReadAt(b []byte, offset int64) (int, error) {
-	return readAt(b, offset, s.binDataFormat)
+	return readAt(b, offset, s)
 }
 
 // Size returns the length of the backing data and a nil error.
 func (s *sensorBinDataFormat) Size() (int64, error) {
-	return size(s.binDataFormat), nil
+	return size(s), nil
+}
+
+// String returns a string representation of the attribute.
+func (s *sensorBinDataFormat) String() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s._binDataFormat
 }
 
 // sensorBinData is the bin_datas attribute.
@@ -190,10 +279,11 @@ func (s *sensorBinData) ReadAt(b []byte, offset int64) (int, error) {
 	if len(b) == 0 {
 		return 0, nil
 	}
-	if offset >= int64(len(s.binData)) {
+	d := s.String()
+	if offset >= int64(len(d)) {
 		return 0, io.EOF
 	}
-	n := copy(b, s.binData[offset:])
+	n := copy(b, d[offset:])
 	if n <= len(b) {
 		return n, io.EOF
 	}
@@ -202,7 +292,14 @@ func (s *sensorBinData) ReadAt(b []byte, offset int64) (int, error) {
 
 // Size returns the length of the backing data and a nil error.
 func (s *sensorBinData) Size() (int64, error) {
-	return int64(len(s.binData)), nil
+	return size(s), nil
+}
+
+// String returns a string representation of the attribute.
+func (s *sensorBinData) String() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return string(s._binData)
 }
 
 // sensorDirect is the direct attribute.
@@ -213,10 +310,11 @@ func (s *sensorDirect) ReadAt(b []byte, offset int64) (int, error) {
 	if len(b) == 0 {
 		return 0, nil
 	}
-	if offset >= int64(len(s.direct)) {
+	d := s.String()
+	if offset >= int64(len(d)) {
 		return 0, io.EOF
 	}
-	n := copy(b, s.direct[offset:])
+	n := copy(b, d[offset:])
 	if n <= len(b) {
 		return n, io.EOF
 	}
@@ -225,43 +323,63 @@ func (s *sensorDirect) ReadAt(b []byte, offset int64) (int, error) {
 
 // Truncate truncates the Bytes at n bytes from the beginning of the slice.
 func (s *sensorDirect) Truncate(n int64) error {
-	if n < 0 || n > int64(len(s.direct)) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if n < 0 || n > int64(len(s._direct)) {
 		return syscall.EINVAL
 	}
-	tail := s.direct[n:cap(s.direct)]
+	tail := s._direct[n:cap(s._direct)]
 	for i := range tail {
 		tail[i] = 0
 	}
-	s.direct = s.direct[:n]
+	s._direct = s._direct[:n]
 	return nil
 }
 
 // WriteAt satisfies the io.WriterAt interface.
 func (s *sensorDirect) WriteAt(b []byte, off int64) (int, error) {
-	if off >= int64(cap(s.direct)) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if off >= int64(cap(s._direct)) {
 		t := make([]byte, off+int64(len(b)))
-		copy(t, s.direct)
-		s.direct = t
+		copy(t, s._direct)
+		s._direct = t
 	}
-	s.direct = s.direct[:off]
-	s.direct = append(s.direct, b...)
+	s._direct = s._direct[:off]
+	s._direct = append(s._direct, b...)
 	return len(b), nil
 }
 
 // Size returns the length of the backing data and a nil error.
-func (s *sensorDirect) Size() (int64, error) { return int64(len(s.direct)), nil }
+func (s *sensorDirect) Size() (int64, error) {
+	return size(s), nil
+}
+
+// String returns a string representation of the attribute.
+func (s *sensorDirect) String() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return string(s._direct)
+}
 
 // sensorUnits is the units attribute.
 type sensorUnits sensor
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (s *sensorUnits) ReadAt(b []byte, offset int64) (int, error) {
-	return readAt(b, offset, s.units[s.mode])
+	return readAt(b, offset, s)
 }
 
 // Size returns the length of the backing data and a nil error.
 func (s *sensorUnits) Size() (int64, error) {
-	return size(s.units[s.mode]), nil
+	return size(s), nil
+}
+
+// String returns a string representation of the attribute.
+func (s *sensorUnits) String() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s._units[s._mode]
 }
 
 // sensorPollRate is the poll_rate attribute.
@@ -269,7 +387,7 @@ type sensorPollRate sensor
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (s *sensorPollRate) ReadAt(b []byte, offset int64) (int, error) {
-	return readAt(b, offset, s.pollRate)
+	return readAt(b, offset, s)
 }
 
 // Truncate is a no-op.
@@ -277,18 +395,27 @@ func (s *sensorPollRate) Truncate(_ int64) error { return nil }
 
 // WriteAt satisfies the io.WriterAt interface.
 func (s *sensorPollRate) WriteAt(b []byte, off int64) (int, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	i, err := strconv.Atoi(string(chomp(b)))
 	if err != nil {
 		s.t.Errorf("unexpected error: %v", err)
 		return len(b), syscall.EINVAL
 	}
-	s.pollRate = i
+	s._pollRate = i
 	return len(b), nil
 }
 
 // Size returns the length of the backing data and a nil error.
 func (s *sensorPollRate) Size() (int64, error) {
-	return size(s.pollRate), nil
+	return size(s), nil
+}
+
+// String returns a string representation of the attribute.
+func (s *sensorPollRate) String() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return fmt.Sprint(s._pollRate)
 }
 
 // sensorDecimals is the decimals attribute.
@@ -296,12 +423,19 @@ type sensorDecimals sensor
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (s *sensorDecimals) ReadAt(b []byte, offset int64) (int, error) {
-	return readAt(b, offset, s.decimals[s.mode])
+	return readAt(b, offset, s)
 }
 
 // Size returns the length of the backing data and a nil error.
 func (s *sensorDecimals) Size() (int64, error) {
-	return size(s.decimals[s.mode]), nil
+	return size(s), nil
+}
+
+// String returns a string representation of the attribute.
+func (s *sensorDecimals) String() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return fmt.Sprint(s._decimals[s._mode])
 }
 
 // sensorNumValues is the num_values attribute.
@@ -309,12 +443,19 @@ type sensorNumValues sensor
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (s *sensorNumValues) ReadAt(b []byte, offset int64) (int, error) {
-	return readAt(b, offset, len(s.values))
+	return readAt(b, offset, s)
 }
 
 // Size returns the length of the backing data and a nil error.
 func (s *sensorNumValues) Size() (int64, error) {
-	return size(len(s.values)), nil
+	return size(s), nil
+}
+
+// String returns a string representation of the attribute.
+func (s *sensorNumValues) String() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return fmt.Sprint(len(s._values))
 }
 
 // sensorValue is the valueN attribute.
@@ -333,11 +474,14 @@ func (s sensorValue) Size() (int64, error) {
 	return size(s), nil
 }
 
+// String returns a string representation of the attribute.
 func (s sensorValue) String() string {
-	if len(s.values) <= s.n {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if len(s._values) <= s.n {
 		return "\n"
 	}
-	return s.values[s.n]
+	return s._values[s.n]
 }
 
 // sensorTextValues is the text_values attribute.
@@ -353,8 +497,11 @@ func (s *sensorTextValues) Size() (int64, error) {
 	return size(s), nil
 }
 
+// String returns a string representation of the attribute.
 func (s *sensorTextValues) String() string {
-	return strings.Join(s.values, " ")
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return strings.Join(s._values, " ")
 }
 
 // sensorUevent is the uevent attribute.
@@ -370,9 +517,12 @@ func (s *sensorUevent) Size() (int64, error) {
 	return size(s), nil
 }
 
+// String returns a string representation of the attribute.
 func (s *sensorUevent) String() string {
-	e := make([]string, 0, len(s.uevent))
-	for k, v := range s.uevent {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	e := make([]string, 0, len(s._uevent))
+	for k, v := range s._uevent {
 		e = append(e, fmt.Sprintf("%s=%s", k, v))
 	}
 	sort.Strings(e)
@@ -431,21 +581,21 @@ func TestSensor(t *testing.T) {
 				address: "in2",
 				driver:  driver,
 
-				modes:    []string{"GYRO-ANG", "GYRO-RATE", "GYRO-FAS", "GYRO-G&A", "GYRO-CAL"},
-				mode:     "GYRO-ANG",
-				units:    map[string]string{"GYRO-ANG": "deg", "GYRO-RATE": "d/s"},
-				decimals: map[string]int{"GYRO-ANG": 0, "GYRO-RATE": 1},
+				_modes:    []string{"GYRO-ANG", "GYRO-RATE", "GYRO-FAS", "GYRO-G&A", "GYRO-CAL"},
+				_mode:     "GYRO-ANG",
+				_units:    map[string]string{"GYRO-ANG": "deg", "GYRO-RATE": "d/s"},
+				_decimals: map[string]int{"GYRO-ANG": 0, "GYRO-RATE": 1},
 
-				commands: []string{"operate", "twirl"},
+				_commands: []string{"operate", "twirl"},
 
-				binDataFormat: "s16",
-				binData:       []byte{0x01, 0x00, 0x02, 0x00},
+				_binDataFormat: "s16",
+				_binData:       []byte{0x01, 0x00, 0x02, 0x00},
 
-				values: []string{"1", "2"},
+				_values: []string{"1", "2"},
 
-				direct: []byte("initial state"),
+				_direct: []byte("initial state"),
 
-				uevent: map[string]string{
+				_uevent: map[string]string{
 					"LEGO_ADDRESS":     "in2",
 					"LEGO_DRIVER_NAME": driver,
 				},
@@ -459,12 +609,12 @@ func TestSensor(t *testing.T) {
 				address: "in4",
 				driver:  driver,
 
-				modes: []string{"GYRO-ANG", "GYRO-RATE", "GYRO-FAS", "GYRO-G&A", "GYRO-CAL"},
-				mode:  "GYRO-ANG",
-				units: map[string]string{"GYRO-ANG": "deg", "GYRO-RATE": "d/s"},
+				_modes: []string{"GYRO-ANG", "GYRO-RATE", "GYRO-FAS", "GYRO-G&A", "GYRO-CAL"},
+				_mode:  "GYRO-ANG",
+				_units: map[string]string{"GYRO-ANG": "deg", "GYRO-RATE": "d/s"},
 
-				binDataFormat: "s16",
-				binData:       []byte{0x01, 0x00, 0x02, '\n'},
+				_binDataFormat: "s16",
+				_binData:       []byte{0x01, 0x00, 0x02, '\n'},
 
 				t: t,
 			},
@@ -599,8 +749,9 @@ func TestSensor(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error getting modes: %v", err)
 		}
-		if !reflect.DeepEqual(modes, conn[0].sensor.modes) {
-			t.Errorf("unexpected modes value: got:%q want:%q", modes, conn[0].sensor.modes)
+		want := conn[0].sensor.modes()
+		if !reflect.DeepEqual(modes, want) {
+			t.Errorf("unexpected modes value: got:%q want:%q", modes, want)
 		}
 		for _, mode := range modes {
 			err := s.SetMode(mode).Err()
@@ -641,7 +792,8 @@ func TestSensor(t *testing.T) {
 				t.Fatalf("unexpected error: %v", err)
 			}
 			commands, err := s.Commands()
-			if len(c.sensor.commands) == 0 {
+			want := c.sensor.commands()
+			if len(want) == 0 {
 				if err == nil {
 					t.Error("expected error getting commands from non-commandable sensor")
 				}
@@ -650,8 +802,8 @@ func TestSensor(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error getting commands: %v", err)
 			}
-			if !reflect.DeepEqual(commands, c.sensor.commands) {
-				t.Errorf("unexpected commands value: got:%q want:%q", commands, c.sensor.commands)
+			if !reflect.DeepEqual(commands, want) {
+				t.Errorf("unexpected commands value: got:%q want:%q", commands, want)
 			}
 			for _, command := range commands {
 				err := s.Command(command).Err()
@@ -659,7 +811,7 @@ func TestSensor(t *testing.T) {
 					t.Errorf("unexpected error for command %q: %v", command, err)
 				}
 
-				got := c.sensor.lastCommand
+				got := c.sensor.lastCommand()
 				want := command
 				if got != want {
 					t.Errorf("unexpected command value: got:%q want:%q", got, want)
@@ -671,7 +823,7 @@ func TestSensor(t *testing.T) {
 					t.Errorf("expected error for command %q", command)
 				}
 
-				got := c.sensor.lastCommand
+				got := c.sensor.lastCommand()
 				dontwant := command
 				if got == dontwant {
 					t.Errorf("unexpected invalid command value: got:%q don't want:%q", got, dontwant)
@@ -690,15 +842,17 @@ func TestSensor(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error getting bin data format: %v", err)
 			}
-			if format != c.sensor.binDataFormat {
-				t.Errorf("unexpected bin data format value: got:%q want:%q", format, c.sensor.binDataFormat)
+			wantFmt := c.sensor.binDataFormat()
+			if format != wantFmt {
+				t.Errorf("unexpected bin data format value: got:%q want:%q", format, wantFmt)
 			}
 			data, err := s.BinData()
 			if err != nil {
 				t.Fatalf("unexpected error getting bin data: %v", err)
 			}
-			if !reflect.DeepEqual(data, c.sensor.binData) {
-				t.Errorf("unexpected bin data value: got:%#x want:%#x", data, c.sensor.binData)
+			wantData := c.sensor.binData()
+			if !reflect.DeepEqual(data, wantData) {
+				t.Errorf("unexpected bin data value: got:%#x want:%#x", data, wantData)
 			}
 		}
 	})
@@ -717,8 +871,9 @@ func TestSensor(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error reading direct connection: %v", err)
 		}
-		if !reflect.DeepEqual(got, conn[0].sensor.direct) {
-			t.Errorf("unexpected direct value: got:%q want:%q", got, conn[0].sensor.direct)
+		want := conn[0].sensor.direct()
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("unexpected direct value: got:%q want:%q", got, want)
 		}
 		err = f.Truncate(0)
 		if err != nil {
@@ -792,7 +947,7 @@ func TestSensor(t *testing.T) {
 			if err != nil {
 				t.Errorf("unexpected error getting units: %v", err)
 			}
-			want := conn[0].sensor.units[mode]
+			want := conn[0].sensor.units()
 			if got != want {
 				t.Errorf("unexpected mode value: got:%q want:%q", got, want)
 			}
@@ -823,7 +978,7 @@ func TestSensor(t *testing.T) {
 			if err != nil {
 				t.Errorf("unexpected error getting decimals: %v", err)
 			}
-			want := conn[0].sensor.decimals[mode]
+			want := conn[0].sensor.decimals()
 			if got != want {
 				t.Errorf("unexpected decimals value: got:%d want:%d", got, want)
 			}
@@ -840,7 +995,7 @@ func TestSensor(t *testing.T) {
 			if err != nil {
 				t.Errorf("unexpected error getting num values: %v", err)
 			}
-			want := len(c.sensor.values)
+			want := len(c.sensor.values())
 			if got != want {
 				t.Errorf("unexpected num values: got:%d want:%d", got, want)
 			}
@@ -862,7 +1017,7 @@ func TestSensor(t *testing.T) {
 				if err != nil {
 					t.Errorf("unexpected error getting value %d: %v", i, err)
 				}
-				want := c.sensor.values[i]
+				want := c.sensor.values()[i]
 				if got != want {
 					t.Errorf("unexpected value: got:%q want:%q", got, want)
 				}
@@ -880,7 +1035,7 @@ func TestSensor(t *testing.T) {
 			if err != nil {
 				t.Errorf("unexpected error getting text values: %v", err)
 			}
-			want := c.sensor.values
+			want := c.sensor.values()
 			if !reflect.DeepEqual(got, want) {
 				t.Errorf("unexpected text values: got:%q want:%q", got, want)
 			}
@@ -897,7 +1052,7 @@ func TestSensor(t *testing.T) {
 			if err != nil {
 				t.Errorf("unexpected error getting uevent: %v", err)
 			}
-			want := c.sensor.uevent
+			want := c.sensor.uevent()
 			if !reflect.DeepEqual(got, want) {
 				t.Errorf("unexpected uevent value: got:%v want:%v", got, want)
 			}

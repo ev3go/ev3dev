@@ -11,6 +11,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"testing"
 	"time"
@@ -25,44 +26,138 @@ type linearActuator struct {
 	address string
 	driver  string
 
-	lastCommand string
-	commands    []string
+	// mu protects the underscore
+	// prefix attributes below.
+	mu sync.Mutex
 
-	countPerM int
+	_lastCommand string
+	_commands    []string
 
-	maxSpeed int
-	speed    int
-	speedSet int
+	_countPerM int
 
-	rampUpSet   time.Duration
-	rampDownSet time.Duration
+	_maxSpeed int
+	_speed    int
+	_speedSet int
 
-	timeSet time.Duration
+	_rampUpSet   time.Duration
+	_rampDownSet time.Duration
 
-	dutyCycle    int
-	dutyCycleSet int
+	_timeSet time.Duration
 
-	polarity Polarity
+	_dutyCycle    int
+	_dutyCycleSet int
 
-	position    int
-	positionSet int
+	_polarity Polarity
 
-	holdPIDkd int
-	holdPIDki int
-	holdPIDkp int
+	_position    int
+	_positionSet int
 
-	speedPIDkd int
-	speedPIDki int
-	speedPIDkp int
+	_holdPIDkd int
+	_holdPIDki int
+	_holdPIDkp int
 
-	state MotorState
+	_speedPIDkd int
+	_speedPIDki int
+	_speedPIDkp int
 
-	lastStopAction string
-	stopActions    []string
+	_state MotorState
 
-	uevent map[string]string
+	_lastStopAction string
+	_stopActions    []string
+
+	_uevent map[string]string
 
 	t *testing.T
+}
+
+func (m *linearActuator) commands() []string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m._commands
+}
+
+func (m *linearActuator) lastCommand() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m._lastCommand
+}
+
+func (m *linearActuator) countPerM() int {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m._countPerM
+}
+
+func (m *linearActuator) setCountPerM(n int) {
+	m.mu.Lock()
+	m._countPerM = n
+	m.mu.Unlock()
+}
+
+func (m *linearActuator) maxSpeed() int {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m._maxSpeed
+}
+
+func (m *linearActuator) setMaxSpeed(s int) {
+	m.mu.Lock()
+	m._maxSpeed = s
+	m.mu.Unlock()
+}
+
+func (m *linearActuator) speed() int {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m._speed
+}
+
+func (m *linearActuator) setSpeed(s int) {
+	m.mu.Lock()
+	m._speed = s
+	m.mu.Unlock()
+}
+
+func (m *linearActuator) dutyCycle() int {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m._dutyCycle
+}
+
+func (m *linearActuator) setDutyCycle(n int) {
+	m.mu.Lock()
+	m._dutyCycle = n
+	m.mu.Unlock()
+}
+
+func (m *linearActuator) state() MotorState {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m._state
+}
+
+func (m *linearActuator) setState(s MotorState) {
+	m.mu.Lock()
+	m._state = s
+	m.mu.Unlock()
+}
+
+func (m *linearActuator) lastStopAction() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m._lastStopAction
+}
+
+func (m *linearActuator) stopActions() []string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m._stopActions
+}
+
+func (m *linearActuator) uevent() map[string]string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m._uevent
 }
 
 // linearActuatorAddress is the address attribute.
@@ -96,7 +191,7 @@ type linearActuatorCommands linearActuator
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *linearActuatorCommands) ReadAt(b []byte, offset int64) (int, error) {
-	if len(m.commands) == 0 {
+	if len((*linearActuator)(m).commands()) == 0 {
 		return len(b), syscall.ENOTSUP
 	}
 	return readAt(b, offset, m)
@@ -107,9 +202,12 @@ func (m *linearActuatorCommands) Size() (int64, error) {
 	return size(m), nil
 }
 
+// String returns a string representation of the attribute.
 func (m *linearActuatorCommands) String() string {
-	sort.Strings(m.commands)
-	return strings.Join(m.commands, " ")
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	sort.Strings(m._commands)
+	return strings.Join(m._commands, " ")
 }
 
 // linearActuatorCommand is the command attribute.
@@ -120,13 +218,15 @@ func (m *linearActuatorCommand) Truncate(_ int64) error { return nil }
 
 // WriteAt satisfies the io.WriterAt interface.
 func (m *linearActuatorCommand) WriteAt(b []byte, off int64) (int, error) {
-	if len(m.commands) == 0 {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if len(m._commands) == 0 {
 		return len(b), syscall.ENOTSUP
 	}
 	command := string(chomp(b))
-	for _, c := range m.commands {
+	for _, c := range m._commands {
 		if command == c {
-			m.lastCommand = command
+			m._lastCommand = command
 			return len(b), nil
 		}
 	}
@@ -135,7 +235,14 @@ func (m *linearActuatorCommand) WriteAt(b []byte, off int64) (int, error) {
 
 // Size returns the length of the backing data and a nil error.
 func (m *linearActuatorCommand) Size() (int64, error) {
-	return size(m.lastCommand), nil
+	return size(m), nil
+}
+
+// String returns a string representation of the attribute.
+func (m *linearActuatorCommand) String() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m._lastCommand
 }
 
 // linearActuatorStopActions is the stop_actions attribute.
@@ -143,7 +250,7 @@ type linearActuatorStopActions linearActuator
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *linearActuatorStopActions) ReadAt(b []byte, offset int64) (int, error) {
-	if len(m.stopActions) == 0 {
+	if len((*linearActuator)(m).stopActions()) == 0 {
 		return len(b), syscall.ENOTSUP
 	}
 	return readAt(b, offset, m)
@@ -154,9 +261,12 @@ func (m *linearActuatorStopActions) Size() (int64, error) {
 	return size(m), nil
 }
 
+// String returns a string representation of the attribute.
 func (m *linearActuatorStopActions) String() string {
-	sort.Strings(m.stopActions)
-	return strings.Join(m.stopActions, " ")
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	sort.Strings(m._stopActions)
+	return strings.Join(m._stopActions, " ")
 }
 
 // linearActuatorCountsPerMeter is the counts_per_m attribute.
@@ -164,12 +274,19 @@ type linearActuatorCountsPerMeter linearActuator
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *linearActuatorCountsPerMeter) ReadAt(b []byte, offset int64) (int, error) {
-	return readAt(b, offset, m.countPerM)
+	return readAt(b, offset, m)
 }
 
 // Size returns the length of the backing data and a nil error.
 func (m *linearActuatorCountsPerMeter) Size() (int64, error) {
-	return size(m.countPerM), nil
+	return size(m), nil
+}
+
+// String returns a string representation of the attribute.
+func (m *linearActuatorCountsPerMeter) String() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return fmt.Sprint(m._countPerM)
 }
 
 // linearActuatorDutyCycle is the duty_cycle attribute.
@@ -177,12 +294,19 @@ type linearActuatorDutyCycle linearActuator
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *linearActuatorDutyCycle) ReadAt(b []byte, offset int64) (int, error) {
-	return readAt(b, offset, m.dutyCycle)
+	return readAt(b, offset, m)
 }
 
 // Size returns the length of the backing data and a nil error.
 func (m *linearActuatorDutyCycle) Size() (int64, error) {
-	return size(m.dutyCycle), nil
+	return size(m), nil
+}
+
+// String returns a string representation of the attribute.
+func (m *linearActuatorDutyCycle) String() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return fmt.Sprint(m._dutyCycle)
 }
 
 // linearActuatorDutyCycleSet is the duty_cycle_sp attribute.
@@ -190,7 +314,7 @@ type linearActuatorDutyCycleSet linearActuator
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *linearActuatorDutyCycleSet) ReadAt(b []byte, offset int64) (int, error) {
-	return readAt(b, offset, m.dutyCycleSet)
+	return readAt(b, offset, m)
 }
 
 // Truncate is a no-op.
@@ -198,18 +322,27 @@ func (m *linearActuatorDutyCycleSet) Truncate(_ int64) error { return nil }
 
 // WriteAt satisfies the io.WriterAt interface.
 func (m *linearActuatorDutyCycleSet) WriteAt(b []byte, off int64) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	i, err := strconv.Atoi(string(chomp(b)))
 	if err != nil {
 		m.t.Errorf("unexpected error: %v", err)
 		return len(b), syscall.EINVAL
 	}
-	m.dutyCycleSet = i
+	m._dutyCycleSet = i
 	return len(b), nil
 }
 
 // Size returns the length of the backing data and a nil error.
 func (m *linearActuatorDutyCycleSet) Size() (int64, error) {
-	return size(m.dutyCycleSet), nil
+	return size(m), nil
+}
+
+// String returns a string representation of the attribute.
+func (m *linearActuatorDutyCycleSet) String() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return fmt.Sprint(m._dutyCycleSet)
 }
 
 // linearActuatorPolarity is the polarity attribute.
@@ -217,7 +350,7 @@ type linearActuatorPolarity linearActuator
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *linearActuatorPolarity) ReadAt(b []byte, offset int64) (int, error) {
-	return readAt(b, offset, m.polarity)
+	return readAt(b, offset, m)
 }
 
 // Truncate is a no-op.
@@ -225,10 +358,12 @@ func (m *linearActuatorPolarity) Truncate(_ int64) error { return nil }
 
 // WriteAt satisfies the io.WriterAt interface.
 func (m *linearActuatorPolarity) WriteAt(b []byte, off int64) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	p := Polarity(b)
 	switch p {
 	case "normal", "inversed":
-		m.polarity = p
+		m._polarity = p
 	default:
 		m.t.Errorf("unexpected error: %q", b)
 		return len(b), syscall.EINVAL
@@ -238,7 +373,14 @@ func (m *linearActuatorPolarity) WriteAt(b []byte, off int64) (int, error) {
 
 // Size returns the length of the backing data and a nil error.
 func (m *linearActuatorPolarity) Size() (int64, error) {
-	return size(m.polarity), nil
+	return size(m), nil
+}
+
+// String returns a string representation of the attribute.
+func (m *linearActuatorPolarity) String() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return string(m._polarity)
 }
 
 // linearActuatorPosition is the position attribute.
@@ -246,7 +388,7 @@ type linearActuatorPosition linearActuator
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *linearActuatorPosition) ReadAt(b []byte, offset int64) (int, error) {
-	return readAt(b, offset, m.position)
+	return readAt(b, offset, m)
 }
 
 // Truncate is a no-op.
@@ -254,18 +396,27 @@ func (m *linearActuatorPosition) Truncate(_ int64) error { return nil }
 
 // WriteAt satisfies the io.WriterAt interface.
 func (m *linearActuatorPosition) WriteAt(b []byte, off int64) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	i, err := strconv.Atoi(string(chomp(b)))
 	if err != nil {
 		m.t.Errorf("unexpected error: %v", err)
 		return len(b), syscall.EINVAL
 	}
-	m.position = i
+	m._position = i
 	return len(b), nil
 }
 
 // Size returns the length of the backing data and a nil error.
 func (m *linearActuatorPosition) Size() (int64, error) {
-	return size(m.position), nil
+	return size(m), nil
+}
+
+// String returns a string representation of the attribute.
+func (m *linearActuatorPosition) String() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return fmt.Sprint(m._position)
 }
 
 // linearActuatorPositionSet is the position_sp attribute.
@@ -273,7 +424,7 @@ type linearActuatorPositionSet linearActuator
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *linearActuatorPositionSet) ReadAt(b []byte, offset int64) (int, error) {
-	return readAt(b, offset, m.positionSet)
+	return readAt(b, offset, m)
 }
 
 // Truncate is a no-op.
@@ -281,18 +432,27 @@ func (m *linearActuatorPositionSet) Truncate(_ int64) error { return nil }
 
 // WriteAt satisfies the io.WriterAt interface.
 func (m *linearActuatorPositionSet) WriteAt(b []byte, off int64) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	i, err := strconv.Atoi(string(chomp(b)))
 	if err != nil {
 		m.t.Errorf("unexpected error: %v", err)
 		return len(b), syscall.EINVAL
 	}
-	m.positionSet = i
+	m._positionSet = i
 	return len(b), nil
 }
 
 // Size returns the length of the backing data and a nil error.
 func (m *linearActuatorPositionSet) Size() (int64, error) {
-	return size(m.positionSet), nil
+	return size(m), nil
+}
+
+// String returns a string representation of the attribute.
+func (m *linearActuatorPositionSet) String() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return fmt.Sprint(m._positionSet)
 }
 
 // linearActuatorHoldPIDkd is the hold_pid/Kd attribute.
@@ -300,7 +460,7 @@ type linearActuatorHoldPIDkd linearActuator
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *linearActuatorHoldPIDkd) ReadAt(b []byte, offset int64) (int, error) {
-	return readAt(b, offset, m.holdPIDkd)
+	return readAt(b, offset, m)
 }
 
 // Truncate is a no-op.
@@ -308,18 +468,27 @@ func (m *linearActuatorHoldPIDkd) Truncate(_ int64) error { return nil }
 
 // WriteAt satisfies the io.WriterAt interface.
 func (m *linearActuatorHoldPIDkd) WriteAt(b []byte, off int64) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	i, err := strconv.Atoi(string(chomp(b)))
 	if err != nil {
 		m.t.Errorf("unexpected error: %v", err)
 		return len(b), syscall.EINVAL
 	}
-	m.holdPIDkd = i
+	m._holdPIDkd = i
 	return len(b), nil
 }
 
 // Size returns the length of the backing data and a nil error.
 func (m *linearActuatorHoldPIDkd) Size() (int64, error) {
-	return size(m.holdPIDkd), nil
+	return size(m), nil
+}
+
+// String returns a string representation of the attribute.
+func (m *linearActuatorHoldPIDkd) String() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return fmt.Sprint(m._holdPIDkd)
 }
 
 // linearActuatorHoldPIDki is the hold_pid/Ki attribute.
@@ -327,7 +496,7 @@ type linearActuatorHoldPIDki linearActuator
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *linearActuatorHoldPIDki) ReadAt(b []byte, offset int64) (int, error) {
-	return readAt(b, offset, m.holdPIDki)
+	return readAt(b, offset, m)
 }
 
 // Truncate is a no-op.
@@ -335,18 +504,27 @@ func (m *linearActuatorHoldPIDki) Truncate(_ int64) error { return nil }
 
 // WriteAt satisfies the io.WriterAt interface.
 func (m *linearActuatorHoldPIDki) WriteAt(b []byte, off int64) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	i, err := strconv.Atoi(string(chomp(b)))
 	if err != nil {
 		m.t.Errorf("unexpected error: %v", err)
 		return len(b), syscall.EINVAL
 	}
-	m.holdPIDki = i
+	m._holdPIDki = i
 	return len(b), nil
 }
 
 // Size returns the length of the backing data and a nil error.
 func (m *linearActuatorHoldPIDki) Size() (int64, error) {
-	return size(m.holdPIDki), nil
+	return size(m), nil
+}
+
+// String returns a string representation of the attribute.
+func (m *linearActuatorHoldPIDki) String() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return fmt.Sprint(m._holdPIDki)
 }
 
 // linearActuatorHoldPIDkp is the hold_pid/Kp attribute.
@@ -354,7 +532,7 @@ type linearActuatorHoldPIDkp linearActuator
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *linearActuatorHoldPIDkp) ReadAt(b []byte, offset int64) (int, error) {
-	return readAt(b, offset, m.holdPIDkp)
+	return readAt(b, offset, m)
 }
 
 // Truncate is a no-op.
@@ -362,18 +540,27 @@ func (m *linearActuatorHoldPIDkp) Truncate(_ int64) error { return nil }
 
 // WriteAt satisfies the io.WriterAt interface.
 func (m *linearActuatorHoldPIDkp) WriteAt(b []byte, off int64) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	i, err := strconv.Atoi(string(chomp(b)))
 	if err != nil {
 		m.t.Errorf("unexpected error: %v", err)
 		return len(b), syscall.EINVAL
 	}
-	m.holdPIDkp = i
+	m._holdPIDkp = i
 	return len(b), nil
 }
 
 // Size returns the length of the backing data and a nil error.
 func (m *linearActuatorHoldPIDkp) Size() (int64, error) {
-	return size(m.holdPIDkp), nil
+	return size(m), nil
+}
+
+// String returns a string representation of the attribute.
+func (m *linearActuatorHoldPIDkp) String() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return fmt.Sprint(m._holdPIDkp)
 }
 
 // linearActuatorMaxSpeed is the max_speed attribute.
@@ -381,12 +568,19 @@ type linearActuatorMaxSpeed linearActuator
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *linearActuatorMaxSpeed) ReadAt(b []byte, offset int64) (int, error) {
-	return readAt(b, offset, m.maxSpeed)
+	return readAt(b, offset, m)
 }
 
 // Size returns the length of the backing data and a nil error.
 func (m *linearActuatorMaxSpeed) Size() (int64, error) {
-	return size(m.maxSpeed), nil
+	return size(m), nil
+}
+
+// String returns a string representation of the attribute.
+func (m *linearActuatorMaxSpeed) String() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return fmt.Sprint(m._maxSpeed)
 }
 
 // linearActuatorSpeed is the speed attribute.
@@ -394,12 +588,19 @@ type linearActuatorSpeed linearActuator
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *linearActuatorSpeed) ReadAt(b []byte, offset int64) (int, error) {
-	return readAt(b, offset, m.speed)
+	return readAt(b, offset, m)
 }
 
 // Size returns the length of the backing data and a nil error.
 func (m *linearActuatorSpeed) Size() (int64, error) {
-	return size(m.speed), nil
+	return size(m), nil
+}
+
+// String returns a string representation of the attribute.
+func (m *linearActuatorSpeed) String() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return fmt.Sprint(m._speed)
 }
 
 // linearActuatorSpeedSet is the speed_sp attribute.
@@ -407,7 +608,7 @@ type linearActuatorSpeedSet linearActuator
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *linearActuatorSpeedSet) ReadAt(b []byte, offset int64) (int, error) {
-	return readAt(b, offset, m.speedSet)
+	return readAt(b, offset, m)
 }
 
 // Truncate is a no-op.
@@ -415,18 +616,27 @@ func (m *linearActuatorSpeedSet) Truncate(_ int64) error { return nil }
 
 // WriteAt satisfies the io.WriterAt interface.
 func (m *linearActuatorSpeedSet) WriteAt(b []byte, off int64) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	i, err := strconv.Atoi(string(chomp(b)))
 	if err != nil {
 		m.t.Errorf("unexpected error: %v", err)
 		return len(b), syscall.EINVAL
 	}
-	m.speedSet = i
+	m._speedSet = i
 	return len(b), nil
 }
 
 // Size returns the length of the backing data and a nil error.
 func (m *linearActuatorSpeedSet) Size() (int64, error) {
-	return size(m.speedSet), nil
+	return size(m), nil
+}
+
+// String returns a string representation of the attribute.
+func (m *linearActuatorSpeedSet) String() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return fmt.Sprint(m._speedSet)
 }
 
 // linearActuatorRampUpSet is the ramp_up_sp attribute.
@@ -442,6 +652,8 @@ func (m *linearActuatorRampUpSet) Truncate(_ int64) error { return nil }
 
 // WriteAt satisfies the io.WriterAt interface.
 func (m *linearActuatorRampUpSet) WriteAt(b []byte, off int64) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	i, err := strconv.Atoi(string(chomp(b)))
 	if i < 0 {
 		err = errors.New("ev3dev: negative duration")
@@ -450,7 +662,7 @@ func (m *linearActuatorRampUpSet) WriteAt(b []byte, off int64) (int, error) {
 		m.t.Errorf("unexpected error: %v", err)
 		return len(b), syscall.EINVAL
 	}
-	m.rampUpSet = time.Duration(i) * time.Millisecond
+	m._rampUpSet = time.Duration(i) * time.Millisecond
 	return len(b), nil
 }
 
@@ -459,8 +671,11 @@ func (m *linearActuatorRampUpSet) Size() (int64, error) {
 	return size(m), nil
 }
 
+// String returns a string representation of the attribute.
 func (m *linearActuatorRampUpSet) String() string {
-	return fmt.Sprint(int(m.rampUpSet / time.Millisecond))
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return fmt.Sprint(int(m._rampUpSet / time.Millisecond))
 }
 
 // linearActuatorRampDownSet is the ramp_down_sp attribute.
@@ -476,6 +691,8 @@ func (m *linearActuatorRampDownSet) Truncate(_ int64) error { return nil }
 
 // WriteAt satisfies the io.WriterAt interface.
 func (m *linearActuatorRampDownSet) WriteAt(b []byte, off int64) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	i, err := strconv.Atoi(string(chomp(b)))
 	if i < 0 {
 		err = errors.New("ev3dev: negative duration")
@@ -484,7 +701,7 @@ func (m *linearActuatorRampDownSet) WriteAt(b []byte, off int64) (int, error) {
 		m.t.Errorf("unexpected error: %v", err)
 		return len(b), syscall.EINVAL
 	}
-	m.rampDownSet = time.Duration(i) * time.Millisecond
+	m._rampDownSet = time.Duration(i) * time.Millisecond
 	return len(b), nil
 }
 
@@ -493,8 +710,11 @@ func (m *linearActuatorRampDownSet) Size() (int64, error) {
 	return size(m), nil
 }
 
+// String returns a string representation of the attribute.
 func (m *linearActuatorRampDownSet) String() string {
-	return fmt.Sprint(int(m.rampDownSet / time.Millisecond))
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return fmt.Sprint(int(m._rampDownSet / time.Millisecond))
 }
 
 // linearActuatorSpeedPIDkd is the speed_pid/Kd attribute.
@@ -502,7 +722,7 @@ type linearActuatorSpeedPIDkd linearActuator
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *linearActuatorSpeedPIDkd) ReadAt(b []byte, offset int64) (int, error) {
-	return readAt(b, offset, m.speedPIDkd)
+	return readAt(b, offset, m)
 }
 
 // Truncate is a no-op.
@@ -510,18 +730,27 @@ func (m *linearActuatorSpeedPIDkd) Truncate(_ int64) error { return nil }
 
 // WriteAt satisfies the io.WriterAt interface.
 func (m *linearActuatorSpeedPIDkd) WriteAt(b []byte, off int64) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	i, err := strconv.Atoi(string(chomp(b)))
 	if err != nil {
 		m.t.Errorf("unexpected error: %v", err)
 		return len(b), syscall.EINVAL
 	}
-	m.speedPIDkd = i
+	m._speedPIDkd = i
 	return len(b), nil
 }
 
 // Size returns the length of the backing data and a nil error.
 func (m *linearActuatorSpeedPIDkd) Size() (int64, error) {
-	return size(m.speedPIDkd), nil
+	return size(m), nil
+}
+
+// String returns a string representation of the attribute.
+func (m *linearActuatorSpeedPIDkd) String() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return fmt.Sprint(m._speedPIDkd)
 }
 
 // linearActuatorSpeedPIDki is the speed_pid/Ki attribute.
@@ -529,7 +758,7 @@ type linearActuatorSpeedPIDki linearActuator
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *linearActuatorSpeedPIDki) ReadAt(b []byte, offset int64) (int, error) {
-	return readAt(b, offset, m.speedPIDki)
+	return readAt(b, offset, m)
 }
 
 // Truncate is a no-op.
@@ -537,18 +766,27 @@ func (m *linearActuatorSpeedPIDki) Truncate(_ int64) error { return nil }
 
 // WriteAt satisfies the io.WriterAt interface.
 func (m *linearActuatorSpeedPIDki) WriteAt(b []byte, off int64) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	i, err := strconv.Atoi(string(chomp(b)))
 	if err != nil {
 		m.t.Errorf("unexpected error: %v", err)
 		return len(b), syscall.EINVAL
 	}
-	m.speedPIDki = i
+	m._speedPIDki = i
 	return len(b), nil
 }
 
 // Size returns the length of the backing data and a nil error.
 func (m *linearActuatorSpeedPIDki) Size() (int64, error) {
-	return size(m.speedPIDki), nil
+	return size(m), nil
+}
+
+// String returns a string representation of the attribute.
+func (m *linearActuatorSpeedPIDki) String() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return fmt.Sprint(m._speedPIDki)
 }
 
 // linearActuatorSpeedPIDkp is the speed_pid/Kp attribute.
@@ -556,7 +794,7 @@ type linearActuatorSpeedPIDkp linearActuator
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *linearActuatorSpeedPIDkp) ReadAt(b []byte, offset int64) (int, error) {
-	return readAt(b, offset, m.speedPIDkp)
+	return readAt(b, offset, m)
 }
 
 // Truncate is a no-op.
@@ -564,18 +802,27 @@ func (m *linearActuatorSpeedPIDkp) Truncate(_ int64) error { return nil }
 
 // WriteAt satisfies the io.WriterAt interface.
 func (m *linearActuatorSpeedPIDkp) WriteAt(b []byte, off int64) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	i, err := strconv.Atoi(string(chomp(b)))
 	if err != nil {
 		m.t.Errorf("unexpected error: %v", err)
 		return len(b), syscall.EINVAL
 	}
-	m.speedPIDkp = i
+	m._speedPIDkp = i
 	return len(b), nil
 }
 
 // Size returns the length of the backing data and a nil error.
 func (m *linearActuatorSpeedPIDkp) Size() (int64, error) {
-	return size(m.speedPIDkp), nil
+	return size(m), nil
+}
+
+// String returns a string representation of the attribute.
+func (m *linearActuatorSpeedPIDkp) String() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return fmt.Sprint(m._speedPIDkp)
 }
 
 // linearActuatorState is the state attribute.
@@ -591,8 +838,11 @@ func (m *linearActuatorState) Size() (int64, error) {
 	return size(m), nil
 }
 
+// String returns a string representation of the attribute.
 func (m *linearActuatorState) String() string {
-	s := strings.Replace(m.state.String(), "|", " ", -1)
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	s := strings.Replace(m._state.String(), "|", " ", -1)
 	if s == MotorState(0).String() {
 		return ""
 	}
@@ -604,10 +854,10 @@ type linearActuatorStopAction linearActuator
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *linearActuatorStopAction) ReadAt(b []byte, offset int64) (int, error) {
-	if len(m.stopActions) == 0 {
+	if len((*linearActuator)(m).stopActions()) == 0 {
 		return len(b), syscall.ENOTSUP
 	}
-	return readAt(b, offset, m.lastStopAction)
+	return readAt(b, offset, m)
 }
 
 // Truncate is a no-op.
@@ -615,13 +865,15 @@ func (m *linearActuatorStopAction) Truncate(_ int64) error { return nil }
 
 // WriteAt satisfies the io.WriterAt interface.
 func (m *linearActuatorStopAction) WriteAt(b []byte, off int64) (int, error) {
-	if len(m.stopActions) == 0 {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if len(m._stopActions) == 0 {
 		return len(b), syscall.ENOTSUP
 	}
 	stopAction := string(chomp(b))
-	for _, c := range m.stopActions {
+	for _, c := range m._stopActions {
 		if stopAction == c {
-			m.lastStopAction = stopAction
+			m._lastStopAction = stopAction
 			return len(b), nil
 		}
 	}
@@ -630,7 +882,14 @@ func (m *linearActuatorStopAction) WriteAt(b []byte, off int64) (int, error) {
 
 // Size returns the length of the backing data and a nil error.
 func (m *linearActuatorStopAction) Size() (int64, error) {
-	return size(m.lastStopAction), nil
+	return size(m), nil
+}
+
+// String returns a string representation of the attribute.
+func (m *linearActuatorStopAction) String() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m._lastStopAction
 }
 
 // linearActuatorTimeSet is the time_sp attribute.
@@ -646,6 +905,8 @@ func (m *linearActuatorTimeSet) Truncate(_ int64) error { return nil }
 
 // WriteAt satisfies the io.WriterAt interface.
 func (m *linearActuatorTimeSet) WriteAt(b []byte, off int64) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	i, err := strconv.Atoi(string(chomp(b)))
 	if i < 0 {
 		err = errors.New("ev3dev: negative duration")
@@ -654,7 +915,7 @@ func (m *linearActuatorTimeSet) WriteAt(b []byte, off int64) (int, error) {
 		m.t.Errorf("unexpected error: %v", err)
 		return len(b), syscall.EINVAL
 	}
-	m.timeSet = time.Duration(i) * time.Millisecond
+	m._timeSet = time.Duration(i) * time.Millisecond
 	return len(b), nil
 }
 
@@ -663,8 +924,11 @@ func (m *linearActuatorTimeSet) Size() (int64, error) {
 	return size(m), nil
 }
 
+// String returns a string representation of the attribute.
 func (m *linearActuatorTimeSet) String() string {
-	return fmt.Sprint(int(m.timeSet / time.Millisecond))
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return fmt.Sprint(int(m._timeSet / time.Millisecond))
 }
 
 // linearActuatorUevent is the uevent attribute.
@@ -680,9 +944,12 @@ func (m *linearActuatorUevent) Size() (int64, error) {
 	return size(m), nil
 }
 
+// String returns a string representation of the attribute.
 func (m *linearActuatorUevent) String() string {
-	e := make([]string, 0, len(m.uevent))
-	for k, v := range m.uevent {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	e := make([]string, 0, len(m._uevent))
+	for k, v := range m._uevent {
 		e = append(e, fmt.Sprintf("%s=%s", k, v))
 	}
 	sort.Strings(e)
@@ -754,7 +1021,7 @@ func TestLinearActuator(t *testing.T) {
 				address: "outA",
 				driver:  driver,
 
-				commands: []string{
+				_commands: []string{
 					"run-forever",
 					"run-to-abs-pos",
 					"run-to-rel-pos",
@@ -764,14 +1031,14 @@ func TestLinearActuator(t *testing.T) {
 					"reset",
 				},
 
-				lastStopAction: "coast",
-				stopActions: []string{
+				_lastStopAction: "coast",
+				_stopActions: []string{
 					"coast",
 					"brake",
 					"hold",
 				},
 
-				uevent: map[string]string{
+				_uevent: map[string]string{
 					"LEGO_ADDRESS":     "outA",
 					"LEGO_DRIVER_NAME": driver,
 				},
@@ -916,7 +1183,8 @@ func TestLinearActuator(t *testing.T) {
 				t.Fatalf("unexpected error: %v", err)
 			}
 			commands, err := m.Commands()
-			if len(c.linearActuator.commands) == 0 {
+			want := c.linearActuator.commands()
+			if len(want) == 0 {
 				if err == nil {
 					t.Error("expected error getting commands from non-commandable linearActuator")
 				}
@@ -925,8 +1193,8 @@ func TestLinearActuator(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error getting commands: %v", err)
 			}
-			if !reflect.DeepEqual(commands, c.linearActuator.commands) {
-				t.Errorf("unexpected commands value: got:%q want:%q", commands, c.linearActuator.commands)
+			if !reflect.DeepEqual(commands, want) {
+				t.Errorf("unexpected commands value: got:%q want:%q", commands, want)
 			}
 			for _, command := range commands {
 				err := m.Command(command).Err()
@@ -934,7 +1202,7 @@ func TestLinearActuator(t *testing.T) {
 					t.Errorf("unexpected error for command %q: %v", command, err)
 				}
 
-				got := c.linearActuator.lastCommand
+				got := c.linearActuator.lastCommand()
 				want := command
 				if got != want {
 					t.Errorf("unexpected command value: got:%q want:%q", got, want)
@@ -946,7 +1214,7 @@ func TestLinearActuator(t *testing.T) {
 					t.Errorf("expected error for command %q", command)
 				}
 
-				got := c.linearActuator.lastCommand
+				got := c.linearActuator.lastCommand()
 				dontwant := command
 				if got == dontwant {
 					t.Errorf("unexpected invalid command value: got:%q don't want:%q", got, dontwant)
@@ -961,12 +1229,13 @@ func TestLinearActuator(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			for _, c.linearActuator.countPerM = range []int{0, 64, 128, 192, 255} {
+			for _, n := range []int{0, 64, 128, 192, 255} {
+				c.linearActuator.setCountPerM(n)
 				got, err := m.CountPerMeter()
 				if err != nil {
 					t.Errorf("unexpected error: %v", err)
 				}
-				want := c.linearActuator.countPerM
+				want := c.linearActuator.countPerM()
 				if got != want {
 					t.Errorf("unexpected count per meter value: got:%d want:%d", got, want)
 				}
@@ -980,12 +1249,13 @@ func TestLinearActuator(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			for _, c.linearActuator.dutyCycle = range []int{0, 64, 128, 192, 255} {
+			for _, p := range []int{0, 64, 128, 192, 255} {
+				c.linearActuator.setDutyCycle(p)
 				got, err := m.DutyCycle()
 				if err != nil {
 					t.Errorf("unexpected error: %v", err)
 				}
-				want := c.linearActuator.dutyCycle
+				want := c.linearActuator.dutyCycle()
 				if got != want {
 					t.Errorf("unexpected duty cycle value: got:%d want:%d", got, want)
 				}
@@ -1206,12 +1476,13 @@ func TestLinearActuator(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			for _, c.linearActuator.maxSpeed = range []int{0, 64, 128, 192, 255} {
+			for _, s := range []int{0, 64, 128, 192, 255} {
+				c.linearActuator.setMaxSpeed(s)
 				got, err := m.MaxSpeed()
 				if err != nil {
 					t.Errorf("unexpected error: %v", err)
 				}
-				want := c.linearActuator.maxSpeed
+				want := c.linearActuator.maxSpeed()
 				if got != want {
 					t.Errorf("unexpected max speed value: got:%d want:%d", got, want)
 				}
@@ -1225,12 +1496,13 @@ func TestLinearActuator(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			for _, c.linearActuator.speed = range []int{0, 64, 128, 192, 255} {
+			for _, s := range []int{0, 64, 128, 192, 255} {
+				c.linearActuator.setSpeed(s)
 				got, err := m.Speed()
 				if err != nil {
 					t.Errorf("unexpected error: %v", err)
 				}
-				want := c.linearActuator.speed
+				want := c.linearActuator.speed()
 				if got != want {
 					t.Errorf("unexpected speed value: got:%d want:%d", got, want)
 				}
@@ -1400,7 +1672,7 @@ func TestLinearActuator(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			for _, c.linearActuator.state = range []MotorState{
+			for _, s := range []MotorState{
 				0,
 				Running,
 				Running | Ramping,
@@ -1409,11 +1681,12 @@ func TestLinearActuator(t *testing.T) {
 				Running | Stalled | Overloaded,
 				Holding,
 			} {
+				c.linearActuator.setState(s)
 				got, err := m.State()
 				if err != nil {
 					t.Errorf("unexpected error: %v", err)
 				}
-				want := c.linearActuator.state
+				want := c.linearActuator.state()
 				if got != want {
 					t.Errorf("unexpected state value: got:%v want:%v", got, want)
 				}
@@ -1428,7 +1701,8 @@ func TestLinearActuator(t *testing.T) {
 				t.Fatalf("unexpected error: %v", err)
 			}
 			stopActions, err := m.StopActions()
-			if len(c.linearActuator.stopActions) == 0 {
+			want := c.linearActuator.stopActions()
+			if len(want) == 0 {
 				if err == nil {
 					t.Error("expected error getting stop actions from non-stop action linearActuator")
 				}
@@ -1437,8 +1711,8 @@ func TestLinearActuator(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error getting stop actions: %v", err)
 			}
-			if !reflect.DeepEqual(stopActions, c.linearActuator.stopActions) {
-				t.Errorf("unexpected stop actions value: got:%q want:%q", stopActions, c.linearActuator.stopActions)
+			if !reflect.DeepEqual(stopActions, want) {
+				t.Errorf("unexpected stop actions value: got:%q want:%q", stopActions, want)
 			}
 			for _, stopAction := range stopActions {
 				err := m.SetStopAction(stopAction).Err()
@@ -1446,7 +1720,7 @@ func TestLinearActuator(t *testing.T) {
 					t.Errorf("unexpected error for set stop action %q: %v", stopAction, err)
 				}
 
-				got := c.linearActuator.lastStopAction
+				got := c.linearActuator.lastStopAction()
 				want := stopAction
 				if got != want {
 					t.Errorf("unexpected stop action value: got:%q want:%q", got, want)
@@ -1466,7 +1740,7 @@ func TestLinearActuator(t *testing.T) {
 					t.Errorf("expected error for set stop action %q", stopAction)
 				}
 
-				got := c.linearActuator.lastStopAction
+				got := c.linearActuator.lastStopAction()
 				dontwant := stopAction
 				if got == dontwant {
 					t.Errorf("unexpected invalid stop action value: got:%q don't want:%q", got, dontwant)
@@ -1515,7 +1789,7 @@ func TestLinearActuator(t *testing.T) {
 			if err != nil {
 				t.Errorf("unexpected error getting uevent: %v", err)
 			}
-			want := c.linearActuator.uevent
+			want := c.linearActuator.uevent()
 			if !reflect.DeepEqual(got, want) {
 				t.Errorf("unexpected uevent value: got:%v want:%v", got, want)
 			}

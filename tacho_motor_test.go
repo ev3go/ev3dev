@@ -11,6 +11,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"testing"
 	"time"
@@ -25,44 +26,138 @@ type tachoMotor struct {
 	address string
 	driver  string
 
-	lastCommand string
-	commands    []string
+	// mu protects the underscore
+	// prefix attributes below.
+	mu sync.Mutex
 
-	countPerRot int
+	_lastCommand string
+	_commands    []string
 
-	maxSpeed int
-	speed    int
-	speedSet int
+	_countPerRot int
 
-	rampUpSet   time.Duration
-	rampDownSet time.Duration
+	_maxSpeed int
+	_speed    int
+	_speedSet int
 
-	timeSet time.Duration
+	_rampUpSet   time.Duration
+	_rampDownSet time.Duration
 
-	dutyCycle    int
-	dutyCycleSet int
+	_timeSet time.Duration
 
-	polarity Polarity
+	_dutyCycle    int
+	_dutyCycleSet int
 
-	position    int
-	positionSet int
+	_polarity Polarity
 
-	holdPIDkd int
-	holdPIDki int
-	holdPIDkp int
+	_position    int
+	_positionSet int
 
-	speedPIDkd int
-	speedPIDki int
-	speedPIDkp int
+	_holdPIDkd int
+	_holdPIDki int
+	_holdPIDkp int
 
-	state MotorState
+	_speedPIDkd int
+	_speedPIDki int
+	_speedPIDkp int
 
-	lastStopAction string
-	stopActions    []string
+	_state MotorState
 
-	uevent map[string]string
+	_lastStopAction string
+	_stopActions    []string
+
+	_uevent map[string]string
 
 	t *testing.T
+}
+
+func (m *tachoMotor) commands() []string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m._commands
+}
+
+func (m *tachoMotor) lastCommand() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m._lastCommand
+}
+
+func (m *tachoMotor) countsPerRot() int {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m._countPerRot
+}
+
+func (m *tachoMotor) setCountsPerRot(n int) {
+	m.mu.Lock()
+	m._countPerRot = n
+	m.mu.Unlock()
+}
+
+func (m *tachoMotor) maxSpeed() int {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m._maxSpeed
+}
+
+func (m *tachoMotor) setMaxSpeed(s int) {
+	m.mu.Lock()
+	m._maxSpeed = s
+	m.mu.Unlock()
+}
+
+func (m *tachoMotor) speed() int {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m._speed
+}
+
+func (m *tachoMotor) setSpeed(s int) {
+	m.mu.Lock()
+	m._speed = s
+	m.mu.Unlock()
+}
+
+func (m *tachoMotor) dutyCycle() int {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m._dutyCycle
+}
+
+func (m *tachoMotor) setDutyCycle(n int) {
+	m.mu.Lock()
+	m._dutyCycle = n
+	m.mu.Unlock()
+}
+
+func (m *tachoMotor) state() MotorState {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m._state
+}
+
+func (m *tachoMotor) setState(s MotorState) {
+	m.mu.Lock()
+	m._state = s
+	m.mu.Unlock()
+}
+
+func (m *tachoMotor) lastStopAction() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m._lastStopAction
+}
+
+func (m *tachoMotor) stopActions() []string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m._stopActions
+}
+
+func (m *tachoMotor) uevent() map[string]string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m._uevent
 }
 
 // tachoMotorAddress is the address attribute.
@@ -96,7 +191,7 @@ type tachoMotorCommands tachoMotor
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *tachoMotorCommands) ReadAt(b []byte, offset int64) (int, error) {
-	if len(m.commands) == 0 {
+	if len((*tachoMotor)(m).commands()) == 0 {
 		return len(b), syscall.ENOTSUP
 	}
 	return readAt(b, offset, m)
@@ -107,9 +202,12 @@ func (m *tachoMotorCommands) Size() (int64, error) {
 	return size(m), nil
 }
 
+// String returns a string representation of the attribute.
 func (m *tachoMotorCommands) String() string {
-	sort.Strings(m.commands)
-	return strings.Join(m.commands, " ")
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	sort.Strings(m._commands)
+	return strings.Join(m._commands, " ")
 }
 
 // tachoMotorCommand is the command attribute.
@@ -120,13 +218,15 @@ func (m *tachoMotorCommand) Truncate(_ int64) error { return nil }
 
 // WriteAt satisfies the io.WriterAt interface.
 func (m *tachoMotorCommand) WriteAt(b []byte, off int64) (int, error) {
-	if len(m.commands) == 0 {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if len(m._commands) == 0 {
 		return len(b), syscall.ENOTSUP
 	}
 	command := string(chomp(b))
-	for _, c := range m.commands {
+	for _, c := range m._commands {
 		if command == c {
-			m.lastCommand = command
+			m._lastCommand = command
 			return len(b), nil
 		}
 	}
@@ -135,7 +235,14 @@ func (m *tachoMotorCommand) WriteAt(b []byte, off int64) (int, error) {
 
 // Size returns the length of the backing data and a nil error.
 func (m *tachoMotorCommand) Size() (int64, error) {
-	return size(m.lastCommand), nil
+	return size(m), nil
+}
+
+// String returns a string representation of the attribute.
+func (m *tachoMotorCommand) String() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m._lastCommand
 }
 
 // tachoMotorStopActions is the stop_sactions attribute.
@@ -143,7 +250,7 @@ type tachoMotorStopActions tachoMotor
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *tachoMotorStopActions) ReadAt(b []byte, offset int64) (int, error) {
-	if len(m.stopActions) == 0 {
+	if len((*tachoMotor)(m).stopActions()) == 0 {
 		return len(b), syscall.ENOTSUP
 	}
 	return readAt(b, offset, m)
@@ -154,9 +261,12 @@ func (m *tachoMotorStopActions) Size() (int64, error) {
 	return size(m), nil
 }
 
+// String returns a string representation of the attribute.
 func (m *tachoMotorStopActions) String() string {
-	sort.Strings(m.stopActions)
-	return strings.Join(m.stopActions, " ")
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	sort.Strings(m._stopActions)
+	return strings.Join(m._stopActions, " ")
 }
 
 // tachoMotorCountsPerRot is the counts_per_rot attribute.
@@ -164,12 +274,19 @@ type tachoMotorCountsPerRot tachoMotor
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *tachoMotorCountsPerRot) ReadAt(b []byte, offset int64) (int, error) {
-	return readAt(b, offset, m.countPerRot)
+	return readAt(b, offset, m)
 }
 
 // Size returns the length of the backing data and a nil error.
 func (m *tachoMotorCountsPerRot) Size() (int64, error) {
-	return size(m.countPerRot), nil
+	return size(m), nil
+}
+
+// String returns a string representation of the attribute.
+func (m *tachoMotorCountsPerRot) String() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return fmt.Sprint(m._countPerRot)
 }
 
 // tachoMotorDutyCycle is the duty_cycle attribute.
@@ -177,12 +294,19 @@ type tachoMotorDutyCycle tachoMotor
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *tachoMotorDutyCycle) ReadAt(b []byte, offset int64) (int, error) {
-	return readAt(b, offset, m.dutyCycle)
+	return readAt(b, offset, m)
 }
 
 // Size returns the length of the backing data and a nil error.
 func (m *tachoMotorDutyCycle) Size() (int64, error) {
-	return size(m.dutyCycle), nil
+	return size(m), nil
+}
+
+// String returns a string representation of the attribute.
+func (m *tachoMotorDutyCycle) String() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return fmt.Sprint(m._dutyCycle)
 }
 
 // tachoMotorDutyCycleSet is the duty_cycle_sp attribute.
@@ -190,7 +314,7 @@ type tachoMotorDutyCycleSet tachoMotor
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *tachoMotorDutyCycleSet) ReadAt(b []byte, offset int64) (int, error) {
-	return readAt(b, offset, m.dutyCycleSet)
+	return readAt(b, offset, m)
 }
 
 // Truncate is a no-op.
@@ -198,18 +322,27 @@ func (m *tachoMotorDutyCycleSet) Truncate(_ int64) error { return nil }
 
 // WriteAt satisfies the io.WriterAt interface.
 func (m *tachoMotorDutyCycleSet) WriteAt(b []byte, off int64) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	i, err := strconv.Atoi(string(chomp(b)))
 	if err != nil {
 		m.t.Errorf("unexpected error: %v", err)
 		return len(b), syscall.EINVAL
 	}
-	m.dutyCycleSet = i
+	m._dutyCycleSet = i
 	return len(b), nil
 }
 
 // Size returns the length of the backing data and a nil error.
 func (m *tachoMotorDutyCycleSet) Size() (int64, error) {
-	return size(m.dutyCycleSet), nil
+	return size(m), nil
+}
+
+// String returns a string representation of the attribute.
+func (m *tachoMotorDutyCycleSet) String() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return fmt.Sprint(m._dutyCycleSet)
 }
 
 // tachoMotorPolarity is the polarity attribute.
@@ -217,7 +350,7 @@ type tachoMotorPolarity tachoMotor
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *tachoMotorPolarity) ReadAt(b []byte, offset int64) (int, error) {
-	return readAt(b, offset, m.polarity)
+	return readAt(b, offset, m)
 }
 
 // Truncate is a no-op.
@@ -225,10 +358,12 @@ func (m *tachoMotorPolarity) Truncate(_ int64) error { return nil }
 
 // WriteAt satisfies the io.WriterAt interface.
 func (m *tachoMotorPolarity) WriteAt(b []byte, off int64) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	p := Polarity(b)
 	switch p {
 	case "normal", "inversed":
-		m.polarity = p
+		m._polarity = p
 	default:
 		m.t.Errorf("unexpected error: %q", b)
 		return len(b), syscall.EINVAL
@@ -238,7 +373,14 @@ func (m *tachoMotorPolarity) WriteAt(b []byte, off int64) (int, error) {
 
 // Size returns the length of the backing data and a nil error.
 func (m *tachoMotorPolarity) Size() (int64, error) {
-	return size(m.polarity), nil
+	return size(m), nil
+}
+
+// String returns a string representation of the attribute.
+func (m *tachoMotorPolarity) String() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return string(m._polarity)
 }
 
 // tachoMotorPosition is the position attribute.
@@ -246,7 +388,7 @@ type tachoMotorPosition tachoMotor
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *tachoMotorPosition) ReadAt(b []byte, offset int64) (int, error) {
-	return readAt(b, offset, m.position)
+	return readAt(b, offset, m)
 }
 
 // Truncate is a no-op.
@@ -254,18 +396,27 @@ func (m *tachoMotorPosition) Truncate(_ int64) error { return nil }
 
 // WriteAt satisfies the io.WriterAt interface.
 func (m *tachoMotorPosition) WriteAt(b []byte, off int64) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	i, err := strconv.Atoi(string(chomp(b)))
 	if err != nil {
 		m.t.Errorf("unexpected error: %v", err)
 		return len(b), syscall.EINVAL
 	}
-	m.position = i
+	m._position = i
 	return len(b), nil
 }
 
 // Size returns the length of the backing data and a nil error.
 func (m *tachoMotorPosition) Size() (int64, error) {
-	return size(m.position), nil
+	return size(m), nil
+}
+
+// String returns a string representation of the attribute.
+func (m *tachoMotorPosition) String() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return fmt.Sprint(m._position)
 }
 
 // tachoMotorPositionSet is the position_sp attribute.
@@ -273,7 +424,7 @@ type tachoMotorPositionSet tachoMotor
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *tachoMotorPositionSet) ReadAt(b []byte, offset int64) (int, error) {
-	return readAt(b, offset, m.positionSet)
+	return readAt(b, offset, m)
 }
 
 // Truncate is a no-op.
@@ -281,18 +432,27 @@ func (m *tachoMotorPositionSet) Truncate(_ int64) error { return nil }
 
 // WriteAt satisfies the io.WriterAt interface.
 func (m *tachoMotorPositionSet) WriteAt(b []byte, off int64) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	i, err := strconv.Atoi(string(chomp(b)))
 	if err != nil {
 		m.t.Errorf("unexpected error: %v", err)
 		return len(b), syscall.EINVAL
 	}
-	m.positionSet = i
+	m._positionSet = i
 	return len(b), nil
 }
 
 // Size returns the length of the backing data and a nil error.
 func (m *tachoMotorPositionSet) Size() (int64, error) {
-	return size(m.positionSet), nil
+	return size(m), nil
+}
+
+// String returns a string representation of the attribute.
+func (m *tachoMotorPositionSet) String() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return fmt.Sprint(m._positionSet)
 }
 
 // tachoMotorHoldPIDkd is the hold_pid/Kd attribute.
@@ -300,7 +460,7 @@ type tachoMotorHoldPIDkd tachoMotor
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *tachoMotorHoldPIDkd) ReadAt(b []byte, offset int64) (int, error) {
-	return readAt(b, offset, m.holdPIDkd)
+	return readAt(b, offset, m)
 }
 
 // Truncate is a no-op.
@@ -308,18 +468,27 @@ func (m *tachoMotorHoldPIDkd) Truncate(_ int64) error { return nil }
 
 // WriteAt satisfies the io.WriterAt interface.
 func (m *tachoMotorHoldPIDkd) WriteAt(b []byte, off int64) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	i, err := strconv.Atoi(string(chomp(b)))
 	if err != nil {
 		m.t.Errorf("unexpected error: %v", err)
 		return len(b), syscall.EINVAL
 	}
-	m.holdPIDkd = i
+	m._holdPIDkd = i
 	return len(b), nil
 }
 
 // Size returns the length of the backing data and a nil error.
 func (m *tachoMotorHoldPIDkd) Size() (int64, error) {
-	return size(m.holdPIDkd), nil
+	return size(m), nil
+}
+
+// String returns a string representation of the attribute.
+func (m *tachoMotorHoldPIDkd) String() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return fmt.Sprint(m._holdPIDkd)
 }
 
 // tachoMotorHoldPIDki is the hold_pid/Ki attribute.
@@ -327,7 +496,7 @@ type tachoMotorHoldPIDki tachoMotor
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *tachoMotorHoldPIDki) ReadAt(b []byte, offset int64) (int, error) {
-	return readAt(b, offset, m.holdPIDki)
+	return readAt(b, offset, m)
 }
 
 // Truncate is a no-op.
@@ -335,18 +504,27 @@ func (m *tachoMotorHoldPIDki) Truncate(_ int64) error { return nil }
 
 // WriteAt satisfies the io.WriterAt interface.
 func (m *tachoMotorHoldPIDki) WriteAt(b []byte, off int64) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	i, err := strconv.Atoi(string(chomp(b)))
 	if err != nil {
 		m.t.Errorf("unexpected error: %v", err)
 		return len(b), syscall.EINVAL
 	}
-	m.holdPIDki = i
+	m._holdPIDki = i
 	return len(b), nil
 }
 
 // Size returns the length of the backing data and a nil error.
 func (m *tachoMotorHoldPIDki) Size() (int64, error) {
-	return size(m.holdPIDki), nil
+	return size(m), nil
+}
+
+// String returns a string representation of the attribute.
+func (m *tachoMotorHoldPIDki) String() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return fmt.Sprint(m._holdPIDki)
 }
 
 // tachoMotorHoldPIDkp is the hold_pid/Kp attribute.
@@ -354,7 +532,7 @@ type tachoMotorHoldPIDkp tachoMotor
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *tachoMotorHoldPIDkp) ReadAt(b []byte, offset int64) (int, error) {
-	return readAt(b, offset, m.holdPIDkp)
+	return readAt(b, offset, m)
 }
 
 // Truncate is a no-op.
@@ -362,18 +540,27 @@ func (m *tachoMotorHoldPIDkp) Truncate(_ int64) error { return nil }
 
 // WriteAt satisfies the io.WriterAt interface.
 func (m *tachoMotorHoldPIDkp) WriteAt(b []byte, off int64) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	i, err := strconv.Atoi(string(chomp(b)))
 	if err != nil {
 		m.t.Errorf("unexpected error: %v", err)
 		return len(b), syscall.EINVAL
 	}
-	m.holdPIDkp = i
+	m._holdPIDkp = i
 	return len(b), nil
 }
 
 // Size returns the length of the backing data and a nil error.
 func (m *tachoMotorHoldPIDkp) Size() (int64, error) {
-	return size(m.holdPIDkp), nil
+	return size(m), nil
+}
+
+// String returns a string representation of the attribute.
+func (m *tachoMotorHoldPIDkp) String() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return fmt.Sprint(m._holdPIDkp)
 }
 
 // tachoMotorMaxSpeed is the max_speed attribute.
@@ -381,12 +568,19 @@ type tachoMotorMaxSpeed tachoMotor
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *tachoMotorMaxSpeed) ReadAt(b []byte, offset int64) (int, error) {
-	return readAt(b, offset, m.maxSpeed)
+	return readAt(b, offset, m)
 }
 
 // Size returns the length of the backing data and a nil error.
 func (m *tachoMotorMaxSpeed) Size() (int64, error) {
-	return size(m.maxSpeed), nil
+	return size(m), nil
+}
+
+// String returns a string representation of the attribute.
+func (m *tachoMotorMaxSpeed) String() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return fmt.Sprint(m._maxSpeed)
 }
 
 // tachoMotorSpeed is the speed attribute.
@@ -394,12 +588,19 @@ type tachoMotorSpeed tachoMotor
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *tachoMotorSpeed) ReadAt(b []byte, offset int64) (int, error) {
-	return readAt(b, offset, m.speed)
+	return readAt(b, offset, m)
 }
 
 // Size returns the length of the backing data and a nil error.
 func (m *tachoMotorSpeed) Size() (int64, error) {
-	return size(m.speed), nil
+	return size(m), nil
+}
+
+// String returns a string representation of the attribute.
+func (m *tachoMotorSpeed) String() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return fmt.Sprint(m._speed)
 }
 
 // tachoMotorSpeedSet is the speed_sp attribute.
@@ -407,7 +608,7 @@ type tachoMotorSpeedSet tachoMotor
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *tachoMotorSpeedSet) ReadAt(b []byte, offset int64) (int, error) {
-	return readAt(b, offset, m.speedSet)
+	return readAt(b, offset, m)
 }
 
 // Truncate is a no-op.
@@ -415,18 +616,27 @@ func (m *tachoMotorSpeedSet) Truncate(_ int64) error { return nil }
 
 // WriteAt satisfies the io.WriterAt interface.
 func (m *tachoMotorSpeedSet) WriteAt(b []byte, off int64) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	i, err := strconv.Atoi(string(chomp(b)))
 	if err != nil {
 		m.t.Errorf("unexpected error: %v", err)
 		return len(b), syscall.EINVAL
 	}
-	m.speedSet = i
+	m._speedSet = i
 	return len(b), nil
 }
 
 // Size returns the length of the backing data and a nil error.
 func (m *tachoMotorSpeedSet) Size() (int64, error) {
-	return size(m.speedSet), nil
+	return size(m), nil
+}
+
+// String returns a string representation of the attribute.
+func (m *tachoMotorSpeedSet) String() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return fmt.Sprint(m._speedSet)
 }
 
 // tachoMotorRampUpSet is the ramp_up_sp attribute.
@@ -442,6 +652,8 @@ func (m *tachoMotorRampUpSet) Truncate(_ int64) error { return nil }
 
 // WriteAt satisfies the io.WriterAt interface.
 func (m *tachoMotorRampUpSet) WriteAt(b []byte, off int64) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	i, err := strconv.Atoi(string(chomp(b)))
 	if i < 0 {
 		err = errors.New("ev3dev: negative duration")
@@ -450,7 +662,7 @@ func (m *tachoMotorRampUpSet) WriteAt(b []byte, off int64) (int, error) {
 		m.t.Errorf("unexpected error: %v", err)
 		return len(b), syscall.EINVAL
 	}
-	m.rampUpSet = time.Duration(i) * time.Millisecond
+	m._rampUpSet = time.Duration(i) * time.Millisecond
 	return len(b), nil
 }
 
@@ -459,8 +671,11 @@ func (m *tachoMotorRampUpSet) Size() (int64, error) {
 	return size(m), nil
 }
 
+// String returns a string representation of the attribute.
 func (m *tachoMotorRampUpSet) String() string {
-	return fmt.Sprint(int(m.rampUpSet / time.Millisecond))
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return fmt.Sprint(int(m._rampUpSet / time.Millisecond))
 }
 
 // tachoMotorRampDownSet is the ramp_down_sp attribute.
@@ -476,6 +691,8 @@ func (m *tachoMotorRampDownSet) Truncate(_ int64) error { return nil }
 
 // WriteAt satisfies the io.WriterAt interface.
 func (m *tachoMotorRampDownSet) WriteAt(b []byte, off int64) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	i, err := strconv.Atoi(string(chomp(b)))
 	if i < 0 {
 		err = errors.New("ev3dev: negative duration")
@@ -484,7 +701,7 @@ func (m *tachoMotorRampDownSet) WriteAt(b []byte, off int64) (int, error) {
 		m.t.Errorf("unexpected error: %v", err)
 		return len(b), syscall.EINVAL
 	}
-	m.rampDownSet = time.Duration(i) * time.Millisecond
+	m._rampDownSet = time.Duration(i) * time.Millisecond
 	return len(b), nil
 }
 
@@ -493,8 +710,11 @@ func (m *tachoMotorRampDownSet) Size() (int64, error) {
 	return size(m), nil
 }
 
+// String returns a string representation of the attribute.
 func (m *tachoMotorRampDownSet) String() string {
-	return fmt.Sprint(int(m.rampDownSet / time.Millisecond))
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return fmt.Sprint(int(m._rampDownSet / time.Millisecond))
 }
 
 // tachoMotorSpeedPIDkd is the speed_pid/Kd attribute.
@@ -502,7 +722,7 @@ type tachoMotorSpeedPIDkd tachoMotor
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *tachoMotorSpeedPIDkd) ReadAt(b []byte, offset int64) (int, error) {
-	return readAt(b, offset, m.speedPIDkd)
+	return readAt(b, offset, m)
 }
 
 // Truncate is a no-op.
@@ -510,18 +730,27 @@ func (m *tachoMotorSpeedPIDkd) Truncate(_ int64) error { return nil }
 
 // WriteAt satisfies the io.WriterAt interface.
 func (m *tachoMotorSpeedPIDkd) WriteAt(b []byte, off int64) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	i, err := strconv.Atoi(string(chomp(b)))
 	if err != nil {
 		m.t.Errorf("unexpected error: %v", err)
 		return len(b), syscall.EINVAL
 	}
-	m.speedPIDkd = i
+	m._speedPIDkd = i
 	return len(b), nil
 }
 
 // Size returns the length of the backing data and a nil error.
 func (m *tachoMotorSpeedPIDkd) Size() (int64, error) {
-	return size(m.speedPIDkd), nil
+	return size(m), nil
+}
+
+// String returns a string representation of the attribute.
+func (m *tachoMotorSpeedPIDkd) String() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return fmt.Sprint(m._speedPIDkd)
 }
 
 // tachoMotorSpeedPIDki is the speed_pid/Ki attribute.
@@ -529,7 +758,7 @@ type tachoMotorSpeedPIDki tachoMotor
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *tachoMotorSpeedPIDki) ReadAt(b []byte, offset int64) (int, error) {
-	return readAt(b, offset, m.speedPIDki)
+	return readAt(b, offset, m)
 }
 
 // Truncate is a no-op.
@@ -537,18 +766,27 @@ func (m *tachoMotorSpeedPIDki) Truncate(_ int64) error { return nil }
 
 // WriteAt satisfies the io.WriterAt interface.
 func (m *tachoMotorSpeedPIDki) WriteAt(b []byte, off int64) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	i, err := strconv.Atoi(string(chomp(b)))
 	if err != nil {
 		m.t.Errorf("unexpected error: %v", err)
 		return len(b), syscall.EINVAL
 	}
-	m.speedPIDki = i
+	m._speedPIDki = i
 	return len(b), nil
 }
 
 // Size returns the length of the backing data and a nil error.
 func (m *tachoMotorSpeedPIDki) Size() (int64, error) {
-	return size(m.speedPIDki), nil
+	return size(m), nil
+}
+
+// String returns a string representation of the attribute.
+func (m *tachoMotorSpeedPIDki) String() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return fmt.Sprint(m._speedPIDki)
 }
 
 // tachoMotorSpeedPIDkp is the speed_pid/Kp attribute.
@@ -556,7 +794,7 @@ type tachoMotorSpeedPIDkp tachoMotor
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *tachoMotorSpeedPIDkp) ReadAt(b []byte, offset int64) (int, error) {
-	return readAt(b, offset, m.speedPIDkp)
+	return readAt(b, offset, m)
 }
 
 // Truncate is a no-op.
@@ -564,18 +802,27 @@ func (m *tachoMotorSpeedPIDkp) Truncate(_ int64) error { return nil }
 
 // WriteAt satisfies the io.WriterAt interface.
 func (m *tachoMotorSpeedPIDkp) WriteAt(b []byte, off int64) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	i, err := strconv.Atoi(string(chomp(b)))
 	if err != nil {
 		m.t.Errorf("unexpected error: %v", err)
 		return len(b), syscall.EINVAL
 	}
-	m.speedPIDkp = i
+	m._speedPIDkp = i
 	return len(b), nil
 }
 
 // Size returns the length of the backing data and a nil error.
 func (m *tachoMotorSpeedPIDkp) Size() (int64, error) {
-	return size(m.speedPIDkp), nil
+	return size(m), nil
+}
+
+// String returns a string representation of the attribute.
+func (m *tachoMotorSpeedPIDkp) String() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return fmt.Sprint(m._speedPIDkp)
 }
 
 // tachoMotorState is the state attribute.
@@ -591,8 +838,11 @@ func (m *tachoMotorState) Size() (int64, error) {
 	return size(m), nil
 }
 
+// String returns a string representation of the attribute.
 func (m *tachoMotorState) String() string {
-	s := strings.Replace(m.state.String(), "|", " ", -1)
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	s := strings.Replace(m._state.String(), "|", " ", -1)
 	if s == MotorState(0).String() {
 		return ""
 	}
@@ -604,10 +854,10 @@ type tachoMotorStopAction tachoMotor
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *tachoMotorStopAction) ReadAt(b []byte, offset int64) (int, error) {
-	if len(m.stopActions) == 0 {
+	if len((*tachoMotor)(m).stopActions()) == 0 {
 		return len(b), syscall.ENOTSUP
 	}
-	return readAt(b, offset, m.lastStopAction)
+	return readAt(b, offset, m)
 }
 
 // Truncate is a no-op.
@@ -615,13 +865,15 @@ func (m *tachoMotorStopAction) Truncate(_ int64) error { return nil }
 
 // WriteAt satisfies the io.WriterAt interface.
 func (m *tachoMotorStopAction) WriteAt(b []byte, off int64) (int, error) {
-	if len(m.stopActions) == 0 {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if len(m._stopActions) == 0 {
 		return len(b), syscall.ENOTSUP
 	}
 	stopAction := string(chomp(b))
-	for _, c := range m.stopActions {
+	for _, c := range m._stopActions {
 		if stopAction == c {
-			m.lastStopAction = stopAction
+			m._lastStopAction = stopAction
 			return len(b), nil
 		}
 	}
@@ -630,7 +882,14 @@ func (m *tachoMotorStopAction) WriteAt(b []byte, off int64) (int, error) {
 
 // Size returns the length of the backing data and a nil error.
 func (m *tachoMotorStopAction) Size() (int64, error) {
-	return size(m.lastStopAction), nil
+	return size(m), nil
+}
+
+// String returns a string representation of the attribute.
+func (m *tachoMotorStopAction) String() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m._lastStopAction
 }
 
 // tachoMotorTimeSet is the time_sp attribute.
@@ -646,6 +905,8 @@ func (m *tachoMotorTimeSet) Truncate(_ int64) error { return nil }
 
 // WriteAt satisfies the io.WriterAt interface.
 func (m *tachoMotorTimeSet) WriteAt(b []byte, off int64) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	i, err := strconv.Atoi(string(chomp(b)))
 	if i < 0 {
 		err = errors.New("ev3dev: negative duration")
@@ -654,7 +915,7 @@ func (m *tachoMotorTimeSet) WriteAt(b []byte, off int64) (int, error) {
 		m.t.Errorf("unexpected error: %v", err)
 		return len(b), syscall.EINVAL
 	}
-	m.timeSet = time.Duration(i) * time.Millisecond
+	m._timeSet = time.Duration(i) * time.Millisecond
 	return len(b), nil
 }
 
@@ -663,8 +924,11 @@ func (m *tachoMotorTimeSet) Size() (int64, error) {
 	return size(m), nil
 }
 
+// String returns a string representation of the attribute.
 func (m *tachoMotorTimeSet) String() string {
-	return fmt.Sprint(int(m.timeSet / time.Millisecond))
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return fmt.Sprint(int(m._timeSet / time.Millisecond))
 }
 
 // tachoMotorUevent is the uevent attribute.
@@ -680,9 +944,12 @@ func (m *tachoMotorUevent) Size() (int64, error) {
 	return size(m), nil
 }
 
+// String returns a string representation of the attribute.
 func (m *tachoMotorUevent) String() string {
-	e := make([]string, 0, len(m.uevent))
-	for k, v := range m.uevent {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	e := make([]string, 0, len(m._uevent))
+	for k, v := range m._uevent {
 		e = append(e, fmt.Sprintf("%s=%s", k, v))
 	}
 	sort.Strings(e)
@@ -754,7 +1021,7 @@ func TestTachoMotor(t *testing.T) {
 				address: "outA",
 				driver:  driver,
 
-				commands: []string{
+				_commands: []string{
 					"run-forever",
 					"run-to-abs-pos",
 					"run-to-rel-pos",
@@ -764,14 +1031,14 @@ func TestTachoMotor(t *testing.T) {
 					"reset",
 				},
 
-				lastStopAction: "coast",
-				stopActions: []string{
+				_lastStopAction: "coast",
+				_stopActions: []string{
 					"coast",
 					"brake",
 					"hold",
 				},
 
-				uevent: map[string]string{
+				_uevent: map[string]string{
 					"LEGO_ADDRESS":     "outA",
 					"LEGO_DRIVER_NAME": driver,
 				},
@@ -916,7 +1183,8 @@ func TestTachoMotor(t *testing.T) {
 				t.Fatalf("unexpected error: %v", err)
 			}
 			commands, err := m.Commands()
-			if len(c.tachoMotor.commands) == 0 {
+			want := c.tachoMotor.commands()
+			if len(want) == 0 {
 				if err == nil {
 					t.Error("expected error getting commands from non-commandable tachoMotor")
 				}
@@ -925,8 +1193,8 @@ func TestTachoMotor(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error getting commands: %v", err)
 			}
-			if !reflect.DeepEqual(commands, c.tachoMotor.commands) {
-				t.Errorf("unexpected commands value: got:%q want:%q", commands, c.tachoMotor.commands)
+			if !reflect.DeepEqual(commands, want) {
+				t.Errorf("unexpected commands value: got:%q want:%q", commands, want)
 			}
 			for _, command := range commands {
 				err := m.Command(command).Err()
@@ -934,7 +1202,7 @@ func TestTachoMotor(t *testing.T) {
 					t.Errorf("unexpected error for command %q: %v", command, err)
 				}
 
-				got := c.tachoMotor.lastCommand
+				got := c.tachoMotor.lastCommand()
 				want := command
 				if got != want {
 					t.Errorf("unexpected command value: got:%q want:%q", got, want)
@@ -946,7 +1214,7 @@ func TestTachoMotor(t *testing.T) {
 					t.Errorf("expected error for command %q", command)
 				}
 
-				got := c.tachoMotor.lastCommand
+				got := c.tachoMotor.lastCommand()
 				dontwant := command
 				if got == dontwant {
 					t.Errorf("unexpected invalid command value: got:%q don't want:%q", got, dontwant)
@@ -961,12 +1229,13 @@ func TestTachoMotor(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			for _, c.tachoMotor.countPerRot = range []int{0, 64, 128, 192, 255} {
+			for _, n := range []int{0, 64, 128, 192, 255} {
+				c.tachoMotor.setCountsPerRot(n)
 				got, err := m.CountPerRot()
 				if err != nil {
 					t.Errorf("unexpected error: %v", err)
 				}
-				want := c.tachoMotor.countPerRot
+				want := c.tachoMotor.countsPerRot()
 				if got != want {
 					t.Errorf("unexpected count per rot value: got:%d want:%d", got, want)
 				}
@@ -980,12 +1249,13 @@ func TestTachoMotor(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			for _, c.tachoMotor.dutyCycle = range []int{0, 64, 128, 192, 255} {
+			for _, p := range []int{0, 64, 128, 192, 255} {
+				c.tachoMotor.setDutyCycle(p)
 				got, err := m.DutyCycle()
 				if err != nil {
 					t.Errorf("unexpected error: %v", err)
 				}
-				want := c.tachoMotor.dutyCycle
+				want := c.tachoMotor.dutyCycle()
 				if got != want {
 					t.Errorf("unexpected duty cycle value: got:%d want:%d", got, want)
 				}
@@ -1206,12 +1476,13 @@ func TestTachoMotor(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			for _, c.tachoMotor.maxSpeed = range []int{0, 64, 128, 192, 255} {
+			for _, s := range []int{0, 64, 128, 192, 255} {
+				c.tachoMotor.setMaxSpeed(s)
 				got, err := m.MaxSpeed()
 				if err != nil {
 					t.Errorf("unexpected error: %v", err)
 				}
-				want := c.tachoMotor.maxSpeed
+				want := c.tachoMotor.maxSpeed()
 				if got != want {
 					t.Errorf("unexpected max speed value: got:%d want:%d", got, want)
 				}
@@ -1225,12 +1496,13 @@ func TestTachoMotor(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			for _, c.tachoMotor.speed = range []int{0, 64, 128, 192, 255} {
+			for _, s := range []int{0, 64, 128, 192, 255} {
+				c.tachoMotor.setSpeed(s)
 				got, err := m.Speed()
 				if err != nil {
 					t.Errorf("unexpected error: %v", err)
 				}
-				want := c.tachoMotor.speed
+				want := c.tachoMotor.speed()
 				if got != want {
 					t.Errorf("unexpected speed value: got:%d want:%d", got, want)
 				}
@@ -1400,7 +1672,7 @@ func TestTachoMotor(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			for _, c.tachoMotor.state = range []MotorState{
+			for _, s := range []MotorState{
 				0,
 				Running,
 				Running | Ramping,
@@ -1409,11 +1681,12 @@ func TestTachoMotor(t *testing.T) {
 				Running | Stalled | Overloaded,
 				Holding,
 			} {
+				c.tachoMotor.setState(s)
 				got, err := m.State()
 				if err != nil {
 					t.Errorf("unexpected error: %v", err)
 				}
-				want := c.tachoMotor.state
+				want := c.tachoMotor.state()
 				if got != want {
 					t.Errorf("unexpected state value: got:%v want:%v", got, want)
 				}
@@ -1428,7 +1701,8 @@ func TestTachoMotor(t *testing.T) {
 				t.Fatalf("unexpected error: %v", err)
 			}
 			stopActions, err := m.StopActions()
-			if len(c.tachoMotor.stopActions) == 0 {
+			want := c.tachoMotor.stopActions()
+			if len(want) == 0 {
 				if err == nil {
 					t.Error("expected error getting stop actions from non-stop action tachoMotor")
 				}
@@ -1437,8 +1711,8 @@ func TestTachoMotor(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error getting stop actions: %v", err)
 			}
-			if !reflect.DeepEqual(stopActions, c.tachoMotor.stopActions) {
-				t.Errorf("unexpected stop actions value: got:%q want:%q", stopActions, c.tachoMotor.stopActions)
+			if !reflect.DeepEqual(stopActions, want) {
+				t.Errorf("unexpected stop actions value: got:%q want:%q", stopActions, want)
 			}
 			for _, stopAction := range stopActions {
 				err := m.SetStopAction(stopAction).Err()
@@ -1446,7 +1720,7 @@ func TestTachoMotor(t *testing.T) {
 					t.Errorf("unexpected error for set stop action %q: %v", stopAction, err)
 				}
 
-				got := c.tachoMotor.lastStopAction
+				got := c.tachoMotor.lastStopAction()
 				want := stopAction
 				if got != want {
 					t.Errorf("unexpected stop action value: got:%q want:%q", got, want)
@@ -1466,7 +1740,7 @@ func TestTachoMotor(t *testing.T) {
 					t.Errorf("expected error for set stop action %q", stopAction)
 				}
 
-				got := c.tachoMotor.lastStopAction
+				got := c.tachoMotor.lastStopAction()
 				dontwant := stopAction
 				if got == dontwant {
 					t.Errorf("unexpected invalid stop action value: got:%q don't want:%q", got, dontwant)
@@ -1515,7 +1789,7 @@ func TestTachoMotor(t *testing.T) {
 			if err != nil {
 				t.Errorf("unexpected error getting uevent: %v", err)
 			}
-			want := c.tachoMotor.uevent
+			want := c.tachoMotor.uevent()
 			if !reflect.DeepEqual(got, want) {
 				t.Errorf("unexpected uevent value: got:%v want:%v", got, want)
 			}

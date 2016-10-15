@@ -11,6 +11,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"testing"
 	"time"
@@ -25,23 +26,51 @@ type servoMotor struct {
 	address string
 	driver  string
 
-	lastCommand string
+	// mu protects the underscore
+	// prefix attributes below.
+	mu sync.Mutex
 
-	polarity Polarity
+	_lastCommand string
 
-	maxPulseSet time.Duration
-	midPulseSet time.Duration
-	minPulseSet time.Duration
+	_polarity Polarity
 
-	positionSet int
+	_maxPulseSet time.Duration
+	_midPulseSet time.Duration
+	_minPulseSet time.Duration
 
-	rateSet time.Duration
+	_positionSet int
 
-	state MotorState
+	_rateSet time.Duration
 
-	uevent map[string]string
+	_state MotorState
+
+	_uevent map[string]string
 
 	t *testing.T
+}
+
+func (m *servoMotor) lastCommand() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m._lastCommand
+}
+
+func (m *servoMotor) state() MotorState {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m._state
+}
+
+func (m *servoMotor) setState(s MotorState) {
+	m.mu.Lock()
+	m._state = s
+	m.mu.Unlock()
+}
+
+func (m *servoMotor) uevent() map[string]string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m._uevent
 }
 
 // servoMotorAddress is the address attribute.
@@ -83,6 +112,7 @@ func (m *servoMotorCommands) Size() (int64, error) {
 	return size(m), nil
 }
 
+// String returns a string representation of the attribute.
 func (m *servoMotorCommands) String() string {
 	return "run float"
 }
@@ -95,10 +125,12 @@ func (m *servoMotorCommand) Truncate(_ int64) error { return nil }
 
 // WriteAt satisfies the io.WriterAt interface.
 func (m *servoMotorCommand) WriteAt(b []byte, off int64) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	command := string(chomp(b))
 	for _, c := range []string{"run", "float"} {
 		if command == c {
-			m.lastCommand = command
+			m._lastCommand = command
 			return len(b), nil
 		}
 	}
@@ -107,7 +139,14 @@ func (m *servoMotorCommand) WriteAt(b []byte, off int64) (int, error) {
 
 // Size returns the length of the backing data and a nil error.
 func (m *servoMotorCommand) Size() (int64, error) {
-	return size(m.lastCommand), nil
+	return size(m), nil
+}
+
+// String returns a string representation of the attribute.
+func (m *servoMotorCommand) String() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m._lastCommand
 }
 
 // servoMotorMaxPulseSet is the max_pulse_sp attribute.
@@ -123,6 +162,8 @@ func (m *servoMotorMaxPulseSet) Truncate(_ int64) error { return nil }
 
 // WriteAt satisfies the io.WriterAt interface.
 func (m *servoMotorMaxPulseSet) WriteAt(b []byte, off int64) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	i, err := strconv.Atoi(string(chomp(b)))
 	d := time.Duration(i) * time.Millisecond
 	if err == nil && (d < 2300*time.Millisecond || 2700*time.Millisecond < d) {
@@ -132,7 +173,7 @@ func (m *servoMotorMaxPulseSet) WriteAt(b []byte, off int64) (int, error) {
 		m.t.Errorf("unexpected error: %v", err)
 		return len(b), syscall.EINVAL
 	}
-	m.maxPulseSet = d
+	m._maxPulseSet = d
 	return len(b), nil
 }
 
@@ -141,8 +182,11 @@ func (m *servoMotorMaxPulseSet) Size() (int64, error) {
 	return size(m), nil
 }
 
+// String returns a string representation of the attribute.
 func (m *servoMotorMaxPulseSet) String() string {
-	return fmt.Sprint(int(m.maxPulseSet / time.Millisecond))
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return fmt.Sprint(int(m._maxPulseSet / time.Millisecond))
 }
 
 // servoMotorMidPulseSet is the mid_pulse_sp attribute.
@@ -158,6 +202,8 @@ func (m *servoMotorMidPulseSet) Truncate(_ int64) error { return nil }
 
 // WriteAt satisfies the io.WriterAt interface.
 func (m *servoMotorMidPulseSet) WriteAt(b []byte, off int64) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	i, err := strconv.Atoi(string(chomp(b)))
 	d := time.Duration(i) * time.Millisecond
 	if err == nil && (d < 1300*time.Millisecond || 1700*time.Millisecond < d) {
@@ -167,7 +213,7 @@ func (m *servoMotorMidPulseSet) WriteAt(b []byte, off int64) (int, error) {
 		m.t.Errorf("unexpected error: %v", err)
 		return len(b), syscall.EINVAL
 	}
-	m.midPulseSet = d
+	m._midPulseSet = d
 	return len(b), nil
 }
 
@@ -176,8 +222,11 @@ func (m *servoMotorMidPulseSet) Size() (int64, error) {
 	return size(m), nil
 }
 
+// String returns a string representation of the attribute.
 func (m *servoMotorMidPulseSet) String() string {
-	return fmt.Sprint(int(m.midPulseSet / time.Millisecond))
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return fmt.Sprint(int(m._midPulseSet / time.Millisecond))
 }
 
 // servoMotorMinPulseSet is the min_pulse_sp attribute.
@@ -193,6 +242,8 @@ func (m *servoMotorMinPulseSet) Truncate(_ int64) error { return nil }
 
 // WriteAt satisfies the io.WriterAt interface.
 func (m *servoMotorMinPulseSet) WriteAt(b []byte, off int64) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	i, err := strconv.Atoi(string(chomp(b)))
 	d := time.Duration(i) * time.Millisecond
 	if err == nil && (d < 300*time.Millisecond || 700*time.Millisecond < d) {
@@ -202,7 +253,7 @@ func (m *servoMotorMinPulseSet) WriteAt(b []byte, off int64) (int, error) {
 		m.t.Errorf("unexpected error: %v", err)
 		return len(b), syscall.EINVAL
 	}
-	m.minPulseSet = d
+	m._minPulseSet = d
 	return len(b), nil
 }
 
@@ -211,8 +262,11 @@ func (m *servoMotorMinPulseSet) Size() (int64, error) {
 	return size(m), nil
 }
 
+// String returns a string representation of the attribute.
 func (m *servoMotorMinPulseSet) String() string {
-	return fmt.Sprint(int(m.minPulseSet / time.Millisecond))
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return fmt.Sprint(int(m._minPulseSet / time.Millisecond))
 }
 
 // servoMotorPolarity is the polarity attribute.
@@ -220,7 +274,7 @@ type servoMotorPolarity servoMotor
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *servoMotorPolarity) ReadAt(b []byte, offset int64) (int, error) {
-	return readAt(b, offset, m.polarity)
+	return readAt(b, offset, m)
 }
 
 // Truncate is a no-op.
@@ -228,10 +282,12 @@ func (m *servoMotorPolarity) Truncate(_ int64) error { return nil }
 
 // WriteAt satisfies the io.WriterAt interface.
 func (m *servoMotorPolarity) WriteAt(b []byte, off int64) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	p := Polarity(b)
 	switch p {
 	case "normal", "inversed":
-		m.polarity = p
+		m._polarity = p
 	default:
 		m.t.Errorf("unexpected error: %q", b)
 		return len(b), syscall.EINVAL
@@ -241,7 +297,14 @@ func (m *servoMotorPolarity) WriteAt(b []byte, off int64) (int, error) {
 
 // Size returns the length of the backing data and a nil error.
 func (m *servoMotorPolarity) Size() (int64, error) {
-	return size(m.polarity), nil
+	return size(m), nil
+}
+
+// String returns a string representation of the attribute.
+func (m *servoMotorPolarity) String() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return string(m._polarity)
 }
 
 // servoMotorPositionSet is the position_sp attribute.
@@ -249,7 +312,7 @@ type servoMotorPositionSet servoMotor
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *servoMotorPositionSet) ReadAt(b []byte, offset int64) (int, error) {
-	return readAt(b, offset, m.positionSet)
+	return readAt(b, offset, m)
 }
 
 // Truncate is a no-op.
@@ -257,6 +320,8 @@ func (m *servoMotorPositionSet) Truncate(_ int64) error { return nil }
 
 // WriteAt satisfies the io.WriterAt interface.
 func (m *servoMotorPositionSet) WriteAt(b []byte, off int64) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	i, err := strconv.Atoi(string(chomp(b)))
 	if i < -100 || 100 < i {
 		err = fmt.Errorf("ev3dev: set position out of range: %d not in -100 - 100", i)
@@ -265,13 +330,20 @@ func (m *servoMotorPositionSet) WriteAt(b []byte, off int64) (int, error) {
 		m.t.Errorf("unexpected error: %v", err)
 		return len(b), syscall.EINVAL
 	}
-	m.positionSet = i
+	m._positionSet = i
 	return len(b), nil
 }
 
 // Size returns the length of the backing data and a nil error.
 func (m *servoMotorPositionSet) Size() (int64, error) {
-	return size(m.positionSet), nil
+	return size(m), nil
+}
+
+// String returns a string representation of the attribute.
+func (m *servoMotorPositionSet) String() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return fmt.Sprint(m._positionSet)
 }
 
 // servoMotorRateSet is the rate_sp attribute.
@@ -287,6 +359,8 @@ func (m *servoMotorRateSet) Truncate(_ int64) error { return nil }
 
 // WriteAt satisfies the io.WriterAt interface.
 func (m *servoMotorRateSet) WriteAt(b []byte, off int64) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	i, err := strconv.Atoi(string(chomp(b)))
 	if i < 0 {
 		err = errors.New("ev3dev: negative duration")
@@ -295,7 +369,7 @@ func (m *servoMotorRateSet) WriteAt(b []byte, off int64) (int, error) {
 		m.t.Errorf("unexpected error: %v", err)
 		return len(b), syscall.EINVAL
 	}
-	m.rateSet = time.Duration(i) * time.Millisecond
+	m._rateSet = time.Duration(i) * time.Millisecond
 	return len(b), nil
 }
 
@@ -304,8 +378,11 @@ func (m *servoMotorRateSet) Size() (int64, error) {
 	return size(m), nil
 }
 
+// String returns a string representation of the attribute.
 func (m *servoMotorRateSet) String() string {
-	return fmt.Sprint(int(m.rateSet / time.Millisecond))
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return fmt.Sprint(int(m._rateSet / time.Millisecond))
 }
 
 // servoMotorState is the state attribute.
@@ -321,8 +398,11 @@ func (m *servoMotorState) Size() (int64, error) {
 	return size(m), nil
 }
 
+// String returns a string representation of the attribute.
 func (m *servoMotorState) String() string {
-	s := strings.Replace(m.state.String(), "|", " ", -1)
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	s := strings.Replace(m._state.String(), "|", " ", -1)
 	if s == MotorState(0).String() {
 		return ""
 	}
@@ -342,9 +422,12 @@ func (m *servoMotorUevent) Size() (int64, error) {
 	return size(m), nil
 }
 
+// String returns a string representation of the attribute.
 func (m *servoMotorUevent) String() string {
-	e := make([]string, 0, len(m.uevent))
-	for k, v := range m.uevent {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	e := make([]string, 0, len(m._uevent))
+	for k, v := range m._uevent {
 		e = append(e, fmt.Sprintf("%s=%s", k, v))
 	}
 	sort.Strings(e)
@@ -398,7 +481,7 @@ func TestServoMotor(t *testing.T) {
 				address: "outD",
 				driver:  driver,
 
-				uevent: map[string]string{
+				_uevent: map[string]string{
 					"LEGO_ADDRESS":     "outD",
 					"LEGO_DRIVER_NAME": driver,
 				},
@@ -548,7 +631,7 @@ func TestServoMotor(t *testing.T) {
 					t.Errorf("unexpected error for command %q: %v", command, err)
 				}
 
-				got := c.servoMotor.lastCommand
+				got := c.servoMotor.lastCommand()
 				want := command
 				if got != want {
 					t.Errorf("unexpected command value: got:%q want:%q", got, want)
@@ -560,7 +643,7 @@ func TestServoMotor(t *testing.T) {
 					t.Errorf("expected error for command %q", command)
 				}
 
-				got := c.servoMotor.lastCommand
+				got := c.servoMotor.lastCommand()
 				dontwant := command
 				if got == dontwant {
 					t.Errorf("unexpected invalid command value: got:%q don't want:%q", got, dontwant)
@@ -794,7 +877,7 @@ func TestServoMotor(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			for _, c.servoMotor.state = range []MotorState{
+			for _, s := range []MotorState{
 				0,
 				Running,
 				Running | Ramping,
@@ -803,11 +886,12 @@ func TestServoMotor(t *testing.T) {
 				Running | Stalled | Overloaded,
 				Holding,
 			} {
+				c.servoMotor.setState(s)
 				got, err := m.State()
 				if err != nil {
 					t.Errorf("unexpected error: %v", err)
 				}
-				want := c.servoMotor.state
+				want := c.servoMotor.state()
 				if got != want {
 					t.Errorf("unexpected state value: got:%v want:%v", got, want)
 				}
@@ -825,7 +909,7 @@ func TestServoMotor(t *testing.T) {
 			if err != nil {
 				t.Errorf("unexpected error getting uevent: %v", err)
 			}
-			want := c.servoMotor.uevent
+			want := c.servoMotor.uevent()
 			if !reflect.DeepEqual(got, want) {
 				t.Errorf("unexpected uevent value: got:%v want:%v", got, want)
 			}

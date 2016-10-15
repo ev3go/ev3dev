@@ -10,6 +10,7 @@ import (
 	"reflect"
 	"sort"
 	"strings"
+	"sync"
 	"syscall"
 	"testing"
 
@@ -23,16 +24,50 @@ type legoPort struct {
 	address string
 	driver  string
 
-	mode  string
-	modes []string
+	// mu protects the underscore
+	// prefix attributes below.
+	mu sync.Mutex
 
-	device string
+	_mode  string
+	_modes []string
 
-	status string
+	_device string
 
-	uevent map[string]string
+	_status string
+
+	_uevent map[string]string
 
 	t *testing.T
+}
+
+func (p *legoPort) modes() []string {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p._modes
+}
+
+func (p *legoPort) device() string {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p._device
+}
+
+func (p *legoPort) status() string {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p._status
+}
+
+func (p *legoPort) setStatus(s string) {
+	p.mu.Lock()
+	p._status = s
+	p.mu.Unlock()
+}
+
+func (p *legoPort) uevent() map[string]string {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p._uevent
 }
 
 // legoPortAddress is the address attribute.
@@ -40,12 +75,19 @@ type legoPortAddress legoPort
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (p *legoPortAddress) ReadAt(b []byte, offset int64) (int, error) {
-	return readAt(b, offset, p.address)
+	return readAt(b, offset, p)
 }
 
 // Size returns the length of the backing data and a nil error.
 func (p *legoPortAddress) Size() (int64, error) {
-	return size(p.address), nil
+	return size(p), nil
+}
+
+// String returns a string representation of the attribute.
+func (p *legoPortAddress) String() string {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.address
 }
 
 // legoPortDriver is the driver_name attribute.
@@ -53,12 +95,19 @@ type legoPortDriver legoPort
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (p *legoPortDriver) ReadAt(b []byte, offset int64) (int, error) {
-	return readAt(b, offset, p.driver)
+	return readAt(b, offset, p)
 }
 
 // Size returns the length of the backing data and a nil error.
 func (p *legoPortDriver) Size() (int64, error) {
-	return size(p.driver), nil
+	return size(p), nil
+}
+
+// String returns a string representation of the attribute.
+func (p *legoPortDriver) String() string {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.driver
 }
 
 // legoPortModes is the modes attribute.
@@ -74,9 +123,12 @@ func (p *legoPortModes) Size() (int64, error) {
 	return size(p), nil
 }
 
+// String returns a string representation of the attribute.
 func (p *legoPortModes) String() string {
-	sort.Strings(p.modes)
-	return strings.Join(p.modes, " ")
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	sort.Strings(p._modes)
+	return strings.Join(p._modes, " ")
 }
 
 // legoPortMode is the mode attribute.
@@ -84,7 +136,7 @@ type legoPortMode legoPort
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (p *legoPortMode) ReadAt(b []byte, offset int64) (int, error) {
-	return readAt(b, offset, p.mode)
+	return readAt(b, offset, p)
 }
 
 // Truncate is a no-op.
@@ -92,10 +144,12 @@ func (p *legoPortMode) Truncate(_ int64) error { return nil }
 
 // WriteAt satisfies the io.WriterAt interface.
 func (p *legoPortMode) WriteAt(b []byte, off int64) (int, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
 	mode := string(chomp(b))
-	for _, c := range p.modes {
+	for _, c := range p._modes {
 		if mode == c {
-			p.mode = mode
+			p._mode = mode
 			return len(b), nil
 		}
 	}
@@ -104,7 +158,14 @@ func (p *legoPortMode) WriteAt(b []byte, off int64) (int, error) {
 
 // Size returns the length of the backing data and a nil error.
 func (p *legoPortMode) Size() (int64, error) {
-	return size(p.mode), nil
+	return size(p), nil
+}
+
+// String returns a string representation of the attribute.
+func (p *legoPortMode) String() string {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p._mode
 }
 
 // legoPortStatus is the status attribute.
@@ -112,12 +173,19 @@ type legoPortStatus legoPort
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (p *legoPortStatus) ReadAt(b []byte, offset int64) (int, error) {
-	return readAt(b, offset, p.status)
+	return readAt(b, offset, p)
 }
 
 // Size returns the length of the backing data and a nil error.
 func (p *legoPortStatus) Size() (int64, error) {
-	return size(p.status), nil
+	return size(p), nil
+}
+
+// String returns a string representation of the attribute.
+func (p *legoPortStatus) String() string {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p._status
 }
 
 // legoPortSetDevice is the set_device attribute.
@@ -128,13 +196,22 @@ func (p *legoPortSetDevice) Truncate(_ int64) error { return nil }
 
 // WriteAt satisfies the io.WriterAt interface.
 func (p *legoPortSetDevice) WriteAt(b []byte, off int64) (int, error) {
-	p.device = string(chomp(b))
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p._device = string(chomp(b))
 	return len(b), nil
 }
 
 // Size returns the length of the backing data and a nil error.
 func (p *legoPortSetDevice) Size() (int64, error) {
-	return size(p.device), nil
+	return size(p), nil
+}
+
+// String returns a string representation of the attribute.
+func (p *legoPortSetDevice) String() string {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p._device
 }
 
 // legoPortUevent is the uevent attribute.
@@ -150,9 +227,12 @@ func (p *legoPortUevent) Size() (int64, error) {
 	return size(p), nil
 }
 
+// String returns a string representation of the attribute.
 func (p *legoPortUevent) String() string {
-	e := make([]string, 0, len(p.uevent))
-	for k, v := range p.uevent {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	e := make([]string, 0, len(p._uevent))
+	for k, v := range p._uevent {
 		e = append(e, fmt.Sprintf("%s=%s", k, v))
 	}
 	sort.Strings(e)
@@ -201,10 +281,10 @@ func TestLegoPort(t *testing.T) {
 				address: "in1",
 				driver:  driver,
 
-				modes: []string{"GYRO-ANG", "GYRO-RATE", "GYRO-FAS", "GYRO-G&A", "GYRO-CAL"},
-				mode:  "GYRO-ANG",
+				_modes: []string{"GYRO-ANG", "GYRO-RATE", "GYRO-FAS", "GYRO-G&A", "GYRO-CAL"},
+				_mode:  "GYRO-ANG",
 
-				uevent: map[string]string{
+				_uevent: map[string]string{
 					"DEVTYPE":          "legoev3-input-port",
 					"LEGO_DRIVER_NAME": driver,
 					"LEGO_ADDRESS":     "in1",
@@ -352,8 +432,9 @@ func TestLegoPort(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error getting modes: %v", err)
 		}
-		if !reflect.DeepEqual(modes, conn[0].legoPort.modes) {
-			t.Errorf("unexpected modes value: got:%q want:%q", modes, conn[0].legoPort.modes)
+		want := conn[0].legoPort.modes()
+		if !reflect.DeepEqual(modes, want) {
+			t.Errorf("unexpected modes value: got:%q want:%q", modes, want)
 		}
 		for _, mode := range modes {
 			err := p.SetMode(mode).Err()
@@ -398,7 +479,7 @@ func TestLegoPort(t *testing.T) {
 				t.Errorf("unexpected error for device %q: %v", device, err)
 			}
 
-			got := conn[0].legoPort.device
+			got := conn[0].legoPort.device()
 			want := device
 			if got != want {
 				t.Errorf("unexpected device value: got:%q want:%q", got, want)
@@ -411,12 +492,13 @@ func TestLegoPort(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		for _, conn[0].legoPort.status = range []string{"device", "error", "no-device"} {
+		for _, status := range []string{"device", "error", "no-device"} {
+			conn[0].legoPort.setStatus(status)
 			got, err := p.Status()
 			if err != nil {
 				t.Errorf("unexpected error: %v", err)
 			}
-			want := conn[0].legoPort.status
+			want := conn[0].legoPort.status()
 			if got != want {
 				t.Errorf("unexpected status value: got:%q want:%q", got, want)
 			}
@@ -433,7 +515,7 @@ func TestLegoPort(t *testing.T) {
 			if err != nil {
 				t.Errorf("unexpected error getting uevent: %v", err)
 			}
-			want := c.legoPort.uevent
+			want := c.legoPort.uevent()
 			if !reflect.DeepEqual(got, want) {
 				t.Errorf("unexpected uevent value: got:%v want:%v", got, want)
 			}
