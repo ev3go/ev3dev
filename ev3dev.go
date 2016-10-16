@@ -224,75 +224,17 @@ type StaterDevice interface {
 	State() (MotorState, error)
 }
 
-// TODO(kortschak) Remove this when pre-poll kernels are not supported.
-func init() {
-	b, err := ioutil.ReadFile("/proc/version")
-	if err != nil {
-		return
-	}
-	pollIsSupported = kernelSatisfies(minKernelVersion, string(chomp(b)))
-}
-
-var (
-	minKernelVersion = [4]int{4, 4, 19, 15}
-	pollIsSupported  bool
-)
-
-func kernelSatisfies(min [4]int, kernel string) bool {
-	const prefix = "Linux version "
-	if !strings.HasPrefix(kernel, prefix) {
-		return false
-	}
-	kernel = kernel[len(prefix):]
-	version := strings.SplitN(kernel, " ", 2)[0]
-	if !strings.Contains(version, "ev3dev") {
-		return false
-	}
-
-	// TODO(kortschak) Remove this when poll support PR is merged in ev3dev.
-	if !strings.Contains(version, "kortschak") {
-		return false
-	}
-
-	parts := strings.FieldsFunc(version, func(r rune) bool { return r == '.' || r == '-' })
-	if len(parts) < 3 {
-		return false
-	}
-
-	const (
-		major = iota
-		minor
-		patch
-		revision
-	)
-	var semver [4]int
-	for i, p := range parts[:len(semver)] {
-		var err error
-		semver[i], err = strconv.Atoi(p)
-		if err != nil {
-			return false
-		}
-	}
-
-	var ok bool
-	for i, v := range semver {
-		min := minKernelVersion[i]
-		if v != min {
-			return v > min
-		}
-		ok = true
-	}
-	return ok
-}
+var canPoll = true
 
 // Wait blocks until the wanted motor state under the motor state mask is
-// reached, or the timeout is reached.
+// reached, or the timeout is reached. If timeout is negative Wait will wait
+// indefinitely for the wanted motor state has been reached.
 // The last unmasked motor state is returned unless the timeout was reached
 // before the motor state was read.
 // When the any parameter is false, Wait will return ok as true if
 //  (state&mask)^not == want|not
 // and when any is true Wait return false if
-//  (state&mask)^not != 0.
+//  (state&mask)^not != 0 && state&mask&not == 0 .
 // Otherwise ok will return false indicating that the returned state did
 // not match the request.
 // Wait will not set the error state of the StaterDevice, but will clear and
@@ -329,18 +271,6 @@ func Wait(d StaterDevice, mask, want, not MotorState, any bool, timeout time.Dur
 		return stat, true, nil
 	}
 
-	// The sysfs_notify hooks in the motor drivers
-	// do not monitor stalled or overloaded states,
-	// so if the user wants to wait on these, we
-	// cannot use poll.
-	var canPoll bool
-	if pollIsSupported {
-		noPollMask := mask & (Stalled | Overloaded)
-		if !any {
-			noPollMask &= want | not
-		}
-		canPoll = noPollMask == 0
-	}
 	var fds []unix.PollFd
 	if canPoll {
 		fds = []unix.PollFd{{Fd: int32(f.Fd()), Events: unix.POLLIN}}
@@ -398,7 +328,8 @@ func motorState(d Device, f *os.File) (MotorState, error) {
 
 func stateIsOK(stat, mask, want, not MotorState, any bool) bool {
 	if any {
-		return (stat&mask)^not != 0
+		stat &= mask
+		return stat^not != 0 && stat&not == 0
 	}
 	return (stat&mask)^not == want|not
 }

@@ -9,7 +9,12 @@ var Prefix string
 func init() {
 	prefix = "testmount"
 	Prefix = prefix
+
+	// We cannot use poll(2) for waiting on motor state attribute in testing.
+	canPoll = false
 }
+
+var StateIsOK = stateIsOK
 
 type mockDevice struct{}
 
