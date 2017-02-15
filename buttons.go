@@ -43,7 +43,7 @@ func (b *ButtonPoller) Poll() (Button, error) {
 func getButton(buf []byte) Button {
 	var pressed Button
 	for i, bit := range &buttons {
-		if !isSet(bit, buf) {
+		if isSet(bit, buf) {
 			pressed |= 1 << uint(i)
 		}
 	}

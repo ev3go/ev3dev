@@ -5,7 +5,7 @@
 
 The goal is to implement a simple Go style ev3dev API and helpers for common tasks.
 
-github.com/ev3go/ev3dev depends on an ev3dev kernel v4.4.24-16-ev3dev-ev3, v4.4.24-ti-rt-r55-16-ev3dev-bb.org, v4.4.23-16-ev3dev-rpi or v4.4.23-16-ev3dev-rpi2, or better (http://www.ev3dev.org/news/2016/10/15/kernel-release-cycle-16/).
+github.com/ev3go/ev3dev depends on an 18-ev3dev kernel or better (http://www.ev3dev.org/news/2017/01/25/kernel-release-cycle-18/).
 
 For device-specific functions see [EV3](https://github.com/ev3go/ev3) and [BrickPi](https://github.com/ev3go/brickpi).
 
