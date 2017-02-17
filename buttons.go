@@ -117,7 +117,7 @@ func (b *ButtonWaiter) Close() error {
 }
 
 // ButtonEvent is a button event, including the time of the event. The Err
-// value reflects any error state arising from detected the event.
+// value reflects any error state arising from detecting the event.
 type ButtonEvent struct {
 	Button      Button
 	TimeStamp   time.Duration
