@@ -21,7 +21,7 @@ var intFromTest = []struct {
 	wantInt int
 	wantErr error
 }{
-	{data: "", attr: "empty", err: nil, wantInt: -1, wantErr: errors.New(`ev3dev: failed to parse mock empty attribute path/mock/empty: strconv.ParseInt: parsing "": invalid syntax at ev3dev_conv_test.go:`)},
+	{data: "", attr: "empty", err: nil, wantInt: -1, wantErr: errors.New(`ev3dev: failed to parse mock empty attribute path/mock/empty: strconv.Atoi: parsing "": invalid syntax at ev3dev_conv_test.go:`)},
 	{data: "1", attr: "one", err: nil, wantInt: 1, wantErr: nil},
 	{data: "0", attr: "zero", err: nil, wantInt: 0, wantErr: nil},
 	{data: "-1", attr: "minus_one", err: nil, wantInt: -1, wantErr: nil},
@@ -79,7 +79,7 @@ var durationFromTest = []struct {
 	wantDuration time.Duration
 	wantErr      error
 }{
-	{data: "", attr: "empty", err: nil, wantDuration: -1, wantErr: errors.New(`ev3dev: failed to parse mock empty attribute path/mock/empty: strconv.ParseInt: parsing "": invalid syntax at ev3dev_conv_test.go:`)},
+	{data: "", attr: "empty", err: nil, wantDuration: -1, wantErr: errors.New(`ev3dev: failed to parse mock empty attribute path/mock/empty: strconv.Atoi: parsing "": invalid syntax at ev3dev_conv_test.go:`)},
 	{data: "1", attr: "one", err: nil, wantDuration: 1 * time.Millisecond, wantErr: nil},
 	{data: "0", attr: "zero", err: nil, wantDuration: 0, wantErr: nil},
 	{data: "-1", attr: "minus_one", err: nil, wantDuration: -1 * time.Millisecond, wantErr: nil},
