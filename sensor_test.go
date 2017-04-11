@@ -70,7 +70,9 @@ func (s *sensor) lastCommand() string {
 func (s *sensor) direct() []byte {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return s._direct
+	bytes := make([]byte, len(s._direct))
+	copy(bytes, s._direct)
+	return bytes
 }
 
 func (s *sensor) modes() []string {
