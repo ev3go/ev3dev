@@ -86,7 +86,7 @@ func (s *Sensor) BinData() ([]byte, error) {
 	path := filepath.Join(s.Path(), s.String(), binData)
 	b, err := ioutil.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("ev3dev: failed to read attribute %s: %v", path, err)
+		return nil, newAttrOpError(s, binData, string(b), "read", err)
 	}
 	return b, nil
 }
