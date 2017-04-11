@@ -131,7 +131,7 @@ func (s *Sensor) Command(comm string) *Sensor {
 		}
 	}
 	if !ok {
-		s.err = fmt.Errorf("ev3dev: command %q not available for %s (available:%q)", comm, s, avail)
+		s.err = newInvalidValueError(s, command, "", comm, avail)
 		return s
 	}
 	s.err = setAttributeOf(s, command, comm)
