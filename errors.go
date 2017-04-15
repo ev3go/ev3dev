@@ -113,6 +113,38 @@ func (e valueOutOfRangeError) Range() (value, min, max int) {
 	return e.value, e.min, e.max
 }
 
+type idError struct {
+	dev  Device
+	attr string
+	id   int
+
+	stack
+}
+
+func newIDErrorFor(dev Device, id int) idError {
+	if dev == nil {
+		panic("ev3dev: nil device")
+	}
+	if id >= 0 {
+		panic(fmt.Sprintf("ev3dev: bad id error for %s: %v not negative",
+			dev, id))
+	}
+	return idError{
+		dev:   dev,
+		id:    id,
+		stack: callers(),
+	}
+}
+
+func (e idError) Error() string {
+	return fmt.Sprintf("ev3dev: invalid id for %s: %v (must be positive) at %s",
+		e.dev, e.id, e.caller(0))
+}
+
+func (e idError) Range() (value, min, max int) {
+	return e.id, 0, int(^uint(0) >> 1)
+}
+
 type negativeDurationError struct {
 	dev      Device
 	attr     string

@@ -63,6 +63,25 @@ var errorTests = []struct {
 
 	{
 		fn: func() error {
+			return newIDErrorFor(nil, -1)
+		},
+		panics: true,
+	},
+	{
+		fn: func() error {
+			return newIDErrorFor(mockDevice{}, 0)
+		},
+		panics: true,
+	},
+	{
+		fn: func() error {
+			return newIDErrorFor(mockDevice{}, -1)
+		},
+		wantErrorPrefix: `ev3dev: invalid id for mock: -1 (must be positive) at errors_test.go:`,
+	},
+
+	{
+		fn: func() error {
 			return newNegativeDurationError(nil, "", -1)
 		},
 		panics: true,
