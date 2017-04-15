@@ -65,7 +65,7 @@ func (l *LED) SetBrightness(bright int) *LED {
 		return l
 	}
 	if bright < 0 || bright > max {
-		l.err = fmt.Errorf("ev3dev: invalid led brightness: %d (valid 0-%d)", bright, max)
+		l.err = newValueOutOfRangeError(ledDevice{l}, brightness, bright, 0, max)
 		return l
 	}
 	l.err = setAttributeOf(ledDevice{l}, brightness, fmt.Sprint(bright))
@@ -108,7 +108,7 @@ func (l *LED) SetTrigger(trig string) *LED {
 		}
 	}
 	if !ok {
-		l.err = fmt.Errorf("ev3dev: led trigger %q not available for %s (available:%q)", mode, l, avail)
+		l.err = newInvalidValueError(ledDevice{l}, trigger, "", trig, avail)
 		return l
 	}
 	l.err = setAttributeOf(ledDevice{l}, trigger, trig)
@@ -126,7 +126,7 @@ func (l *LED) SetDelayOff(d time.Duration) *LED {
 		return l
 	}
 	if d < 0 {
-		l.err = fmt.Errorf("ev3dev: invalid delay off duration: %v (must be positive)", d)
+		l.err = newNegativeDurationError(ledDevice{l}, delayOff, d)
 		return l
 	}
 	l.err = setAttributeOf(ledDevice{l}, delayOff, fmt.Sprint(int(d/time.Millisecond)))
@@ -144,7 +144,7 @@ func (l *LED) SetDelayOn(d time.Duration) *LED {
 		return l
 	}
 	if d < 0 {
-		l.err = fmt.Errorf("ev3dev: invalid delay on duration: %v (must be positive)", d)
+		l.err = newNegativeDurationError(ledDevice{l}, delayOn, d)
 		return l
 	}
 	l.err = setAttributeOf(ledDevice{l}, delayOn, fmt.Sprint(int(d/time.Millisecond)))
