@@ -18,6 +18,10 @@
 // is returned by the first result method called on the device handle, clearing the
 // error state. Any attribute value returned by a call chain returning a non-nil error
 // is invalid.
+//
+// In most cases, errors returned by functions in the ev3dev package implement
+// the Causer error interface and will be able to print a stack trace if printed
+// with the "+v" fmt verb.
 package ev3dev
 
 import (

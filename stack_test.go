@@ -12,3 +12,5 @@ func testStack(n int) stack {
 	}
 	return testStack(n - 1)
 }
+
+var mockValueError = newInvalidValueError(mockDevice{}, "attr", "", "invalid", []string{"ok", "valid"})

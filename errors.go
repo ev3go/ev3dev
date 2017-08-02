@@ -73,6 +73,30 @@ func (e invalidValueError) Error() string {
 		e.dev, e.attr, e.value, e.valid, e.caller(0))
 }
 
+func (e invalidValueError) Format(fs fmt.State, c rune) {
+	type naked invalidValueError
+	switch c {
+	case 'v':
+		switch {
+		case fs.Flag('+'):
+			fmt.Fprintln(fs, e.Error())
+			e.stack.writeTo(fs)
+			return
+		case fs.Flag('#'):
+			n := fmt.Sprintf("%#v", naked(e))
+			fmt.Fprintf(fs, "%T%s", e, n[len("ev3dev.naked"):])
+			return
+		}
+		fallthrough
+	case 's':
+		io.WriteString(fs, e.Error())
+	case 'q':
+		fmt.Fprintf(fs, "%q", e.Error())
+	default:
+		fmt.Fprintf(fs, "%"+string(c), naked(e))
+	}
+}
+
 func (e invalidValueError) Values() (value string, valid []string) {
 	return e.value, e.valid
 }
@@ -109,6 +133,30 @@ func (e valueOutOfRangeError) Error() string {
 		e.dev, e.attr, e.value, e.min, e.max, e.caller(0))
 }
 
+func (e valueOutOfRangeError) Format(fs fmt.State, c rune) {
+	type naked valueOutOfRangeError
+	switch c {
+	case 'v':
+		switch {
+		case fs.Flag('+'):
+			fmt.Fprintln(fs, e.Error())
+			e.stack.writeTo(fs)
+			return
+		case fs.Flag('#'):
+			n := fmt.Sprintf("%#v", naked(e))
+			fmt.Fprintf(fs, "%T%s", e, n[len("ev3dev.naked"):])
+			return
+		}
+		fallthrough
+	case 's':
+		io.WriteString(fs, e.Error())
+	case 'q':
+		fmt.Fprintf(fs, "%q", e.Error())
+	default:
+		fmt.Fprintf(fs, "%"+string(c), naked(e))
+	}
+}
+
 func (e valueOutOfRangeError) Range() (value, min, max int) {
 	return e.value, e.min, e.max
 }
@@ -139,6 +187,30 @@ func newIDErrorFor(dev Device, id int) idError {
 func (e idError) Error() string {
 	return fmt.Sprintf("ev3dev: invalid id for %s: %v (must be positive) at %s",
 		e.dev, e.id, e.caller(0))
+}
+
+func (e idError) Format(fs fmt.State, c rune) {
+	type naked idError
+	switch c {
+	case 'v':
+		switch {
+		case fs.Flag('+'):
+			fmt.Fprintln(fs, e.Error())
+			e.stack.writeTo(fs)
+			return
+		case fs.Flag('#'):
+			n := fmt.Sprintf("%#v", naked(e))
+			fmt.Fprintf(fs, "%T%s", e, n[len("ev3dev.naked"):])
+			return
+		}
+		fallthrough
+	case 's':
+		io.WriteString(fs, e.Error())
+	case 'q':
+		fmt.Fprintf(fs, "%q", e.Error())
+	default:
+		fmt.Fprintf(fs, "%"+string(c), naked(e))
+	}
 }
 
 func (e idError) Range() (value, min, max int) {
@@ -172,6 +244,30 @@ func newNegativeDurationError(dev Device, attr string, d time.Duration) negative
 func (e negativeDurationError) Error() string {
 	return fmt.Sprintf("ev3dev: invalid duration for %s %s: %v (must be positive) at %s",
 		e.dev, e.attr, e.duration, e.caller(0))
+}
+
+func (e negativeDurationError) Format(fs fmt.State, c rune) {
+	type naked negativeDurationError
+	switch c {
+	case 'v':
+		switch {
+		case fs.Flag('+'):
+			fmt.Fprintln(fs, e.Error())
+			e.stack.writeTo(fs)
+			return
+		case fs.Flag('#'):
+			n := fmt.Sprintf("%#v", naked(e))
+			fmt.Fprintf(fs, "%T%s", e, n[len("ev3dev.naked"):])
+			return
+		}
+		fallthrough
+	case 's':
+		io.WriteString(fs, e.Error())
+	case 'q':
+		fmt.Fprintf(fs, "%q", e.Error())
+	default:
+		fmt.Fprintf(fs, "%"+string(c), naked(e))
+	}
 }
 
 func (e negativeDurationError) DurationRange() (value, min, max time.Duration) {
@@ -210,6 +306,30 @@ func (e durationOutOfRangeError) Error() string {
 		e.dev, e.attr, e.duration, e.min, e.max, e.caller(0))
 }
 
+func (e durationOutOfRangeError) Format(fs fmt.State, c rune) {
+	type naked durationOutOfRangeError
+	switch c {
+	case 'v':
+		switch {
+		case fs.Flag('+'):
+			fmt.Fprintln(fs, e.Error())
+			e.stack.writeTo(fs)
+			return
+		case fs.Flag('#'):
+			n := fmt.Sprintf("%#v", naked(e))
+			fmt.Fprintf(fs, "%T%s", e, n[len("ev3dev.naked"):])
+			return
+		}
+		fallthrough
+	case 's':
+		io.WriteString(fs, e.Error())
+	case 'q':
+		fmt.Fprintf(fs, "%q", e.Error())
+	default:
+		fmt.Fprintf(fs, "%"+string(c), naked(e))
+	}
+}
+
 func (e durationOutOfRangeError) DurationRange() (value, min, max time.Duration) {
 	return e.duration, e.min, e.max
 }
@@ -240,6 +360,30 @@ func (e attrOpError) Error() string {
 		e.op, e.dev, e.attr, filepath.Join(e.dev.Path(), e.dev.String(), e.attr), e.err, e.caller(0))
 }
 
+func (e attrOpError) Format(fs fmt.State, c rune) {
+	type naked attrOpError
+	switch c {
+	case 'v':
+		switch {
+		case fs.Flag('+'):
+			fmt.Fprintln(fs, e.Error())
+			e.stack.writeTo(fs)
+			return
+		case fs.Flag('#'):
+			n := fmt.Sprintf("%#v", naked(e))
+			fmt.Fprintf(fs, "%T%s", e, n[len("ev3dev.naked"):])
+			return
+		}
+		fallthrough
+	case 's':
+		io.WriteString(fs, e.Error())
+	case 'q':
+		fmt.Fprintf(fs, "%q", e.Error())
+	default:
+		fmt.Fprintf(fs, "%"+string(c), naked(e))
+	}
+}
+
 func (e attrOpError) Cause() error { return e.err }
 
 type parseError struct {
@@ -262,6 +406,30 @@ func newParseError(dev Device, attr string, err error) parseError {
 func (e parseError) Error() string {
 	return fmt.Sprintf("ev3dev: failed to parse %s %s attribute %s: %v at %s",
 		e.dev, e.attr, filepath.Join(e.dev.Path(), e.dev.String(), e.attr), e.err, e.caller(1))
+}
+
+func (e parseError) Format(fs fmt.State, c rune) {
+	type naked parseError
+	switch c {
+	case 'v':
+		switch {
+		case fs.Flag('+'):
+			fmt.Fprintln(fs, e.Error())
+			e.stack.writeTo(fs)
+			return
+		case fs.Flag('#'):
+			n := fmt.Sprintf("%#v", naked(e))
+			fmt.Fprintf(fs, "%T%s", e, n[len("ev3dev.naked"):])
+			return
+		}
+		fallthrough
+	case 's':
+		io.WriteString(fs, e.Error())
+	case 'q':
+		fmt.Fprintf(fs, "%q", e.Error())
+	default:
+		fmt.Fprintf(fs, "%"+string(c), naked(e))
+	}
 }
 
 func (e parseError) Cause() error { return e.err }
