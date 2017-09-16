@@ -11,7 +11,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"math"
 	"math/rand"
@@ -20,6 +19,7 @@ import (
 	"time"
 
 	"github.com/ev3go/ev3dev"
+	"github.com/ev3go/ev3dev/motorutil"
 )
 
 func main() {
@@ -229,7 +229,7 @@ func wander() {
 	}
 	max /= 2
 
-	s := steering{left, right}
+	s := motorutil.Steering{Left: left, Right: right, Timeout: 5 * time.Second}
 	for {
 	rol:
 		for {
@@ -239,13 +239,17 @@ func wander() {
 			}
 			for _, move := range []struct {
 				speed int
-				dir   float64
+				dir   int
 			}{
-				{speed: max, dir: 1},
-				{speed: max, dir: -1},
+				{speed: max, dir: 100},
+				{speed: max, dir: -100},
 				{speed: max, dir: 0},
 			} {
-				err = s.steer(move.speed, (rand.Intn(3)+1)*360, move.dir)
+				err = s.SteerCounts(move.speed, move.dir, (rand.Intn(3)+1)*360)
+				if err != nil {
+					log.Fatalf("failed to steer %v/%v: %v", move.speed, move.dir, err)
+				}
+				err = s.Wait()
 				if err != nil {
 					log.Fatalf("failed to steer %v/%v: %v", move.speed, move.dir, err)
 				}
@@ -269,78 +273,4 @@ func wander() {
 
 		time.Sleep(2 * time.Second)
 	}
-}
-
-type steering struct {
-	left, right *ev3dev.TachoMotor
-}
-
-func (s steering) steer(speed, counts int, dir float64) error {
-	if dir < -1 || 1 < dir || math.IsNaN(dir) {
-		return fmt.Errorf("direction out of range: %v", dir)
-	}
-
-	var ls, rs, lcounts, rcounts int
-	switch {
-	case dir == 0:
-		ls = speed
-		rs = speed
-		lcounts = counts
-		rcounts = counts
-	case dir < 0:
-		rs = speed
-		rcounts = counts
-		dir = (dir + 0.5) * 2
-		ls = int(math.Abs(dir * float64(speed)))
-		lcounts = int(float64(rcounts) * dir)
-	case dir > 0:
-		ls = speed
-		lcounts = counts
-		dir = (0.5 - dir) * 2
-		rs = int(math.Abs(dir * float64(speed)))
-		rcounts = int(float64(lcounts) * dir)
-	}
-
-	var err error
-	err = s.left.
-		SetSpeedSetpoint(ls).
-		SetPositionSetpoint(lcounts).
-		Err()
-	if err != nil {
-		return err
-	}
-	err = s.right.
-		SetSpeedSetpoint(rs).
-		SetPositionSetpoint(rcounts).
-		Err()
-	if err != nil {
-		return err
-	}
-
-	err = s.left.Command("run-to-rel-pos").Err()
-	if err != nil {
-		return err
-	}
-	err = s.right.Command("run-to-rel-pos").Err()
-	if err != nil {
-		s.left.Command("stop").Err()
-		return err
-	}
-	var stat ev3dev.MotorState
-	var ok bool
-	stat, ok, err = ev3dev.Wait(s.left, ev3dev.Running, 0, 0, false, 5*time.Second)
-	if err != nil {
-		log.Fatalf("failed to wait for left motor to stop: %v", err)
-	}
-	if !ok {
-		log.Fatalf("failed to wait for left motor to stop: %v", stat)
-	}
-	stat, ok, err = ev3dev.Wait(s.right, ev3dev.Running, 0, 0, false, 5*time.Second)
-	if err != nil {
-		log.Fatalf("failed to wait for right motor to stop: %v", err)
-	}
-	if !ok {
-		log.Fatalf("failed to wait for right motor to stop: %v", stat)
-	}
-	return nil
 }

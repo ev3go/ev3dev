@@ -27,6 +27,6 @@ For device-specific functions see [EV3](https://github.com/ev3go/ev3) and [Brick
 
 ### Common tasks
 
-None yet.
+- [x] Steering helper similar to EV-G steering block
 
 LEGO® is a trademark of the LEGO Group of companies which does not sponsor, authorize or endorse this software.
