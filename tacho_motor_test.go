@@ -286,7 +286,7 @@ func (m *tachoMotorCountsPerRot) Size() (int64, error) {
 func (m *tachoMotorCountsPerRot) String() string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return fmt.Sprint(m._countPerRot)
+	return strconv.Itoa(m._countPerRot)
 }
 
 // tachoMotorDutyCycle is the duty_cycle attribute.
@@ -306,7 +306,7 @@ func (m *tachoMotorDutyCycle) Size() (int64, error) {
 func (m *tachoMotorDutyCycle) String() string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return fmt.Sprint(m._dutyCycle)
+	return strconv.Itoa(m._dutyCycle)
 }
 
 // tachoMotorDutyCycleSet is the duty_cycle_sp attribute.
@@ -342,7 +342,7 @@ func (m *tachoMotorDutyCycleSet) Size() (int64, error) {
 func (m *tachoMotorDutyCycleSet) String() string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return fmt.Sprint(m._dutyCycleSet)
+	return strconv.Itoa(m._dutyCycleSet)
 }
 
 // tachoMotorPolarity is the polarity attribute.
@@ -416,7 +416,7 @@ func (m *tachoMotorPosition) Size() (int64, error) {
 func (m *tachoMotorPosition) String() string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return fmt.Sprint(m._position)
+	return strconv.Itoa(m._position)
 }
 
 // tachoMotorPositionSet is the position_sp attribute.
@@ -452,7 +452,7 @@ func (m *tachoMotorPositionSet) Size() (int64, error) {
 func (m *tachoMotorPositionSet) String() string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return fmt.Sprint(m._positionSet)
+	return strconv.Itoa(m._positionSet)
 }
 
 // tachoMotorHoldPIDkd is the hold_pid/Kd attribute.
@@ -488,7 +488,7 @@ func (m *tachoMotorHoldPIDkd) Size() (int64, error) {
 func (m *tachoMotorHoldPIDkd) String() string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return fmt.Sprint(m._holdPIDkd)
+	return strconv.Itoa(m._holdPIDkd)
 }
 
 // tachoMotorHoldPIDki is the hold_pid/Ki attribute.
@@ -524,7 +524,7 @@ func (m *tachoMotorHoldPIDki) Size() (int64, error) {
 func (m *tachoMotorHoldPIDki) String() string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return fmt.Sprint(m._holdPIDki)
+	return strconv.Itoa(m._holdPIDki)
 }
 
 // tachoMotorHoldPIDkp is the hold_pid/Kp attribute.
@@ -560,7 +560,7 @@ func (m *tachoMotorHoldPIDkp) Size() (int64, error) {
 func (m *tachoMotorHoldPIDkp) String() string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return fmt.Sprint(m._holdPIDkp)
+	return strconv.Itoa(m._holdPIDkp)
 }
 
 // tachoMotorMaxSpeed is the max_speed attribute.
@@ -580,7 +580,7 @@ func (m *tachoMotorMaxSpeed) Size() (int64, error) {
 func (m *tachoMotorMaxSpeed) String() string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return fmt.Sprint(m._maxSpeed)
+	return strconv.Itoa(m._maxSpeed)
 }
 
 // tachoMotorSpeed is the speed attribute.
@@ -600,7 +600,7 @@ func (m *tachoMotorSpeed) Size() (int64, error) {
 func (m *tachoMotorSpeed) String() string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return fmt.Sprint(m._speed)
+	return strconv.Itoa(m._speed)
 }
 
 // tachoMotorSpeedSet is the speed_sp attribute.
@@ -636,7 +636,7 @@ func (m *tachoMotorSpeedSet) Size() (int64, error) {
 func (m *tachoMotorSpeedSet) String() string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return fmt.Sprint(m._speedSet)
+	return strconv.Itoa(m._speedSet)
 }
 
 // tachoMotorRampUpSet is the ramp_up_sp attribute.
@@ -675,7 +675,7 @@ func (m *tachoMotorRampUpSet) Size() (int64, error) {
 func (m *tachoMotorRampUpSet) String() string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return fmt.Sprint(int(m._rampUpSet / time.Millisecond))
+	return strconv.Itoa(int(m._rampUpSet / time.Millisecond))
 }
 
 // tachoMotorRampDownSet is the ramp_down_sp attribute.
@@ -714,7 +714,7 @@ func (m *tachoMotorRampDownSet) Size() (int64, error) {
 func (m *tachoMotorRampDownSet) String() string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return fmt.Sprint(int(m._rampDownSet / time.Millisecond))
+	return strconv.Itoa(int(m._rampDownSet / time.Millisecond))
 }
 
 // tachoMotorSpeedPIDkd is the speed_pid/Kd attribute.
@@ -750,7 +750,7 @@ func (m *tachoMotorSpeedPIDkd) Size() (int64, error) {
 func (m *tachoMotorSpeedPIDkd) String() string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return fmt.Sprint(m._speedPIDkd)
+	return strconv.Itoa(m._speedPIDkd)
 }
 
 // tachoMotorSpeedPIDki is the speed_pid/Ki attribute.
@@ -786,7 +786,7 @@ func (m *tachoMotorSpeedPIDki) Size() (int64, error) {
 func (m *tachoMotorSpeedPIDki) String() string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return fmt.Sprint(m._speedPIDki)
+	return strconv.Itoa(m._speedPIDki)
 }
 
 // tachoMotorSpeedPIDkp is the speed_pid/Kp attribute.
@@ -822,7 +822,7 @@ func (m *tachoMotorSpeedPIDkp) Size() (int64, error) {
 func (m *tachoMotorSpeedPIDkp) String() string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return fmt.Sprint(m._speedPIDkp)
+	return strconv.Itoa(m._speedPIDkp)
 }
 
 // tachoMotorState is the state attribute.
@@ -928,7 +928,7 @@ func (m *tachoMotorTimeSet) Size() (int64, error) {
 func (m *tachoMotorTimeSet) String() string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return fmt.Sprint(int(m._timeSet / time.Millisecond))
+	return strconv.Itoa(int(m._timeSet / time.Millisecond))
 }
 
 // tachoMotorUevent is the uevent attribute.

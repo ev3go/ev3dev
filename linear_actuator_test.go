@@ -286,7 +286,7 @@ func (m *linearActuatorCountsPerMeter) Size() (int64, error) {
 func (m *linearActuatorCountsPerMeter) String() string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return fmt.Sprint(m._countPerM)
+	return strconv.Itoa(m._countPerM)
 }
 
 // linearActuatorDutyCycle is the duty_cycle attribute.
@@ -306,7 +306,7 @@ func (m *linearActuatorDutyCycle) Size() (int64, error) {
 func (m *linearActuatorDutyCycle) String() string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return fmt.Sprint(m._dutyCycle)
+	return strconv.Itoa(m._dutyCycle)
 }
 
 // linearActuatorDutyCycleSet is the duty_cycle_sp attribute.
@@ -342,7 +342,7 @@ func (m *linearActuatorDutyCycleSet) Size() (int64, error) {
 func (m *linearActuatorDutyCycleSet) String() string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return fmt.Sprint(m._dutyCycleSet)
+	return strconv.Itoa(m._dutyCycleSet)
 }
 
 // linearActuatorPolarity is the polarity attribute.
@@ -416,7 +416,7 @@ func (m *linearActuatorPosition) Size() (int64, error) {
 func (m *linearActuatorPosition) String() string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return fmt.Sprint(m._position)
+	return strconv.Itoa(m._position)
 }
 
 // linearActuatorPositionSet is the position_sp attribute.
@@ -452,7 +452,7 @@ func (m *linearActuatorPositionSet) Size() (int64, error) {
 func (m *linearActuatorPositionSet) String() string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return fmt.Sprint(m._positionSet)
+	return strconv.Itoa(m._positionSet)
 }
 
 // linearActuatorHoldPIDkd is the hold_pid/Kd attribute.
@@ -488,7 +488,7 @@ func (m *linearActuatorHoldPIDkd) Size() (int64, error) {
 func (m *linearActuatorHoldPIDkd) String() string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return fmt.Sprint(m._holdPIDkd)
+	return strconv.Itoa(m._holdPIDkd)
 }
 
 // linearActuatorHoldPIDki is the hold_pid/Ki attribute.
@@ -524,7 +524,7 @@ func (m *linearActuatorHoldPIDki) Size() (int64, error) {
 func (m *linearActuatorHoldPIDki) String() string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return fmt.Sprint(m._holdPIDki)
+	return strconv.Itoa(m._holdPIDki)
 }
 
 // linearActuatorHoldPIDkp is the hold_pid/Kp attribute.
@@ -560,7 +560,7 @@ func (m *linearActuatorHoldPIDkp) Size() (int64, error) {
 func (m *linearActuatorHoldPIDkp) String() string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return fmt.Sprint(m._holdPIDkp)
+	return strconv.Itoa(m._holdPIDkp)
 }
 
 // linearActuatorMaxSpeed is the max_speed attribute.
@@ -580,7 +580,7 @@ func (m *linearActuatorMaxSpeed) Size() (int64, error) {
 func (m *linearActuatorMaxSpeed) String() string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return fmt.Sprint(m._maxSpeed)
+	return strconv.Itoa(m._maxSpeed)
 }
 
 // linearActuatorSpeed is the speed attribute.
@@ -600,7 +600,7 @@ func (m *linearActuatorSpeed) Size() (int64, error) {
 func (m *linearActuatorSpeed) String() string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return fmt.Sprint(m._speed)
+	return strconv.Itoa(m._speed)
 }
 
 // linearActuatorSpeedSet is the speed_sp attribute.
@@ -636,7 +636,7 @@ func (m *linearActuatorSpeedSet) Size() (int64, error) {
 func (m *linearActuatorSpeedSet) String() string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return fmt.Sprint(m._speedSet)
+	return strconv.Itoa(m._speedSet)
 }
 
 // linearActuatorRampUpSet is the ramp_up_sp attribute.
@@ -675,7 +675,7 @@ func (m *linearActuatorRampUpSet) Size() (int64, error) {
 func (m *linearActuatorRampUpSet) String() string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return fmt.Sprint(int(m._rampUpSet / time.Millisecond))
+	return strconv.Itoa(int(m._rampUpSet / time.Millisecond))
 }
 
 // linearActuatorRampDownSet is the ramp_down_sp attribute.
@@ -714,7 +714,7 @@ func (m *linearActuatorRampDownSet) Size() (int64, error) {
 func (m *linearActuatorRampDownSet) String() string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return fmt.Sprint(int(m._rampDownSet / time.Millisecond))
+	return strconv.Itoa(int(m._rampDownSet / time.Millisecond))
 }
 
 // linearActuatorSpeedPIDkd is the speed_pid/Kd attribute.
@@ -750,7 +750,7 @@ func (m *linearActuatorSpeedPIDkd) Size() (int64, error) {
 func (m *linearActuatorSpeedPIDkd) String() string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return fmt.Sprint(m._speedPIDkd)
+	return strconv.Itoa(m._speedPIDkd)
 }
 
 // linearActuatorSpeedPIDki is the speed_pid/Ki attribute.
@@ -786,7 +786,7 @@ func (m *linearActuatorSpeedPIDki) Size() (int64, error) {
 func (m *linearActuatorSpeedPIDki) String() string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return fmt.Sprint(m._speedPIDki)
+	return strconv.Itoa(m._speedPIDki)
 }
 
 // linearActuatorSpeedPIDkp is the speed_pid/Kp attribute.
@@ -822,7 +822,7 @@ func (m *linearActuatorSpeedPIDkp) Size() (int64, error) {
 func (m *linearActuatorSpeedPIDkp) String() string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return fmt.Sprint(m._speedPIDkp)
+	return strconv.Itoa(m._speedPIDkp)
 }
 
 // linearActuatorState is the state attribute.
@@ -928,7 +928,7 @@ func (m *linearActuatorTimeSet) Size() (int64, error) {
 func (m *linearActuatorTimeSet) String() string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return fmt.Sprint(int(m._timeSet / time.Millisecond))
+	return strconv.Itoa(int(m._timeSet / time.Millisecond))
 }
 
 // linearActuatorUevent is the uevent attribute.

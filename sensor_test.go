@@ -417,7 +417,7 @@ func (s *sensorPollRate) Size() (int64, error) {
 func (s *sensorPollRate) String() string {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return fmt.Sprint(s._pollRate)
+	return strconv.Itoa(s._pollRate)
 }
 
 // sensorDecimals is the decimals attribute.
@@ -437,7 +437,7 @@ func (s *sensorDecimals) Size() (int64, error) {
 func (s *sensorDecimals) String() string {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return fmt.Sprint(s._decimals[s._mode])
+	return strconv.Itoa(s._decimals[s._mode])
 }
 
 // sensorNumValues is the num_values attribute.
@@ -457,7 +457,7 @@ func (s *sensorNumValues) Size() (int64, error) {
 func (s *sensorNumValues) String() string {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return fmt.Sprint(len(s._values))
+	return strconv.Itoa(len(s._values))
 }
 
 // sensorValue is the valueN attribute.

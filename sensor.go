@@ -5,10 +5,10 @@
 package ev3dev
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 )
 
@@ -32,7 +32,7 @@ func (s *Sensor) String() string {
 	if s == nil {
 		return sensorPrefix + "*"
 	}
-	return fmt.Sprint(sensorPrefix, s.id)
+	return sensorPrefix + strconv.Itoa(s.id)
 }
 
 // Err returns the error state of the Sensor and clears it.
@@ -190,7 +190,7 @@ func (s *Sensor) SetPollRate(d time.Duration) *Sensor {
 	if s.err != nil {
 		return s
 	}
-	s.err = setAttributeOf(s, pollRate, fmt.Sprint(int(d/time.Millisecond)))
+	s.err = setAttributeOf(s, pollRate, strconv.Itoa(int(d/time.Millisecond)))
 	return s
 }
 
@@ -202,7 +202,7 @@ func (s *Sensor) Units() (string, error) {
 // Value returns tthe value or values measured by the Sensor. Value will return
 // and error if n is greater than or equal to the value returned by NumValues.
 func (s *Sensor) Value(n int) (string, error) {
-	return stringFrom(attributeOf(s, fmt.Sprint(value, n)))
+	return stringFrom(attributeOf(s, value+strconv.Itoa(n)))
 }
 
 // TextValues returns slice of strings string representing sensor-specific text values.

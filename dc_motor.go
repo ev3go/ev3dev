@@ -5,8 +5,8 @@
 package ev3dev
 
 import (
-	"fmt"
 	"path/filepath"
+	"strconv"
 	"time"
 )
 
@@ -30,7 +30,7 @@ func (m *DCMotor) String() string {
 	if m == nil {
 		return motorPrefix + "*"
 	}
-	return fmt.Sprint(motorPrefix, m.id)
+	return motorPrefix + strconv.Itoa(m.id)
 }
 
 // Err returns the error state of the DCMotor and clears it.
@@ -124,7 +124,7 @@ func (m *DCMotor) SetDutyCycleSetpoint(sp int) *DCMotor {
 		m.err = newValueOutOfRangeError(m, dutyCycleSetpoint, sp, -100, 100)
 		return m
 	}
-	m.err = setAttributeOf(m, dutyCycleSetpoint, fmt.Sprint(sp))
+	m.err = setAttributeOf(m, dutyCycleSetpoint, strconv.Itoa(sp))
 	return m
 }
 
@@ -161,7 +161,7 @@ func (m *DCMotor) SetRampUpSetpoint(sp time.Duration) *DCMotor {
 		m.err = newDurationOutOfRangeError(m, rampUpSetpoint, sp, 0, 10*time.Second)
 		return m
 	}
-	m.err = setAttributeOf(m, rampUpSetpoint, fmt.Sprint(int(sp/time.Millisecond)))
+	m.err = setAttributeOf(m, rampUpSetpoint, strconv.Itoa(int(sp/time.Millisecond)))
 	return m
 }
 
@@ -179,7 +179,7 @@ func (m *DCMotor) SetRampDownSetpoint(sp time.Duration) *DCMotor {
 		m.err = newDurationOutOfRangeError(m, rampDownSetpoint, sp, 0, 10*time.Second)
 		return m
 	}
-	m.err = setAttributeOf(m, rampDownSetpoint, fmt.Sprint(int(sp/time.Millisecond)))
+	m.err = setAttributeOf(m, rampDownSetpoint, strconv.Itoa(int(sp/time.Millisecond)))
 	return m
 }
 
@@ -242,7 +242,7 @@ func (m *DCMotor) SetTimeSetpoint(sp time.Duration) *DCMotor {
 		m.err = newNegativeDurationError(m, timeSetpoint, sp)
 		return m
 	}
-	m.err = setAttributeOf(m, timeSetpoint, fmt.Sprint(int(sp/time.Millisecond)))
+	m.err = setAttributeOf(m, timeSetpoint, strconv.Itoa(int(sp/time.Millisecond)))
 	return m
 }
 

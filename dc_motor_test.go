@@ -233,7 +233,7 @@ func (m *dcMotorDutyCycle) Size() (int64, error) {
 func (m *dcMotorDutyCycle) String() string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return fmt.Sprint(m._dutyCycle)
+	return strconv.Itoa(m._dutyCycle)
 }
 
 // dcMotorDutyCycleSet is the duty_cycle_sp attribute.
@@ -269,7 +269,7 @@ func (m *dcMotorDutyCycleSet) Size() (int64, error) {
 func (m *dcMotorDutyCycleSet) String() string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return fmt.Sprint(m._dutyCycleSet)
+	return strconv.Itoa(m._dutyCycleSet)
 }
 
 // dcMotorPolarity is the polarity attribute.
@@ -349,7 +349,7 @@ func (m *dcMotorRampUpSet) Size() (int64, error) {
 func (m *dcMotorRampUpSet) String() string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return fmt.Sprint(int(m._rampUpSet / time.Millisecond))
+	return strconv.Itoa(int(m._rampUpSet / time.Millisecond))
 }
 
 // dcMotorRampDownSet is the ramp_down_sp attribute.
@@ -391,7 +391,7 @@ func (m *dcMotorRampDownSet) Size() (int64, error) {
 func (m *dcMotorRampDownSet) String() string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return fmt.Sprint(int(m._rampDownSet / time.Millisecond))
+	return strconv.Itoa(int(m._rampDownSet / time.Millisecond))
 }
 
 // dcMotorState is the state attribute.
@@ -497,7 +497,7 @@ func (m *dcMotorTimeSet) Size() (int64, error) {
 func (m *dcMotorTimeSet) String() string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return fmt.Sprint(int(m._timeSet / time.Millisecond))
+	return strconv.Itoa(int(m._timeSet / time.Millisecond))
 }
 
 // dcMotorUevent is the uevent attribute.

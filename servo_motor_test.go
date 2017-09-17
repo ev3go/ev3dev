@@ -186,7 +186,7 @@ func (m *servoMotorMaxPulseSet) Size() (int64, error) {
 func (m *servoMotorMaxPulseSet) String() string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return fmt.Sprint(int(m._maxPulseSet / time.Millisecond))
+	return strconv.Itoa(int(m._maxPulseSet / time.Millisecond))
 }
 
 // servoMotorMidPulseSet is the mid_pulse_sp attribute.
@@ -226,7 +226,7 @@ func (m *servoMotorMidPulseSet) Size() (int64, error) {
 func (m *servoMotorMidPulseSet) String() string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return fmt.Sprint(int(m._midPulseSet / time.Millisecond))
+	return strconv.Itoa(int(m._midPulseSet / time.Millisecond))
 }
 
 // servoMotorMinPulseSet is the min_pulse_sp attribute.
@@ -266,7 +266,7 @@ func (m *servoMotorMinPulseSet) Size() (int64, error) {
 func (m *servoMotorMinPulseSet) String() string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return fmt.Sprint(int(m._minPulseSet / time.Millisecond))
+	return strconv.Itoa(int(m._minPulseSet / time.Millisecond))
 }
 
 // servoMotorPolarity is the polarity attribute.
@@ -343,7 +343,7 @@ func (m *servoMotorPositionSet) Size() (int64, error) {
 func (m *servoMotorPositionSet) String() string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return fmt.Sprint(m._positionSet)
+	return strconv.Itoa(m._positionSet)
 }
 
 // servoMotorRateSet is the rate_sp attribute.
@@ -382,7 +382,7 @@ func (m *servoMotorRateSet) Size() (int64, error) {
 func (m *servoMotorRateSet) String() string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	return fmt.Sprint(int(m._rateSet / time.Millisecond))
+	return strconv.Itoa(int(m._rateSet / time.Millisecond))
 }
 
 // servoMotorState is the state attribute.

@@ -109,7 +109,7 @@ func (l *ledDelayOn) Size() (int64, error) {
 }
 
 func (l *ledDelayOn) String() string {
-	return fmt.Sprint(int(l.delayOn / time.Millisecond))
+	return strconv.Itoa(int(l.delayOn / time.Millisecond))
 }
 
 // ledDelayOff is the delay_off attribute.
@@ -143,7 +143,7 @@ func (l *ledDelayOff) Size() (int64, error) {
 }
 
 func (l *ledDelayOff) String() string {
-	return fmt.Sprint(int(l.delayOff / time.Millisecond))
+	return strconv.Itoa(int(l.delayOff / time.Millisecond))
 }
 
 // ledTrigger is the trigger attribute.
