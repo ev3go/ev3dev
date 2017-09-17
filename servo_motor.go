@@ -5,8 +5,8 @@
 package ev3dev
 
 import (
-	"fmt"
 	"path/filepath"
+	"strconv"
 	"time"
 )
 
@@ -30,7 +30,7 @@ func (m *ServoMotor) String() string {
 	if m == nil {
 		return motorPrefix + "*"
 	}
-	return fmt.Sprint(motorPrefix, m.id)
+	return motorPrefix + strconv.Itoa(m.id)
 }
 
 // Err returns the error state of the ServoMotor and clears it.
@@ -118,7 +118,7 @@ func (m *ServoMotor) SetMaxPulseSetpoint(sp time.Duration) *ServoMotor {
 		m.err = newDurationOutOfRangeError(m, maxPulseSetpoint, sp, 2300*time.Millisecond, 2700*time.Millisecond)
 		return m
 	}
-	m.err = setAttributeOf(m, maxPulseSetpoint, fmt.Sprint(int(sp/time.Millisecond)))
+	m.err = setAttributeOf(m, maxPulseSetpoint, strconv.Itoa(int(sp/time.Millisecond)))
 	return m
 }
 
@@ -136,7 +136,7 @@ func (m *ServoMotor) SetMidPulseSetpoint(sp time.Duration) *ServoMotor {
 		m.err = newDurationOutOfRangeError(m, midPulseSetpoint, sp, 1300*time.Millisecond, 1700*time.Millisecond)
 		return m
 	}
-	m.err = setAttributeOf(m, midPulseSetpoint, fmt.Sprint(int(sp/time.Millisecond)))
+	m.err = setAttributeOf(m, midPulseSetpoint, strconv.Itoa(int(sp/time.Millisecond)))
 	return m
 }
 
@@ -154,7 +154,7 @@ func (m *ServoMotor) SetMinPulseSetpoint(sp time.Duration) *ServoMotor {
 		m.err = newDurationOutOfRangeError(m, minPulseSetpoint, sp, 300*time.Millisecond, 700*time.Millisecond)
 		return m
 	}
-	m.err = setAttributeOf(m, minPulseSetpoint, fmt.Sprint(int(sp/time.Millisecond)))
+	m.err = setAttributeOf(m, minPulseSetpoint, strconv.Itoa(int(sp/time.Millisecond)))
 	return m
 }
 
@@ -192,7 +192,7 @@ func (m *ServoMotor) SetPositionSetpoint(sp int) *ServoMotor {
 		m.err = newValueOutOfRangeError(m, positionSetpoint, sp, -100, 100)
 		return m
 	}
-	m.err = setAttributeOf(m, positionSetpoint, fmt.Sprint(sp))
+	m.err = setAttributeOf(m, positionSetpoint, strconv.Itoa(sp))
 	return m
 }
 
@@ -210,7 +210,7 @@ func (m *ServoMotor) SetRateSetpoint(sp time.Duration) *ServoMotor {
 		m.err = newNegativeDurationError(m, rateSetpoint, sp)
 		return m
 	}
-	m.err = setAttributeOf(m, rateSetpoint, fmt.Sprint(int(sp/time.Millisecond)))
+	m.err = setAttributeOf(m, rateSetpoint, strconv.Itoa(int(sp/time.Millisecond)))
 	return m
 }
 

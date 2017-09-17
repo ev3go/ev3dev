@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"strconv"
 	"time"
 )
 
@@ -68,7 +69,7 @@ func (l *LED) SetBrightness(bright int) *LED {
 		l.err = newValueOutOfRangeError(ledDevice{l}, brightness, bright, 0, max)
 		return l
 	}
-	l.err = setAttributeOf(ledDevice{l}, brightness, fmt.Sprint(bright))
+	l.err = setAttributeOf(ledDevice{l}, brightness, strconv.Itoa(bright))
 	return l
 }
 
@@ -129,7 +130,7 @@ func (l *LED) SetDelayOff(d time.Duration) *LED {
 		l.err = newNegativeDurationError(ledDevice{l}, delayOff, d)
 		return l
 	}
-	l.err = setAttributeOf(ledDevice{l}, delayOff, fmt.Sprint(int(d/time.Millisecond)))
+	l.err = setAttributeOf(ledDevice{l}, delayOff, strconv.Itoa(int(d/time.Millisecond)))
 	return l
 }
 
@@ -147,7 +148,7 @@ func (l *LED) SetDelayOn(d time.Duration) *LED {
 		l.err = newNegativeDurationError(ledDevice{l}, delayOn, d)
 		return l
 	}
-	l.err = setAttributeOf(ledDevice{l}, delayOn, fmt.Sprint(int(d/time.Millisecond)))
+	l.err = setAttributeOf(ledDevice{l}, delayOn, strconv.Itoa(int(d/time.Millisecond)))
 	return l
 }
 

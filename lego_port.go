@@ -5,9 +5,9 @@
 package ev3dev
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -27,7 +27,9 @@ type LegoPort struct {
 }
 
 // String satisfies the fmt.Stringer interface.
-func (p *LegoPort) String() string { return fmt.Sprint(portPrefix, p.id) }
+func (p *LegoPort) String() string {
+	return portPrefix + strconv.Itoa(p.id)
+}
 
 // Err returns the error state of the LegoPort and clears it.
 func (p *LegoPort) Err() error {

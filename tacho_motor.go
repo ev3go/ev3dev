@@ -5,9 +5,9 @@
 package ev3dev
 
 import (
-	"fmt"
 	"math"
 	"path/filepath"
+	"strconv"
 	"time"
 )
 
@@ -31,7 +31,7 @@ func (m *TachoMotor) String() string {
 	if m == nil {
 		return motorPrefix + "*"
 	}
-	return fmt.Sprint(motorPrefix, m.id)
+	return motorPrefix + strconv.Itoa(m.id)
 }
 
 // Err returns the error state of the TachoMotor and clears it.
@@ -131,7 +131,7 @@ func (m *TachoMotor) SetDutyCycleSetpoint(sp int) *TachoMotor {
 		m.err = newValueOutOfRangeError(m, dutyCycleSetpoint, sp, -100, 100)
 		return m
 	}
-	m.err = setAttributeOf(m, dutyCycleSetpoint, fmt.Sprint(sp))
+	m.err = setAttributeOf(m, dutyCycleSetpoint, strconv.Itoa(sp))
 	return m
 }
 
@@ -168,7 +168,7 @@ func (m *TachoMotor) SetPosition(pos int) *TachoMotor {
 		m.err = newValueOutOfRangeError(m, position, pos, math.MinInt32, math.MaxInt32)
 		return m
 	}
-	m.err = setAttributeOf(m, position, fmt.Sprint(pos))
+	m.err = setAttributeOf(m, position, strconv.Itoa(pos))
 	return m
 }
 
@@ -182,7 +182,7 @@ func (m *TachoMotor) SetHoldPIDKd(k int) *TachoMotor {
 	if m.err != nil {
 		return m
 	}
-	m.err = setAttributeOf(m, holdPIDkd, fmt.Sprint(k))
+	m.err = setAttributeOf(m, holdPIDkd, strconv.Itoa(k))
 	return m
 }
 
@@ -196,7 +196,7 @@ func (m *TachoMotor) SetHoldPIDKi(k int) *TachoMotor {
 	if m.err != nil {
 		return m
 	}
-	m.err = setAttributeOf(m, holdPIDki, fmt.Sprint(k))
+	m.err = setAttributeOf(m, holdPIDki, strconv.Itoa(k))
 	return m
 }
 
@@ -210,7 +210,7 @@ func (m *TachoMotor) SetHoldPIDKp(k int) *TachoMotor {
 	if m.err != nil {
 		return m
 	}
-	m.err = setAttributeOf(m, holdPIDkp, fmt.Sprint(k))
+	m.err = setAttributeOf(m, holdPIDkp, strconv.Itoa(k))
 	return m
 }
 
@@ -233,7 +233,7 @@ func (m *TachoMotor) SetPositionSetpoint(sp int) *TachoMotor {
 		m.err = newValueOutOfRangeError(m, positionSetpoint, sp, math.MinInt32, math.MaxInt32)
 		return m
 	}
-	m.err = setAttributeOf(m, positionSetpoint, fmt.Sprint(sp))
+	m.err = setAttributeOf(m, positionSetpoint, strconv.Itoa(sp))
 	return m
 }
 
@@ -252,7 +252,7 @@ func (m *TachoMotor) SetSpeedSetpoint(sp int) *TachoMotor {
 	if m.err != nil {
 		return m
 	}
-	m.err = setAttributeOf(m, speedSetpoint, fmt.Sprint(sp))
+	m.err = setAttributeOf(m, speedSetpoint, strconv.Itoa(sp))
 	return m
 }
 
@@ -270,7 +270,7 @@ func (m *TachoMotor) SetRampUpSetpoint(sp time.Duration) *TachoMotor {
 		m.err = newNegativeDurationError(m, rampUpSetpoint, sp)
 		return m
 	}
-	m.err = setAttributeOf(m, rampUpSetpoint, fmt.Sprint(int(sp/time.Millisecond)))
+	m.err = setAttributeOf(m, rampUpSetpoint, strconv.Itoa(int(sp/time.Millisecond)))
 	return m
 }
 
@@ -288,7 +288,7 @@ func (m *TachoMotor) SetRampDownSetpoint(sp time.Duration) *TachoMotor {
 		m.err = newNegativeDurationError(m, rampDownSetpoint, sp)
 		return m
 	}
-	m.err = setAttributeOf(m, rampDownSetpoint, fmt.Sprint(int(sp/time.Millisecond)))
+	m.err = setAttributeOf(m, rampDownSetpoint, strconv.Itoa(int(sp/time.Millisecond)))
 	return m
 }
 
@@ -302,7 +302,7 @@ func (m *TachoMotor) SetSpeedPIDKd(k int) *TachoMotor {
 	if m.err != nil {
 		return m
 	}
-	m.err = setAttributeOf(m, speedPIDkd, fmt.Sprint(k))
+	m.err = setAttributeOf(m, speedPIDkd, strconv.Itoa(k))
 	return m
 }
 
@@ -316,7 +316,7 @@ func (m *TachoMotor) SetSpeedPIDKi(k int) *TachoMotor {
 	if m.err != nil {
 		return m
 	}
-	m.err = setAttributeOf(m, speedPIDki, fmt.Sprint(k))
+	m.err = setAttributeOf(m, speedPIDki, strconv.Itoa(k))
 	return m
 }
 
@@ -330,7 +330,7 @@ func (m *TachoMotor) SetSpeedPIDKp(k int) *TachoMotor {
 	if m.err != nil {
 		return m
 	}
-	m.err = setAttributeOf(m, speedPIDkp, fmt.Sprint(k))
+	m.err = setAttributeOf(m, speedPIDkp, strconv.Itoa(k))
 	return m
 }
 
@@ -393,7 +393,7 @@ func (m *TachoMotor) SetTimeSetpoint(sp time.Duration) *TachoMotor {
 		m.err = newNegativeDurationError(m, timeSetpoint, sp)
 		return m
 	}
-	m.err = setAttributeOf(m, timeSetpoint, fmt.Sprint(int(sp/time.Millisecond)))
+	m.err = setAttributeOf(m, timeSetpoint, strconv.Itoa(int(sp/time.Millisecond)))
 	return m
 }
 

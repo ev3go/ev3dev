@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"reflect"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -43,7 +44,7 @@ func (p *powerSupplyVoltage) Size() (int64, error) {
 }
 
 func (p *powerSupplyVoltage) String() string {
-	return fmt.Sprint(p.voltage * 1e6)
+	return strconv.Itoa(int(p.voltage * 1e6))
 }
 
 // powerSupplyVoltageMin is the voltage_min_design attribute.
@@ -60,7 +61,7 @@ func (p *powerSupplyVoltageMin) Size() (int64, error) {
 }
 
 func (p *powerSupplyVoltageMin) String() string {
-	return fmt.Sprint(p.voltageMin * 1e6)
+	return strconv.Itoa(int(p.voltageMin * 1e6))
 }
 
 // powerSupplyVoltageMax is the voltage_max_design attribute.
@@ -77,7 +78,7 @@ func (p *powerSupplyVoltageMax) Size() (int64, error) {
 }
 
 func (p *powerSupplyVoltageMax) String() string {
-	return fmt.Sprint(p.voltageMax * 1e6)
+	return strconv.Itoa(int(p.voltageMax * 1e6))
 }
 
 // powerSupplyCurrent is the current_now attribute.
@@ -94,7 +95,7 @@ func (p *powerSupplyCurrent) Size() (int64, error) {
 }
 
 func (p *powerSupplyCurrent) String() string {
-	return fmt.Sprint(p.current * 1e3)
+	return strconv.Itoa(int(p.current * 1e3))
 }
 
 // powerSupplyTechnology is the technology attribute.
