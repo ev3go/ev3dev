@@ -14,6 +14,9 @@ import (
 )
 
 // Steering implements a paired-motor steering unit similar to an EV3-G steering block.
+//
+// Errors ocurring during steering operations are sticky. They are returned either by
+// a call to Err or Wait.
 type Steering struct {
 	// Left and Right are the left and right motors to be
 	// used by the steering module.
@@ -24,6 +27,8 @@ type Steering struct {
 	//
 	// See ev3dev.Wait documentation for timeout behaviour.
 	Timeout time.Duration
+
+	err error
 }
 
 // SteerCounts steers in the given turn for the given tacho counts and at the
@@ -33,41 +38,44 @@ type Steering struct {
 //
 // See the ev3dev.SetSpeedSetPoint and ev3dev.SetPositionSetPoint documentation for
 // speed and count behaviour.
-func (s Steering) SteerCounts(speed, turn, counts int) error {
+func (s *Steering) SteerCounts(speed, turn, counts int) *Steering {
+	if s.err != nil {
+		return s
+	}
+
 	if turn < -100 || 100 < turn {
-		return directionError(turn)
+		s.err = directionError(turn)
+		return s
 	}
 
 	// leftSpeed and rightSpeed may be signed here,
 	// but ev3dev ignores speed_sp for run-to-*-pos.
 	leftSpeed, leftCounts, rightSpeed, rightCounts := motorRates(speed, turn, counts)
 
-	var err error
-	err = s.Left.
+	s.err = s.Left.
 		SetSpeedSetpoint(leftSpeed).
 		SetPositionSetpoint(leftCounts).
 		Err()
-	if err != nil {
-		return err
+	if s.err != nil {
+		return s
 	}
-	err = s.Right.
+	s.err = s.Right.
 		SetSpeedSetpoint(rightSpeed).
 		SetPositionSetpoint(rightCounts).
 		Err()
-	if err != nil {
-		return err
+	if s.err != nil {
+		return s
 	}
 
-	err = s.Left.Command("run-to-rel-pos").Err()
-	if err != nil {
-		return err
+	s.err = s.Left.Command("run-to-rel-pos").Err()
+	if s.err != nil {
+		return s
 	}
-	err = s.Right.Command("run-to-rel-pos").Err()
-	if err != nil {
+	s.err = s.Right.Command("run-to-rel-pos").Err()
+	if s.err != nil {
 		s.Left.Command("stop").Err()
-		return err
 	}
-	return nil
+	return s
 }
 
 // SteerDuration steers in the given turn for the given duration, d,  and at the
@@ -76,42 +84,46 @@ func (s Steering) SteerCounts(speed, turn, counts int) error {
 //
 // See the ev3dev.SetSpeedSetpoint and ev3dev.SetTimeSetpoint documentation for speed
 // and duration behaviour.
-func (s Steering) SteerDuration(speed, turn int, d time.Duration) error {
+func (s *Steering) SteerDuration(speed, turn int, d time.Duration) *Steering {
+	if s.err != nil {
+		return s
+	}
+
 	if turn < -100 || 100 < turn {
-		return directionError(turn)
+		s.err = directionError(turn)
+		return s
 	}
 	if d < 0 {
-		return durationError(d)
+		s.err = durationError(d)
+		return s
 	}
 
 	leftSpeed, _, rightSpeed, _ := motorRates(speed, turn, 0)
 
-	var err error
-	err = s.Left.
+	s.err = s.Left.
 		SetSpeedSetpoint(leftSpeed).
 		SetTimeSetpoint(d).
 		Err()
-	if err != nil {
-		return err
+	if s.err != nil {
+		return s
 	}
-	err = s.Right.
+	s.err = s.Right.
 		SetSpeedSetpoint(rightSpeed).
 		SetTimeSetpoint(d).
 		Err()
-	if err != nil {
-		return err
+	if s.err != nil {
+		return s
 	}
 
-	err = s.Left.Command("run-timed").Err()
-	if err != nil {
-		return err
+	s.err = s.Left.Command("run-timed").Err()
+	if s.err != nil {
+		return s
 	}
-	err = s.Right.Command("run-timed").Err()
-	if err != nil {
+	s.err = s.Right.Command("run-timed").Err()
+	if s.err != nil {
 		s.Left.Command("stop").Err()
-		return err
 	}
-	return nil
+	return s
 }
 
 func motorRates(speed, turn, counts int) (leftSpeed, leftCounts, rightSpeed, rightCounts int) {
@@ -137,10 +149,21 @@ func motorRates(speed, turn, counts int) (leftSpeed, leftCounts, rightSpeed, rig
 	return leftSpeed, leftCounts, rightSpeed, rightCounts
 }
 
+// Err returns the error state of the Steering and clears it.
+func (s *Steering) Err() error {
+	err := s.err
+	s.err = nil
+	return err
+}
+
 // Wait waits for the last steering operation to complete. A non-nil error will either
 // implement the Cause method, which may be used to determine the underlying cause, or
 // be an Errors holding errors that implement the Cause method.
-func (s Steering) Wait() error {
+func (s *Steering) Wait() error {
+	if err := s.Err(); err != nil {
+		return err
+	}
+
 	var errors [2]error
 
 	var wg sync.WaitGroup

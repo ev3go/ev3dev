@@ -245,11 +245,7 @@ func wander() {
 				{speed: max, dir: -100},
 				{speed: max, dir: 0},
 			} {
-				err = s.SteerCounts(move.speed, move.dir, (rand.Intn(3)+1)*360)
-				if err != nil {
-					log.Fatalf("failed to steer %v/%v: %v", move.speed, move.dir, err)
-				}
-				err = s.Wait()
+				err = s.SteerCounts(move.speed, move.dir, (rand.Intn(3)+1)*360).Wait()
 				if err != nil {
 					log.Fatalf("failed to steer %v/%v: %v", move.speed, move.dir, err)
 				}
