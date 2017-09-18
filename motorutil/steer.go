@@ -180,7 +180,7 @@ func (s *Steering) Wait() error {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			stat, ok, err := ev3dev.Wait(s.Left, ev3dev.Running, 0, 0, false, s.Timeout)
+			stat, ok, err := ev3dev.Wait(device, ev3dev.Running, 0, 0, false, s.Timeout)
 			if err != nil {
 				errors[i] = waitError{side: side, motor: device, cause: err}
 			}
