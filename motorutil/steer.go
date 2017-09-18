@@ -67,11 +67,23 @@ func (s *Steering) SteerCounts(speed, turn, counts int) *Steering {
 		return s
 	}
 
-	s.err = s.Left.Command("run-to-rel-pos").Err()
+	// TODO(kortschak): Remove conditional stop when the
+	// driver handles zero relative position change as a no-op.
+	if leftCounts == 0 {
+		s.err = s.Left.Command("stop").Err()
+	} else {
+		s.err = s.Left.Command("run-to-rel-pos").Err()
+	}
 	if s.err != nil {
 		return s
 	}
-	s.err = s.Right.Command("run-to-rel-pos").Err()
+	// TODO(kortschak): Remove conditional stop when the
+	// driver handles zero relative position change as a no-op.
+	if rightCounts == 0 {
+		s.err = s.Right.Command("stop").Err()
+	} else {
+		s.err = s.Right.Command("run-to-rel-pos").Err()
+	}
 	if s.err != nil {
 		s.Left.Command("stop").Err()
 	}
