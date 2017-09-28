@@ -2,6 +2,10 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+// gps demonstrates use of the Dexter Industries dGPS device.
+// It displays the time in UTC, the number of satellites in view
+// and the HDOP. It also shows the current location, velocity and
+// heading, and the distance and heading to a notable location.
 package main
 
 import (
@@ -27,6 +31,12 @@ func main() {
 	}
 	defer gps.Close()
 
+	b, err := gps.ExtendedFirmware(true)
+	if err != nil {
+		log.Fatalf("error selecting extended firmware: %v", err)
+	}
+	fmt.Printf("GPS-X response: %v\n", b)
+
 	stat, err := gps.Status()
 	if err != nil {
 		log.Fatalf("error getting satellite link status: %v", err)
@@ -51,12 +61,6 @@ func main() {
 	}
 	fmt.Printf("satellite time=%v\n", t)
 
-	b, err := gps.ExtendedFirmware(true)
-	if err != nil {
-		log.Fatalf("error selecting extended firmware: %v", err)
-	}
-	fmt.Printf("GPS-X response: %v\n", b)
-
 	lat, err := gps.Latitude()
 	if err != nil {
 		log.Fatalf("error getting latitude: %v", err)
@@ -77,13 +81,14 @@ func main() {
 	if err != nil {
 		log.Fatalf("error getting heading: %v", err)
 	}
-	fmt.Printf("%d° %d° %dm %dcm/s %d°\n", lat, lon, alt, vel, head)
+	fmt.Printf("lat=%d.%d° lon=%d.%d° alt=%dm vel=%dcm/s head=%d°\n",
+		lat/1e6, abs(lat%1e6), lon/1e6, abs(lon%1e6), alt, vel, head)
 
-	err = gps.SetDestLatitude(0)
+	err = gps.SetDestLatitude(55730966)
 	if err != nil {
 		log.Fatalf("error setting destination latitude: %v", err)
 	}
-	err = gps.SetDestLongitude(0)
+	err = gps.SetDestLongitude(9010570)
 	if err != nil {
 		log.Fatalf("error setting longitude: %v", err)
 	}
@@ -100,6 +105,13 @@ func main() {
 	if err != nil {
 		log.Fatalf("error getting angle since last: %v", err)
 	}
-	fmt.Printf("%dm %d° %d°\n", dist, angle, lastAngle)
+	fmt.Printf("destination=%dm %d° traveled=%d°\n",
+		dist, angle, lastAngle)
+}
 
+func abs(i int) int {
+	if i < 0 {
+		return -i
+	}
+	return i
 }
