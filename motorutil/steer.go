@@ -33,8 +33,7 @@ type Steering struct {
 
 // SteerCounts steers in the given turn for the given tacho counts and at the
 // specified speed. The valid range of turn is -100 (hard left) to +100 (hard right).
-// If counts is negative, the turn will be made in reverse. The sign of speed is
-// ignored.
+// If the product of counts and speed is negative, the turn will be made in reverse.
 //
 // See the ev3dev.SetSpeedSetPoint and ev3dev.SetPositionSetPoint documentation for
 // speed and count behaviour.
@@ -48,6 +47,10 @@ func (s *Steering) SteerCounts(speed, turn, counts int) *Steering {
 		return s
 	}
 
+	// Make speed a velocity relative to the counts vector.
+	if speed < 0 {
+		counts = -counts
+	}
 	// leftSpeed and rightSpeed may be signed here,
 	// but ev3dev ignores speed_sp for run-to-*-pos.
 	leftSpeed, leftCounts, rightSpeed, rightCounts := motorRates(speed, turn, counts)
