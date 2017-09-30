@@ -38,6 +38,8 @@ type sensor struct {
 
 	_direct []byte
 
+	_firmwareVersion string
+
 	_mode     string
 	_modes    []string
 	_units    map[string]string
@@ -214,6 +216,19 @@ func (s *sensorModes) String() string {
 	defer s.mu.Unlock()
 	sort.Strings(s._modes)
 	return strings.Join(s._modes, " ")
+}
+
+// sensorFirmwareVersion is the fw_version attribute.
+type sensorFirmwareVersion sensor
+
+// ReadAt satisfies the io.ReaderAt interface.
+func (s *sensorFirmwareVersion) ReadAt(b []byte, offset int64) (int, error) {
+	return readAt(b, offset, s._firmwareVersion)
+}
+
+// Size returns the length of the backing data and a nil error.
+func (s *sensorFirmwareVersion) Size() (int64, error) {
+	return size(s._firmwareVersion), nil
 }
 
 // sensorMode is the mode attribute.
@@ -542,6 +557,7 @@ func connectedSensors(c ...sensorConn) []sisyphus.Node {
 		n[i] = d(fmt.Sprintf("sensor%d", s.id), 0775).With(
 			ro(AddressName, 0444, (*sensorAddress)(s.sensor)),
 			ro(DriverNameName, 0444, (*sensorDriver)(s.sensor)),
+			ro(FirmwareVersion, 0444, (*sensorFirmwareVersion)(s.sensor)),
 			ro(ModesName, 0444, (*sensorModes)(s.sensor)),
 			rw(ModeName, 0666, (*sensorMode)(s.sensor)),
 			ro(CommandsName, 0444, (*sensorCommands)(s.sensor)),
@@ -582,6 +598,8 @@ func TestSensor(t *testing.T) {
 			sensor: &sensor{
 				address: "in2",
 				driver:  driver,
+
+				_firmwareVersion: "v1",
 
 				_modes:    []string{"GYRO-ANG", "GYRO-RATE", "GYRO-FAS", "GYRO-G&A", "GYRO-CAL"},
 				_mode:     "GYRO-ANG",
@@ -738,6 +756,14 @@ func TestSensor(t *testing.T) {
 			wantDriver := c.sensor.driver
 			if gotDriver != wantDriver {
 				t.Errorf("unexpected value for driver name: got:%q want:%q", gotDriver, wantDriver)
+			}
+			gotFirmwareVersion, err := got.FirmwareVersion()
+			if err != nil {
+				t.Errorf("unexpected error getting firmware version:%v", err)
+			}
+			wantFirmwareVersion := c.sensor._firmwareVersion
+			if gotFirmwareVersion != wantFirmwareVersion {
+				t.Errorf("unexpected value for firmware version: got:%q want:%q", gotFirmwareVersion, wantFirmwareVersion)
 			}
 		}
 	})

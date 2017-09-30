@@ -97,6 +97,7 @@ const (
 	driverName                = "driver_name"
 	dutyCycle                 = "duty_cycle"
 	dutyCycleSetpoint         = "duty_cycle_sp"
+	firmwareVersion           = "fw_version"
 	fullTravelCount           = "full_travel_count"
 	holdPID                   = "hold_pid"
 	holdPIDkd                 = holdPID + "/" + kd
