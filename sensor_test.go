@@ -767,10 +767,7 @@ func TestSensor(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		modes, err := s.Modes()
-		if err != nil {
-			t.Fatalf("unexpected error getting modes: %v", err)
-		}
+		modes := s.Modes()
 		want := conn[0].sensor.modes()
 		if !reflect.DeepEqual(modes, want) {
 			t.Errorf("unexpected modes value: got:%q want:%q", modes, want)
@@ -813,11 +810,8 @@ func TestSensor(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			commands, err := s.Commands()
+			commands := s.Commands()
 			want := c.sensor.commands()
-			if err != nil {
-				t.Fatalf("unexpected error getting commands: %v", err)
-			}
 			if !reflect.DeepEqual(commands, want) {
 				t.Errorf("unexpected commands value: got:%q want:%q", commands, want)
 			}
@@ -944,11 +938,7 @@ func TestSensor(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		modes, err := s.Modes()
-		if err != nil {
-			t.Fatalf("unexpected error getting modes: %v", err)
-		}
-		for _, mode := range modes {
+		for _, mode := range s.Modes() {
 			err := s.SetMode(mode).Err()
 			if err != nil {
 				t.Errorf("unexpected error for mode %q: %v", mode, err)
@@ -975,11 +965,7 @@ func TestSensor(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		modes, err := s.Modes()
-		if err != nil {
-			t.Fatalf("unexpected error getting modes: %v", err)
-		}
-		for _, mode := range modes {
+		for _, mode := range s.Modes() {
 			err := s.SetMode(mode).Err()
 			if err != nil {
 				t.Errorf("unexpected error for mode %q: %v", mode, err)

@@ -18,6 +18,10 @@ var _ idSetter = (*Sensor)(nil)
 type Sensor struct {
 	id int
 
+	// Cached values:
+	firmwareVersion string
+	commands, modes []string
+
 	err error
 }
 
@@ -44,8 +48,26 @@ func (s *Sensor) Err() error {
 
 // idInt and setID satisfy the idSetter interface.
 func (s *Sensor) setID(id int) error {
-	*s = Sensor{id: id}
+	t := Sensor{id: id}
+	var err error
+	t.firmwareVersion, err = stringFrom(attributeOf(&t, firmwareVersion))
+	if err != nil {
+		goto fail
+	}
+	t.commands, err = stringSliceFrom(attributeOf(&t, commands))
+	if err != nil {
+		goto fail
+	}
+	t.modes, err = stringSliceFrom(attributeOf(&t, modes))
+	if err != nil {
+		goto fail
+	}
+	*s = t
 	return nil
+
+fail:
+	*s = Sensor{id: -1}
+	return err
 }
 func (s *Sensor) idInt() int {
 	if s == nil {
@@ -117,8 +139,15 @@ func (s *Sensor) BinDataFormat() (string, error) {
 }
 
 // Commands returns the available commands for the Sensor.
-func (s *Sensor) Commands() ([]string, error) {
-	return stringSliceFrom(attributeOf(s, commands))
+func (s *Sensor) Commands() []string {
+	if s.commands == nil {
+		return nil
+	}
+	// Return a copy to prevent users
+	// changing the values under our feet.
+	avail := make([]string, len(s.commands))
+	copy(avail, s.commands)
+	return avail
 }
 
 // Command issues a command to the Sensor.
@@ -126,20 +155,15 @@ func (s *Sensor) Command(comm string) *Sensor {
 	if s.err != nil {
 		return s
 	}
-	avail, err := s.Commands()
-	if err != nil {
-		s.err = err
-		return s
-	}
 	ok := false
-	for _, c := range avail {
+	for _, c := range s.commands {
 		if c == comm {
 			ok = true
 			break
 		}
 	}
 	if !ok {
-		s.err = newInvalidValueError(s, command, "", comm, avail)
+		s.err = newInvalidValueError(s, command, "", comm, s.Commands())
 		return s
 	}
 	s.err = setAttributeOf(s, command, comm)
@@ -170,8 +194,15 @@ func (s *Sensor) FirmwareVersion() (string, error) {
 }
 
 // Modes returns the available modes for the Sensor.
-func (s *Sensor) Modes() ([]string, error) {
-	return stringSliceFrom(attributeOf(s, modes))
+func (s *Sensor) Modes() []string {
+	if s.modes == nil {
+		return nil
+	}
+	// Return a copy to prevent users
+	// changing the values under our feet.
+	avail := make([]string, len(s.modes))
+	copy(avail, s.modes)
+	return avail
 }
 
 // Mode returns the currently selected mode of the Sensor.
