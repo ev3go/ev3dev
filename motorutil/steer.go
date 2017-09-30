@@ -7,6 +7,7 @@ package motorutil
 import (
 	"fmt"
 	"math"
+	"sort"
 	"sync"
 	"time"
 
@@ -29,6 +30,122 @@ type Steering struct {
 	Timeout time.Duration
 
 	err error
+}
+
+// StopAction returns the stop action used when a stop command is issued
+// to the TachoMotor devices held by the Steering. StopAction returns an
+// error if the two motors do not agree on the stop action.
+func (s *Steering) StopAction() (string, error) {
+	err := s.Err()
+	if err != nil {
+		return "", err
+	}
+
+	lAction, err := s.Left.StopAction()
+	if err != nil {
+		return "", err
+	}
+	rAction, err := s.Right.StopAction()
+	if err != nil {
+		return "", err
+	}
+	if lAction != rAction {
+		return "", actionMismatch{left: lAction, right: rAction}
+	}
+	return lAction, nil
+}
+
+type actionMismatch struct {
+	left, right string
+}
+
+func (e actionMismatch) Error() string {
+	return fmt.Sprintf("motorutil: stop action mismatch: %s != %s", e.left, e.right)
+}
+
+// StopActions returns the available stop actions for the TachoMotor.
+// StopAction returns an error and the intersection of available actions
+// if the two motors do not agree on the available stop actions.
+func (s *Steering) StopActions() ([]string, error) {
+	err := s.Err()
+	if err != nil {
+		return nil, err
+	}
+
+	lActions, err := s.Left.StopActions()
+	if err != nil {
+		return nil, err
+	}
+	rActions, err := s.Right.StopActions()
+	if err != nil {
+		return nil, err
+	}
+	sort.Strings(lActions)
+	sort.Strings(rActions)
+	if !equal(lActions, rActions) {
+		err = actionsMismatch{left: lActions, right: rActions}
+		lActions = intersect(lActions, rActions)
+	}
+	return lActions, err
+}
+
+// equal returns whether a and b are equal.
+func equal(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i, va := range a {
+		if va != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
+// intersect returns a new []string containing the intersection of the sorted
+// slices a and b.
+func intersect(a, b []string) []string {
+	var c []string
+	var ia, ib int
+	for ia < len(a) && ib < len(b) {
+		av := a[ia]
+		bv := b[ib]
+		switch {
+		case av == bv:
+			c = append(c, av)
+			ia++
+			ib++
+		case av < bv:
+			ia++
+		case av > bv:
+			ib++
+		}
+	}
+	return c
+}
+
+type actionsMismatch struct {
+	left, right []string
+}
+
+func (e actionsMismatch) Error() string {
+	return fmt.Sprintf("motorutil: available stop actions mismatch: %s != %s", e.left, e.right)
+}
+
+// SetStopAction sets the stop action to be used when a stop command is
+// issued to the TachoMotor. SetStopAction returns on the first error
+// encountered.
+func (s *Steering) SetStopAction(action string) *Steering {
+	if s.err != nil {
+		return s
+	}
+
+	s.err = s.Left.SetStopAction(action).Err()
+	if s.err != nil {
+		return s
+	}
+	s.err = s.Right.SetStopAction(action).Err()
+	return s
 }
 
 // SteerCounts steers in the given turn for the given tacho counts and at the
