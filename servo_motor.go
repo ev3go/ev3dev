@@ -16,6 +16,9 @@ var _ idSetter = (*ServoMotor)(nil)
 type ServoMotor struct {
 	id int
 
+	// Cached value:
+	driver string
+
 	err error
 }
 
@@ -42,7 +45,14 @@ func (m *ServoMotor) Err() error {
 
 // idInt and setID satisfy the idSetter interface.
 func (m *ServoMotor) setID(id int) error {
-	*m = ServoMotor{id: id}
+	t := ServoMotor{id: id}
+	var err error
+	t.driver, err = DriverFor(&t)
+	if err != nil {
+		*m = ServoMotor{id: -1}
+		return err
+	}
+	*m = t
 	return nil
 }
 func (m *ServoMotor) idInt() int {
@@ -81,6 +91,11 @@ func (m *ServoMotor) Next() (*ServoMotor, error) {
 		return nil, err
 	}
 	return &ServoMotor{id: id}, err
+}
+
+// Driver returns the driver used by the ServoMotor.
+func (p *ServoMotor) Driver() string {
+	return p.driver
 }
 
 // Commands returns the available commands for the ServoMotor.

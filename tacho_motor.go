@@ -18,6 +18,7 @@ type TachoMotor struct {
 	id int
 
 	// Cached values:
+	driver                string
 	countPerRot, maxSpeed int
 	commands, stopActions []string
 
@@ -65,6 +66,10 @@ func (m *TachoMotor) setID(id int) error {
 	if err != nil {
 		goto fail
 	}
+	t.driver, err = DriverFor(&t)
+	if err != nil {
+		goto fail
+	}
 	*m = t
 	return nil
 
@@ -108,6 +113,11 @@ func (m *TachoMotor) Next() (*TachoMotor, error) {
 		return nil, err
 	}
 	return &TachoMotor{id: id}, err
+}
+
+// Driver returns the driver used by the TachoMotor.
+func (m *TachoMotor) Driver() string {
+	return m.driver
 }
 
 // Commands returns the available commands for the TachoMotor.
