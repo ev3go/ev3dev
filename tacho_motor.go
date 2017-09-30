@@ -42,7 +42,10 @@ func (m *TachoMotor) Err() error {
 }
 
 // idInt and setID satisfy the idSetter interface.
-func (m *TachoMotor) setID(id int) { *m = TachoMotor{id: id} }
+func (m *TachoMotor) setID(id int) error {
+	*m = TachoMotor{id: id}
+	return nil
+}
 func (m *TachoMotor) idInt() int {
 	if m == nil {
 		return -1
@@ -59,7 +62,12 @@ func TachoMotorFor(port, driver string) (*TachoMotor, error) {
 	if id == -1 {
 		return nil, err
 	}
-	return &TachoMotor{id: id}, err
+	var m TachoMotor
+	_err := m.setID(id)
+	if _err != nil {
+		err = _err
+	}
+	return &m, err
 }
 
 // Next returns a TachoMotor for the next motor with the same device driver as

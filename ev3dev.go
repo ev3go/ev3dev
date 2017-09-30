@@ -299,7 +299,7 @@ type idSetter interface {
 	// setID sets the device id to the given id
 	// and clears the error field to allow an
 	// already used Device to be reused.
-	setID(id int)
+	setID(id int) error
 }
 
 // FindAfter finds the first device after d matching the class of the
@@ -327,8 +327,7 @@ func FindAfter(d, dst Device, driver string) error {
 	if err != nil {
 		return err
 	}
-	dst.(idSetter).setID(id)
-	return nil
+	return dst.(idSetter).setID(id)
 }
 
 // IsConnected returns whether the Device is connected.
