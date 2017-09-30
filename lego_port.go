@@ -23,6 +23,9 @@ func (*LegoPort) Type() string { return portPrefix }
 type LegoPort struct {
 	id int
 
+	// Cached values:
+	modes []string
+
 	err error
 }
 
@@ -40,7 +43,14 @@ func (p *LegoPort) Err() error {
 
 // idInt and setID satisfy the idSetter interface.
 func (p *LegoPort) setID(id int) error {
-	*p = LegoPort{id: id}
+	t := LegoPort{id: id}
+	var err error
+	t.modes, err = stringSliceFrom(attributeOf(&t, modes))
+	if err != nil {
+		*p = LegoPort{id: -1}
+		return err
+	}
+	*p = t
 	return nil
 }
 func (p *LegoPort) idInt() int {
@@ -82,8 +92,15 @@ func (p *LegoPort) Next() (*LegoPort, error) {
 }
 
 // Modes returns the available modes for the LegoPort.
-func (p *LegoPort) Modes() ([]string, error) {
-	return stringSliceFrom(attributeOf(p, modes))
+func (p *LegoPort) Modes() []string {
+	if p.modes == nil {
+		return nil
+	}
+	// Return a copy to prevent users
+	// changing the values under our feet.
+	avail := make([]string, len(p.modes))
+	copy(avail, p.modes)
+	return avail
 }
 
 // Mode returns the currently selected mode of the LegoPort.
