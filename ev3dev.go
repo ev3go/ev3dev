@@ -6,11 +6,11 @@
 // See documentation at http://www.ev3dev.org/docs/drivers/.
 //
 // The API provided in the ev3dev package allows fluent chaining of action calls.
-// Methods for each of the device handle types are split into two classes: action
-// and result. Action method calls return the receiver and result method calls
+// Methods for each of the device handle types are split into three classes: action,
+// result and constant. Action method calls return the receiver and result method calls
 // return an error value generally with another result. Action methods result in
 // a change of state in the robot while result methods return the requested attribute
-// state of the robot.
+// state of the robot. Constant methods return values that are constant for the device.
 //
 // To allow fluent call chains, errors are sticky for action methods and are cleared
 // and returned by result methods. In a chain of calls the first error that is caused
