@@ -267,21 +267,21 @@ func (m *linearActuatorStopActions) String() string {
 	return strings.Join(m._stopActions, " ")
 }
 
-// linearActuatorCountsPerMeter is the counts_per_m attribute.
-type linearActuatorCountsPerMeter linearActuator
+// linearActuatorCountPerMeter is the counts_per_m attribute.
+type linearActuatorCountPerMeter linearActuator
 
 // ReadAt satisfies the io.ReaderAt interface.
-func (m *linearActuatorCountsPerMeter) ReadAt(b []byte, offset int64) (int, error) {
+func (m *linearActuatorCountPerMeter) ReadAt(b []byte, offset int64) (int, error) {
 	return readAt(b, offset, m)
 }
 
 // Size returns the length of the backing data and a nil error.
-func (m *linearActuatorCountsPerMeter) Size() (int64, error) {
+func (m *linearActuatorCountPerMeter) Size() (int64, error) {
 	return size(m), nil
 }
 
 // String returns a string representation of the attribute.
-func (m *linearActuatorCountsPerMeter) String() string {
+func (m *linearActuatorCountPerMeter) String() string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	return strconv.Itoa(m._countPerM)
@@ -981,7 +981,7 @@ func connectedLinearActuators(c ...linearActuatorConn) []sisyphus.Node {
 			ro(DriverNameName, 0444, (*linearActuatorDriver)(m.linearActuator)),
 			ro(CommandsName, 0444, (*linearActuatorCommands)(m.linearActuator)),
 			wo(CommandName, 0222, (*linearActuatorCommand)(m.linearActuator)),
-			ro(CountPerMeterName, 0444, (*linearActuatorCountsPerMeter)(m.linearActuator)),
+			ro(CountPerMeterName, 0444, (*linearActuatorCountPerMeter)(m.linearActuator)),
 			ro(FullTravelCountName, 0444, (*linearActuatorFullTravelCount)(m.linearActuator)),
 			rw(PolarityName, 0666, (*linearActuatorPolarity)(m.linearActuator)),
 			ro(DutyCycleName, 0444, (*linearActuatorDutyCycle)(m.linearActuator)),
