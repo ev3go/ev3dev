@@ -113,6 +113,17 @@ func (p *LegoPort) SetMode(m string) *LegoPort {
 	if p.err != nil {
 		return p
 	}
+	ok := false
+	for _, a := range p.modes {
+		if a == m {
+			ok = true
+			break
+		}
+	}
+	if !ok {
+		p.err = newInvalidValueError(p, mode, "", m, p.Modes())
+		return p
+	}
 	p.err = setAttributeOf(p, mode, m)
 	return p
 }
