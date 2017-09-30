@@ -4,7 +4,10 @@
 
 package motorutil
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+)
 
 var motorRatesTests = []struct {
 	speed, turn, counts int
@@ -89,6 +92,58 @@ func TestMotorRates(t *testing.T) {
 						rightCounts, test.wantRightCounts*countDirection)
 				}
 			}
+		}
+	}
+}
+
+var stringSetTests = []struct {
+	a, b []string
+	want []string
+}{
+	{
+		a:    []string{"1", "2", "3", "4", "5"},
+		b:    []string{"1", "2", "3", "4", "5"},
+		want: []string{"1", "2", "3", "4", "5"},
+	},
+	{
+		a:    []string{"1", "2", "4", "6", "8"},
+		b:    []string{"2", "3", "4", "7", "8"},
+		want: []string{"2", "4", "8"},
+	},
+	{
+		a:    []string{"2", "3", "4", "7", "8"},
+		b:    []string{"1", "2", "4", "6", "8"},
+		want: []string{"2", "4", "8"},
+	},
+	{
+		a:    []string{"4", "5", "6"},
+		b:    []string{"1", "2", "3"},
+		want: nil,
+	},
+	{
+		a:    []string{"4", "5", "6"},
+		b:    []string{"1", "2", "3", "5"},
+		want: []string{"5"},
+	},
+}
+
+func TestEqual(t *testing.T) {
+	for _, test := range stringSetTests {
+		got := equal(test.a, test.b)
+		want := reflect.DeepEqual(test.a, test.b)
+		if got != want {
+			t.Errorf("unexpected equality between %v and %v: got: %t want:%t",
+				test.a, test.b, got, want)
+		}
+	}
+}
+
+func TestIntersect(t *testing.T) {
+	for _, test := range stringSetTests {
+		got := intersect(test.a, test.b)
+		if !reflect.DeepEqual(got, test.want) {
+			t.Errorf("unexpected intersection between %v and %v:\ngot: %v\nwant:%v",
+				test.a, test.b, got, test.want)
 		}
 	}
 }
