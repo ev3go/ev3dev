@@ -150,9 +150,6 @@ type sensorCommands sensor
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (s *sensorCommands) ReadAt(b []byte, offset int64) (int, error) {
-	if len(s._commands) == 0 {
-		return len(b), syscall.ENOTSUP
-	}
 	return readAt(b, offset, s)
 }
 
@@ -179,9 +176,6 @@ func (s *sensorCommand) Truncate(_ int64) error { return nil }
 func (s *sensorCommand) WriteAt(b []byte, off int64) (int, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if len(s._commands) == 0 {
-		return len(b), syscall.ENOTSUP
-	}
 	command := string(chomp(b))
 	for _, c := range s._commands {
 		if command == c {
@@ -821,12 +815,6 @@ func TestSensor(t *testing.T) {
 			}
 			commands, err := s.Commands()
 			want := c.sensor.commands()
-			if len(want) == 0 {
-				if err == nil {
-					t.Error("expected error getting commands from non-commandable sensor")
-				}
-				continue
-			}
 			if err != nil {
 				t.Fatalf("unexpected error getting commands: %v", err)
 			}

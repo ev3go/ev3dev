@@ -191,9 +191,6 @@ type tachoMotorCommands tachoMotor
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *tachoMotorCommands) ReadAt(b []byte, offset int64) (int, error) {
-	if len((*tachoMotor)(m).commands()) == 0 {
-		return len(b), syscall.ENOTSUP
-	}
 	return readAt(b, offset, m)
 }
 
@@ -220,9 +217,6 @@ func (m *tachoMotorCommand) Truncate(_ int64) error { return nil }
 func (m *tachoMotorCommand) WriteAt(b []byte, off int64) (int, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if len(m._commands) == 0 {
-		return len(b), syscall.ENOTSUP
-	}
 	command := string(chomp(b))
 	for _, c := range m._commands {
 		if command == c {
@@ -250,9 +244,6 @@ type tachoMotorStopActions tachoMotor
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *tachoMotorStopActions) ReadAt(b []byte, offset int64) (int, error) {
-	if len((*tachoMotor)(m).stopActions()) == 0 {
-		return len(b), syscall.ENOTSUP
-	}
 	return readAt(b, offset, m)
 }
 
@@ -854,9 +845,6 @@ type tachoMotorStopAction tachoMotor
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *tachoMotorStopAction) ReadAt(b []byte, offset int64) (int, error) {
-	if len((*tachoMotor)(m).stopActions()) == 0 {
-		return len(b), syscall.ENOTSUP
-	}
 	return readAt(b, offset, m)
 }
 
@@ -867,9 +855,6 @@ func (m *tachoMotorStopAction) Truncate(_ int64) error { return nil }
 func (m *tachoMotorStopAction) WriteAt(b []byte, off int64) (int, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if len(m._stopActions) == 0 {
-		return len(b), syscall.ENOTSUP
-	}
 	stopAction := string(chomp(b))
 	for _, c := range m._stopActions {
 		if stopAction == c {
@@ -1184,12 +1169,6 @@ func TestTachoMotor(t *testing.T) {
 			}
 			commands, err := m.Commands()
 			want := c.tachoMotor.commands()
-			if len(want) == 0 {
-				if err == nil {
-					t.Error("expected error getting commands from non-commandable tachoMotor")
-				}
-				continue
-			}
 			if err != nil {
 				t.Fatalf("unexpected error getting commands: %v", err)
 			}
@@ -1702,12 +1681,6 @@ func TestTachoMotor(t *testing.T) {
 			}
 			stopActions, err := m.StopActions()
 			want := c.tachoMotor.stopActions()
-			if len(want) == 0 {
-				if err == nil {
-					t.Error("expected error getting stop actions from non-stop action tachoMotor")
-				}
-				continue
-			}
 			if err != nil {
 				t.Fatalf("unexpected error getting stop actions: %v", err)
 			}
