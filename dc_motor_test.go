@@ -138,9 +138,6 @@ type dcMotorCommands dcMotor
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *dcMotorCommands) ReadAt(b []byte, offset int64) (int, error) {
-	if len((*dcMotor)(m).commands()) == 0 {
-		return len(b), syscall.ENOTSUP
-	}
 	return readAt(b, offset, m)
 }
 
@@ -167,9 +164,6 @@ func (m *dcMotorCommand) Truncate(_ int64) error { return nil }
 func (m *dcMotorCommand) WriteAt(b []byte, off int64) (int, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if len(m._commands) == 0 {
-		return len(b), syscall.ENOTSUP
-	}
 	command := string(chomp(b))
 	for _, c := range m._commands {
 		if command == c {
@@ -197,9 +191,6 @@ type dcMotorStopActions dcMotor
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *dcMotorStopActions) ReadAt(b []byte, offset int64) (int, error) {
-	if len((*dcMotor)(m).stopActions()) == 0 {
-		return len(b), syscall.ENOTSUP
-	}
 	return readAt(b, offset, m)
 }
 
@@ -423,9 +414,6 @@ type dcMotorStopAction dcMotor
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *dcMotorStopAction) ReadAt(b []byte, offset int64) (int, error) {
-	if len((*dcMotor)(m).stopActions()) == 0 {
-		return len(b), syscall.ENOTSUP
-	}
 	return readAt(b, offset, m)
 }
 
@@ -436,9 +424,6 @@ func (m *dcMotorStopAction) Truncate(_ int64) error { return nil }
 func (m *dcMotorStopAction) WriteAt(b []byte, off int64) (int, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if len(m._stopActions) == 0 {
-		return len(b), syscall.ENOTSUP
-	}
 	stopAction := string(chomp(b))
 	for _, c := range m._stopActions {
 		if stopAction == c {
@@ -733,12 +718,6 @@ func TestDCMotor(t *testing.T) {
 			}
 			commands, err := m.Commands()
 			want := c.dcMotor.commands()
-			if len(want) == 0 {
-				if err == nil {
-					t.Error("expected error getting commands from non-commandable dcMotor")
-				}
-				continue
-			}
 			if err != nil {
 				t.Fatalf("unexpected error getting commands: %v", err)
 			}
@@ -956,12 +935,6 @@ func TestDCMotor(t *testing.T) {
 				t.Fatalf("unexpected error: %v", err)
 			}
 			stopActions, err := m.StopActions()
-			if len(c.dcMotor.stopActions()) == 0 {
-				if err == nil {
-					t.Error("expected error getting stop actions from non-stop action dcMotor")
-				}
-				continue
-			}
 			if err != nil {
 				t.Fatalf("unexpected error getting stop actions: %v", err)
 			}

@@ -191,9 +191,6 @@ type linearActuatorCommands linearActuator
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *linearActuatorCommands) ReadAt(b []byte, offset int64) (int, error) {
-	if len((*linearActuator)(m).commands()) == 0 {
-		return len(b), syscall.ENOTSUP
-	}
 	return readAt(b, offset, m)
 }
 
@@ -220,9 +217,6 @@ func (m *linearActuatorCommand) Truncate(_ int64) error { return nil }
 func (m *linearActuatorCommand) WriteAt(b []byte, off int64) (int, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if len(m._commands) == 0 {
-		return len(b), syscall.ENOTSUP
-	}
 	command := string(chomp(b))
 	for _, c := range m._commands {
 		if command == c {
@@ -250,9 +244,6 @@ type linearActuatorStopActions linearActuator
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *linearActuatorStopActions) ReadAt(b []byte, offset int64) (int, error) {
-	if len((*linearActuator)(m).stopActions()) == 0 {
-		return len(b), syscall.ENOTSUP
-	}
 	return readAt(b, offset, m)
 }
 
@@ -854,9 +845,6 @@ type linearActuatorStopAction linearActuator
 
 // ReadAt satisfies the io.ReaderAt interface.
 func (m *linearActuatorStopAction) ReadAt(b []byte, offset int64) (int, error) {
-	if len((*linearActuator)(m).stopActions()) == 0 {
-		return len(b), syscall.ENOTSUP
-	}
 	return readAt(b, offset, m)
 }
 
@@ -867,9 +855,6 @@ func (m *linearActuatorStopAction) Truncate(_ int64) error { return nil }
 func (m *linearActuatorStopAction) WriteAt(b []byte, off int64) (int, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if len(m._stopActions) == 0 {
-		return len(b), syscall.ENOTSUP
-	}
 	stopAction := string(chomp(b))
 	for _, c := range m._stopActions {
 		if stopAction == c {
@@ -1184,12 +1169,6 @@ func TestLinearActuator(t *testing.T) {
 			}
 			commands, err := m.Commands()
 			want := c.linearActuator.commands()
-			if len(want) == 0 {
-				if err == nil {
-					t.Error("expected error getting commands from non-commandable linearActuator")
-				}
-				continue
-			}
 			if err != nil {
 				t.Fatalf("unexpected error getting commands: %v", err)
 			}
@@ -1702,12 +1681,6 @@ func TestLinearActuator(t *testing.T) {
 			}
 			stopActions, err := m.StopActions()
 			want := c.linearActuator.stopActions()
-			if len(want) == 0 {
-				if err == nil {
-					t.Error("expected error getting stop actions from non-stop action linearActuator")
-				}
-				continue
-			}
 			if err != nil {
 				t.Fatalf("unexpected error getting stop actions: %v", err)
 			}
