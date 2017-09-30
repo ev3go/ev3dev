@@ -33,7 +33,8 @@ type linearActuator struct {
 	_lastCommand string
 	_commands    []string
 
-	_countPerM int
+	_countPerM  int
+	_fullTravel int
 
 	_maxSpeed int
 	_speed    int
@@ -91,6 +92,12 @@ func (m *linearActuator) countPerM() int {
 func (m *linearActuator) setCountPerM(n int) {
 	m.mu.Lock()
 	m._countPerM = n
+	m.mu.Unlock()
+}
+
+func (m *linearActuator) setFullTravel(n int) {
+	m.mu.Lock()
+	m._fullTravel = n
 	m.mu.Unlock()
 }
 
@@ -278,6 +285,26 @@ func (m *linearActuatorCountsPerMeter) String() string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	return strconv.Itoa(m._countPerM)
+}
+
+// linearActuatorFullTavelCount is the full_travel_count attribute.
+type linearActuatorFullTravelCount linearActuator
+
+// ReadAt satisfies the io.ReaderAt interface.
+func (m *linearActuatorFullTravelCount) ReadAt(b []byte, offset int64) (int, error) {
+	return readAt(b, offset, m)
+}
+
+// Size returns the length of the backing data and a nil error.
+func (m *linearActuatorFullTravelCount) Size() (int64, error) {
+	return size(m), nil
+}
+
+// String returns a string representation of the attribute.
+func (m *linearActuatorFullTravelCount) String() string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return strconv.Itoa(m._fullTravel)
 }
 
 // linearActuatorDutyCycle is the duty_cycle attribute.
@@ -955,6 +982,7 @@ func connectedLinearActuators(c ...linearActuatorConn) []sisyphus.Node {
 			ro(CommandsName, 0444, (*linearActuatorCommands)(m.linearActuator)),
 			wo(CommandName, 0222, (*linearActuatorCommand)(m.linearActuator)),
 			ro(CountPerMeterName, 0444, (*linearActuatorCountsPerMeter)(m.linearActuator)),
+			ro(FullTravelCountName, 0444, (*linearActuatorFullTravelCount)(m.linearActuator)),
 			rw(PolarityName, 0666, (*linearActuatorPolarity)(m.linearActuator)),
 			ro(DutyCycleName, 0444, (*linearActuatorDutyCycle)(m.linearActuator)),
 			rw(DutyCycleSetpointName, 0666, (*linearActuatorDutyCycleSet)(m.linearActuator)),
@@ -1015,6 +1043,11 @@ func TestLinearActuator(t *testing.T) {
 					"stop",
 					"reset",
 				},
+
+				_maxSpeed: 10,
+
+				_fullTravel: 10,
+				_countPerM:  100,
 
 				_lastStopAction: "coast",
 				_stopActions: []string{
@@ -1167,11 +1200,8 @@ func TestLinearActuator(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			commands, err := m.Commands()
+			commands := m.Commands()
 			want := c.linearActuator.commands()
-			if err != nil {
-				t.Fatalf("unexpected error getting commands: %v", err)
-			}
 			if !reflect.DeepEqual(commands, want) {
 				t.Errorf("unexpected commands value: got:%q want:%q", commands, want)
 			}
@@ -1208,16 +1238,10 @@ func TestLinearActuator(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			for _, n := range []int{0, 64, 128, 192, 255} {
-				c.linearActuator.setCountPerM(n)
-				got, err := m.CountPerMeter()
-				if err != nil {
-					t.Errorf("unexpected error: %v", err)
-				}
-				want := c.linearActuator.countPerM()
-				if got != want {
-					t.Errorf("unexpected count per meter value: got:%d want:%d", got, want)
-				}
+			got := m.CountPerMeter()
+			want := c.linearActuator.countPerM()
+			if got != want {
+				t.Errorf("unexpected count per meter value: got:%d want:%d", got, want)
 			}
 		}
 	})
@@ -1455,16 +1479,10 @@ func TestLinearActuator(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			for _, s := range []int{0, 64, 128, 192, 255} {
-				c.linearActuator.setMaxSpeed(s)
-				got, err := m.MaxSpeed()
-				if err != nil {
-					t.Errorf("unexpected error: %v", err)
-				}
-				want := c.linearActuator.maxSpeed()
-				if got != want {
-					t.Errorf("unexpected max speed value: got:%d want:%d", got, want)
-				}
+			got := m.MaxSpeed()
+			want := c.linearActuator.maxSpeed()
+			if got != want {
+				t.Errorf("unexpected max speed value: got:%d want:%d", got, want)
 			}
 		}
 	})
@@ -1679,11 +1697,8 @@ func TestLinearActuator(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			stopActions, err := m.StopActions()
+			stopActions := m.StopActions()
 			want := c.linearActuator.stopActions()
-			if err != nil {
-				t.Fatalf("unexpected error getting stop actions: %v", err)
-			}
 			if !reflect.DeepEqual(stopActions, want) {
 				t.Errorf("unexpected stop actions value: got:%q want:%q", stopActions, want)
 			}
