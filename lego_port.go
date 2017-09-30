@@ -39,7 +39,10 @@ func (p *LegoPort) Err() error {
 }
 
 // idInt and setID satisfy the idSetter interface.
-func (p *LegoPort) setID(id int) { *p = LegoPort{id: id} }
+func (p *LegoPort) setID(id int) error {
+	*p = LegoPort{id: id}
+	return nil
+}
 func (p *LegoPort) idInt() int {
 	if p == nil {
 		return -1
@@ -56,7 +59,12 @@ func LegoPortFor(port, driver string) (*LegoPort, error) {
 	if id == -1 {
 		return nil, err
 	}
-	return &LegoPort{id: id}, err
+	var p LegoPort
+	_err := p.setID(id)
+	if _err != nil {
+		err = _err
+	}
+	return &p, err
 }
 
 // Next returns a LegoPort for the next port with the same device driver as

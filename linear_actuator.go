@@ -42,7 +42,10 @@ func (m *LinearActuator) Err() error {
 }
 
 // idInt and setID satisfy the idSetter interface.
-func (m *LinearActuator) setID(id int) { *m = LinearActuator{id: id} }
+func (m *LinearActuator) setID(id int) error {
+	*m = LinearActuator{id: id}
+	return nil
+}
 func (m *LinearActuator) idInt() int {
 	if m == nil {
 		return -1
@@ -59,7 +62,12 @@ func LinearActuatorFor(port, driver string) (*LinearActuator, error) {
 	if id == -1 {
 		return nil, err
 	}
-	return &LinearActuator{id: id}, err
+	var m LinearActuator
+	_err := m.setID(id)
+	if _err != nil {
+		err = _err
+	}
+	return &m, err
 }
 
 // Next returns a LinearActuator for the next motor with the same device driver as

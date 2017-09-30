@@ -41,7 +41,10 @@ func (m *ServoMotor) Err() error {
 }
 
 // idInt and setID satisfy the idSetter interface.
-func (m *ServoMotor) setID(id int) { *m = ServoMotor{id: id} }
+func (m *ServoMotor) setID(id int) error {
+	*m = ServoMotor{id: id}
+	return nil
+}
 func (m *ServoMotor) idInt() int {
 	if m == nil {
 		return -1
@@ -58,7 +61,12 @@ func ServoMotorFor(port, driver string) (*ServoMotor, error) {
 	if id == -1 {
 		return nil, err
 	}
-	return &ServoMotor{id: id}, err
+	var m ServoMotor
+	_err := m.setID(id)
+	if _err != nil {
+		err = _err
+	}
+	return &m, err
 }
 
 // Next returns a ServoMotor for the next motor with the same device driver as

@@ -43,7 +43,10 @@ func (s *Sensor) Err() error {
 }
 
 // idInt and setID satisfy the idSetter interface.
-func (s *Sensor) setID(id int) { *s = Sensor{id: id} }
+func (s *Sensor) setID(id int) error {
+	*s = Sensor{id: id}
+	return nil
+}
 func (s *Sensor) idInt() int {
 	if s == nil {
 		return -1
@@ -60,7 +63,12 @@ func SensorFor(port, driver string) (*Sensor, error) {
 	if id == -1 {
 		return nil, err
 	}
-	return &Sensor{id: id}, err
+	var s Sensor
+	_err := s.setID(id)
+	if _err != nil {
+		err = _err
+	}
+	return &s, err
 }
 
 // Next returns a Sensor for the next sensor with the same device driver as

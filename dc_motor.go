@@ -41,7 +41,10 @@ func (m *DCMotor) Err() error {
 }
 
 // idInt and setID satisfy the idSetter interface.
-func (m *DCMotor) setID(id int) { *m = DCMotor{id: id} }
+func (m *DCMotor) setID(id int) error {
+	*m = DCMotor{id: id}
+	return nil
+}
 func (m *DCMotor) idInt() int {
 	if m == nil {
 		return -1
@@ -58,7 +61,12 @@ func DCMotorFor(port, driver string) (*DCMotor, error) {
 	if id == -1 {
 		return nil, err
 	}
-	return &DCMotor{id: id}, err
+	var m DCMotor
+	_err := m.setID(id)
+	if _err != nil {
+		err = _err
+	}
+	return &m, err
 }
 
 // Next returns a DCMotor for the next motor with the same device driver as
