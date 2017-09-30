@@ -69,11 +69,7 @@ func znap() {
 	if err != nil {
 		log.Fatalf("failed to find motor for jaw in outB: %v", err)
 	}
-	max, err := jaw.MaxSpeed()
-	if err != nil {
-		log.Fatalf("failed to read maximum jaw speed: %v", err)
-	}
-	max /= 2
+	max := jaw.MaxSpeed() / 2
 	err = jaw.
 		SetRampUpSetpoint(200 * time.Millisecond).
 		SetRampDownSetpoint(200 * time.Millisecond).
@@ -223,11 +219,7 @@ func wander() {
 	if err != nil {
 		log.Fatalf("failed to set initialize right track: %v", err)
 	}
-	max, err := left.MaxSpeed() // Assume left and right have same maximum.
-	if err != nil {
-		log.Fatalf("failed to read maximum track speed: %v", err)
-	}
-	max /= 2
+	max := left.MaxSpeed() / 2 // Assume left and right have same maximum.
 
 	s := motorutil.Steering{Left: left, Right: right, Timeout: 5 * time.Second}
 	for {

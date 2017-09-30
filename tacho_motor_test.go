@@ -1016,6 +1016,9 @@ func TestTachoMotor(t *testing.T) {
 					"reset",
 				},
 
+				_maxSpeed:    1200,
+				_countPerRot: 360,
+
 				_lastStopAction: "coast",
 				_stopActions: []string{
 					"coast",
@@ -1167,11 +1170,8 @@ func TestTachoMotor(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			commands, err := m.Commands()
+			commands := m.Commands()
 			want := c.tachoMotor.commands()
-			if err != nil {
-				t.Fatalf("unexpected error getting commands: %v", err)
-			}
 			if !reflect.DeepEqual(commands, want) {
 				t.Errorf("unexpected commands value: got:%q want:%q", commands, want)
 			}
@@ -1208,16 +1208,10 @@ func TestTachoMotor(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			for _, n := range []int{0, 64, 128, 192, 255} {
-				c.tachoMotor.setCountsPerRot(n)
-				got, err := m.CountPerRot()
-				if err != nil {
-					t.Errorf("unexpected error: %v", err)
-				}
-				want := c.tachoMotor.countsPerRot()
-				if got != want {
-					t.Errorf("unexpected count per rot value: got:%d want:%d", got, want)
-				}
+			got := m.CountPerRot()
+			want := c.tachoMotor.countsPerRot()
+			if got != want {
+				t.Errorf("unexpected count per rot value: got:%d want:%d", got, want)
 			}
 		}
 	})
@@ -1455,16 +1449,10 @@ func TestTachoMotor(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			for _, s := range []int{0, 64, 128, 192, 255} {
-				c.tachoMotor.setMaxSpeed(s)
-				got, err := m.MaxSpeed()
-				if err != nil {
-					t.Errorf("unexpected error: %v", err)
-				}
-				want := c.tachoMotor.maxSpeed()
-				if got != want {
-					t.Errorf("unexpected max speed value: got:%d want:%d", got, want)
-				}
+			got := m.MaxSpeed()
+			want := c.tachoMotor.maxSpeed()
+			if got != want {
+				t.Errorf("unexpected max speed value: got:%d want:%d", got, want)
 			}
 		}
 	})
@@ -1679,11 +1667,8 @@ func TestTachoMotor(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			stopActions, err := m.StopActions()
+			stopActions := m.StopActions()
 			want := c.tachoMotor.stopActions()
-			if err != nil {
-				t.Fatalf("unexpected error getting stop actions: %v", err)
-			}
 			if !reflect.DeepEqual(stopActions, want) {
 				t.Errorf("unexpected stop actions value: got:%q want:%q", stopActions, want)
 			}

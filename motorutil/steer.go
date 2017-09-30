@@ -72,14 +72,8 @@ func (s *Steering) StopActions() ([]string, error) {
 		return nil, err
 	}
 
-	lActions, err := s.Left.StopActions()
-	if err != nil {
-		return nil, err
-	}
-	rActions, err := s.Right.StopActions()
-	if err != nil {
-		return nil, err
-	}
+	lActions := s.Left.StopActions()
+	rActions := s.Right.StopActions()
 	sort.Strings(lActions)
 	sort.Strings(rActions)
 	if !equal(lActions, rActions) {
