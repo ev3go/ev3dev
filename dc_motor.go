@@ -16,6 +16,9 @@ var _ idSetter = (*DCMotor)(nil)
 type DCMotor struct {
 	id int
 
+	// Cached values:
+	commands, stopActions []string
+
 	err error
 }
 
@@ -42,8 +45,22 @@ func (m *DCMotor) Err() error {
 
 // idInt and setID satisfy the idSetter interface.
 func (m *DCMotor) setID(id int) error {
-	*m = DCMotor{id: id}
+	t := DCMotor{id: id}
+	var err error
+	t.commands, err = stringSliceFrom(attributeOf(&t, commands))
+	if err != nil {
+		goto fail
+	}
+	t.stopActions, err = stringSliceFrom(attributeOf(&t, stopActions))
+	if err != nil {
+		goto fail
+	}
+	*m = t
 	return nil
+
+fail:
+	*m = DCMotor{id: -1}
+	return err
 }
 func (m *DCMotor) idInt() int {
 	if m == nil {
@@ -84,8 +101,15 @@ func (m *DCMotor) Next() (*DCMotor, error) {
 }
 
 // Commands returns the available commands for the DCMotor.
-func (m *DCMotor) Commands() ([]string, error) {
-	return stringSliceFrom(attributeOf(m, commands))
+func (m *DCMotor) Commands() []string {
+	if m.commands == nil {
+		return nil
+	}
+	// Return a copy to prevent users
+	// changing the values under our feet.
+	avail := make([]string, len(m.commands))
+	copy(avail, m.commands)
+	return avail
 }
 
 // Command issues a command to the DCMotor.
@@ -93,20 +117,15 @@ func (m *DCMotor) Command(comm string) *DCMotor {
 	if m.err != nil {
 		return m
 	}
-	avail, err := m.Commands()
-	if err != nil {
-		m.err = err
-		return m
-	}
 	ok := false
-	for _, c := range avail {
+	for _, c := range m.commands {
 		if c == comm {
 			ok = true
 			break
 		}
 	}
 	if !ok {
-		m.err = newInvalidValueError(m, command, "", comm, avail)
+		m.err = newInvalidValueError(m, command, "", comm, m.Commands())
 		return m
 	}
 	m.err = setAttributeOf(m, command, comm)
@@ -211,20 +230,15 @@ func (m *DCMotor) SetStopAction(action string) *DCMotor {
 	if m.err != nil {
 		return m
 	}
-	avail, err := m.StopActions()
-	if err != nil {
-		m.err = err
-		return m
-	}
 	ok := false
-	for _, a := range avail {
+	for _, a := range m.stopActions {
 		if a == action {
 			ok = true
 			break
 		}
 	}
 	if !ok {
-		m.err = newInvalidValueError(m, stopAction, "", action, avail)
+		m.err = newInvalidValueError(m, stopAction, "", action, m.StopActions())
 		return m
 	}
 	m.err = setAttributeOf(m, stopAction, action)
@@ -232,8 +246,15 @@ func (m *DCMotor) SetStopAction(action string) *DCMotor {
 }
 
 // StopActions returns the available stop actions for the DCMotor.
-func (m *DCMotor) StopActions() ([]string, error) {
-	return stringSliceFrom(attributeOf(m, stopActions))
+func (m *DCMotor) StopActions() []string {
+	if m.stopActions == nil {
+		return nil
+	}
+	// Return a copy to prevent users
+	// changing the values under our feet.
+	avail := make([]string, len(m.stopActions))
+	copy(avail, m.stopActions)
+	return avail
 }
 
 // TimeSetpoint returns the current time setpoint value for the DCMotor.

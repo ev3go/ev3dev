@@ -716,11 +716,8 @@ func TestDCMotor(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			commands, err := m.Commands()
+			commands := m.Commands()
 			want := c.dcMotor.commands()
-			if err != nil {
-				t.Fatalf("unexpected error getting commands: %v", err)
-			}
 			if !reflect.DeepEqual(commands, want) {
 				t.Errorf("unexpected commands value: got:%q want:%q", commands, want)
 			}
@@ -934,10 +931,7 @@ func TestDCMotor(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			stopActions, err := m.StopActions()
-			if err != nil {
-				t.Fatalf("unexpected error getting stop actions: %v", err)
-			}
+			stopActions := m.StopActions()
 			want := c.dcMotor.stopActions()
 			if !reflect.DeepEqual(stopActions, want) {
 				t.Errorf("unexpected stop actions value: got:%q want:%q", stopActions, want)
