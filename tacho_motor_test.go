@@ -82,13 +82,13 @@ func (m *tachoMotor) lastCommand() string {
 	return m._lastCommand
 }
 
-func (m *tachoMotor) countsPerRot() int {
+func (m *tachoMotor) countPerRot() int {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	return m._countPerRot
 }
 
-func (m *tachoMotor) setCountsPerRot(n int) {
+func (m *tachoMotor) setCountPerRot(n int) {
 	m.mu.Lock()
 	m._countPerRot = n
 	m.mu.Unlock()
@@ -260,21 +260,21 @@ func (m *tachoMotorStopActions) String() string {
 	return strings.Join(m._stopActions, " ")
 }
 
-// tachoMotorCountsPerRot is the counts_per_rot attribute.
-type tachoMotorCountsPerRot tachoMotor
+// tachoMotorCountPerRot is the counts_per_rot attribute.
+type tachoMotorCountPerRot tachoMotor
 
 // ReadAt satisfies the io.ReaderAt interface.
-func (m *tachoMotorCountsPerRot) ReadAt(b []byte, offset int64) (int, error) {
+func (m *tachoMotorCountPerRot) ReadAt(b []byte, offset int64) (int, error) {
 	return readAt(b, offset, m)
 }
 
 // Size returns the length of the backing data and a nil error.
-func (m *tachoMotorCountsPerRot) Size() (int64, error) {
+func (m *tachoMotorCountPerRot) Size() (int64, error) {
 	return size(m), nil
 }
 
 // String returns a string representation of the attribute.
-func (m *tachoMotorCountsPerRot) String() string {
+func (m *tachoMotorCountPerRot) String() string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	return strconv.Itoa(m._countPerRot)
@@ -954,7 +954,7 @@ func connectedTachoMotors(c ...tachoMotorConn) []sisyphus.Node {
 			ro(DriverNameName, 0444, (*tachoMotorDriver)(m.tachoMotor)),
 			ro(CommandsName, 0444, (*tachoMotorCommands)(m.tachoMotor)),
 			wo(CommandName, 0222, (*tachoMotorCommand)(m.tachoMotor)),
-			ro(CountPerRotName, 0444, (*tachoMotorCountsPerRot)(m.tachoMotor)),
+			ro(CountPerRotName, 0444, (*tachoMotorCountPerRot)(m.tachoMotor)),
 			rw(PolarityName, 0666, (*tachoMotorPolarity)(m.tachoMotor)),
 			ro(DutyCycleName, 0444, (*tachoMotorDutyCycle)(m.tachoMotor)),
 			rw(DutyCycleSetpointName, 0666, (*tachoMotorDutyCycleSet)(m.tachoMotor)),
@@ -1209,7 +1209,7 @@ func TestTachoMotor(t *testing.T) {
 				t.Fatalf("unexpected error: %v", err)
 			}
 			got := m.CountPerRot()
-			want := c.tachoMotor.countsPerRot()
+			want := c.tachoMotor.countPerRot()
 			if got != want {
 				t.Errorf("unexpected count per rot value: got:%d want:%d", got, want)
 			}
