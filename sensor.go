@@ -215,6 +215,17 @@ func (s *Sensor) SetMode(m string) *Sensor {
 	if s.err != nil {
 		return s
 	}
+	ok := false
+	for _, a := range s.modes {
+		if a == m {
+			ok = true
+			break
+		}
+	}
+	if !ok {
+		s.err = newInvalidValueError(s, mode, "", m, s.Modes())
+		return s
+	}
 	s.err = setAttributeOf(s, mode, m)
 	return s
 }
