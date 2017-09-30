@@ -17,6 +17,10 @@ var _ idSetter = (*LinearActuator)(nil)
 type LinearActuator struct {
 	id int
 
+	// Cached values:
+	countPerMeter, fullTravelCount, maxSpeed int
+	commands, stopActions                    []string
+
 	err error
 }
 
@@ -43,8 +47,34 @@ func (m *LinearActuator) Err() error {
 
 // idInt and setID satisfy the idSetter interface.
 func (m *LinearActuator) setID(id int) error {
-	*m = LinearActuator{id: id}
+	t := LinearActuator{id: id}
+	var err error
+	t.countPerMeter, err = intFrom(attributeOf(&t, countPerMeter))
+	if err != nil {
+		goto fail
+	}
+	t.fullTravelCount, err = intFrom(attributeOf(&t, fullTravelCount))
+	if err != nil {
+		goto fail
+	}
+	t.maxSpeed, err = intFrom(attributeOf(&t, maxSpeed))
+	if err != nil {
+		goto fail
+	}
+	t.commands, err = stringSliceFrom(attributeOf(&t, commands))
+	if err != nil {
+		goto fail
+	}
+	t.stopActions, err = stringSliceFrom(attributeOf(&t, stopActions))
+	if err != nil {
+		goto fail
+	}
+	*m = t
 	return nil
+
+fail:
+	*m = LinearActuator{id: -1}
+	return err
 }
 func (m *LinearActuator) idInt() int {
 	if m == nil {
@@ -85,8 +115,15 @@ func (m *LinearActuator) Next() (*LinearActuator, error) {
 }
 
 // Commands returns the available commands for the LinearActuator.
-func (m *LinearActuator) Commands() ([]string, error) {
-	return stringSliceFrom(attributeOf(m, commands))
+func (m *LinearActuator) Commands() []string {
+	if m.commands == nil {
+		return nil
+	}
+	// Return a copy to prevent users
+	// changing the values under our feet.
+	avail := make([]string, len(m.commands))
+	copy(avail, m.commands)
+	return avail
 }
 
 // Command issues a command to the LinearActuator.
@@ -94,20 +131,15 @@ func (m *LinearActuator) Command(comm string) *LinearActuator {
 	if m.err != nil {
 		return m
 	}
-	avail, err := m.Commands()
-	if err != nil {
-		m.err = err
-		return m
-	}
 	ok := false
-	for _, c := range avail {
+	for _, c := range m.commands {
 		if c == comm {
 			ok = true
 			break
 		}
 	}
 	if !ok {
-		m.err = newInvalidValueError(m, command, "", comm, avail)
+		m.err = newInvalidValueError(m, command, "", comm, m.Commands())
 		return m
 	}
 	m.err = setAttributeOf(m, command, comm)
@@ -115,15 +147,13 @@ func (m *LinearActuator) Command(comm string) *LinearActuator {
 }
 
 // CountPerMeter returns the number of tacho counts in one meter of travel of the motor.
-// Calls to CountPerMeter will return an error for non-linear motors.
-func (m *LinearActuator) CountPerMeter() (int, error) {
-	return intFrom(attributeOf(m, countPerMeter))
+func (m *LinearActuator) CountPerMeter() int {
+	return m.countPerMeter
 }
 
 // FullTravelCount returns the the number of tacho counts in the full travel of the motor.
-// Calls to FullTravelCount will return an error for non-linear motors.
-func (m *LinearActuator) FullTravelCount() (int, error) {
-	return intFrom(attributeOf(m, fullTravelCount))
+func (m *LinearActuator) FullTravelCount() int {
+	return m.fullTravelCount
 }
 
 // DutyCycle returns the current duty cycle value for the LinearActuator.
@@ -229,8 +259,8 @@ func (m *LinearActuator) SetHoldPIDKp(k int) *LinearActuator {
 }
 
 // MaxSpeed returns the maximum value that is accepted by SpeedSetpoint.
-func (m *LinearActuator) MaxSpeed() (int, error) {
-	return intFrom(attributeOf(m, maxSpeed))
+func (m *LinearActuator) MaxSpeed() int {
+	return m.maxSpeed
 }
 
 // PositionSetpoint returns the current position setpoint value for the LinearActuator.
@@ -368,20 +398,15 @@ func (m *LinearActuator) SetStopAction(action string) *LinearActuator {
 	if m.err != nil {
 		return m
 	}
-	avail, err := m.StopActions()
-	if err != nil {
-		m.err = err
-		return m
-	}
 	ok := false
-	for _, a := range avail {
+	for _, a := range m.stopActions {
 		if a == action {
 			ok = true
 			break
 		}
 	}
 	if !ok {
-		m.err = newInvalidValueError(m, stopAction, "", action, avail)
+		m.err = newInvalidValueError(m, stopAction, "", action, m.StopActions())
 		return m
 	}
 	m.err = setAttributeOf(m, stopAction, action)
@@ -389,8 +414,16 @@ func (m *LinearActuator) SetStopAction(action string) *LinearActuator {
 }
 
 // StopActions returns the available stop actions for the LinearActuator.
-func (m *LinearActuator) StopActions() ([]string, error) {
-	return stringSliceFrom(attributeOf(m, stopActions))
+func (m *LinearActuator) StopActions() []string {
+	if m.stopActions == nil {
+		return nil
+	}
+	// Return a copy to prevent users
+	// changing the values under our feet.
+	avail := make([]string, len(m.stopActions))
+	copy(avail, m.stopActions)
+	return avail
+
 }
 
 // TimeSetpoint returns the current time setpoint value for the LinearActuator.
