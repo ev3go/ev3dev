@@ -35,10 +35,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to set brake stop for medium motor on outA: %v", err)
 	}
-	maxMedium, err := outA.MaxSpeed()
-	if err != nil {
-		log.Fatalf("failed to get maximum speed for medium motor: %v", err)
-	}
+	maxMedium := outA.MaxSpeed()
 
 	// Get the handle for the left large motor on outB.
 	outB, err := ev3dev.TachoMotorFor("outB", "lego-ev3-l-motor")
@@ -49,10 +46,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to set brake stop for left large motor on outB: %v", err)
 	}
-	maxLarge, err := outB.MaxSpeed()
-	if err != nil {
-		log.Fatalf("failed to get maximum speed for large motor: %v", err)
-	}
+	maxLarge := outB.MaxSpeed()
 
 	// Get the handle for the right large motor on outC.
 	outC, err := ev3dev.TachoMotorFor("outC", "lego-ev3-l-motor")

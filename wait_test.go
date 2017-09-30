@@ -144,6 +144,58 @@ func (m *waitMotorDriver) Size() (int64, error) {
 	return size(m.driver), nil
 }
 
+// waitMotorCommands is the commands attribute.
+type waitMotorCommands waitMotor
+
+// ReadAt satisfies the io.ReaderAt interface.
+func (m *waitMotorCommands) ReadAt(b []byte, offset int64) (int, error) {
+	return readAt(b, offset, "none")
+}
+
+// Size returns the length of the backing data and a nil error.
+func (m *waitMotorCommands) Size() (int64, error) {
+	return size("none"), nil
+}
+
+// waitMotorStopActions is the stop_actions attribute.
+type waitMotorStopActions waitMotor
+
+// ReadAt satisfies the io.ReaderAt interface.
+func (m *waitMotorStopActions) ReadAt(b []byte, offset int64) (int, error) {
+	return readAt(b, offset, "none")
+}
+
+// Size returns the length of the backing data and a nil error.
+func (m *waitMotorStopActions) Size() (int64, error) {
+	return size("none"), nil
+}
+
+// waitMotorMaxSpeed is the max_speed attribute.
+type waitMotorMaxSpeed waitMotor
+
+// ReadAt satisfies the io.ReaderAt interface.
+func (m *waitMotorMaxSpeed) ReadAt(b []byte, offset int64) (int, error) {
+	return readAt(b, offset, "1200")
+}
+
+// Size returns the length of the backing data and a nil error.
+func (m *waitMotorMaxSpeed) Size() (int64, error) {
+	return size("1200"), nil
+}
+
+// waitMotorCountsPerRot is the count_per_rot attribute.
+type waitMotorCountPerRot waitMotor
+
+// ReadAt satisfies the io.ReaderAt interface.
+func (m *waitMotorCountPerRot) ReadAt(b []byte, offset int64) (int, error) {
+	return readAt(b, offset, "360")
+}
+
+// Size returns the length of the backing data and a nil error.
+func (m *waitMotorCountPerRot) Size() (int64, error) {
+	return size("360"), nil
+}
+
 // waitMotorState is the state attribute.
 type waitMotorState waitMotor
 
@@ -179,6 +231,10 @@ func connectedWaitMotors(c ...waitMotorConn) []sisyphus.Node {
 		n[i] = d(fmt.Sprintf("motor%d", m.id), 0775).With(
 			ro(AddressName, 0444, (*waitMotorAddress)(m.waitMotor)),
 			ro(DriverNameName, 0444, (*waitMotorDriver)(m.waitMotor)),
+			ro(CommandsName, 0444, (*waitMotorCommands)(m.waitMotor)),
+			ro(CountPerRotName, 0444, (*waitMotorCountPerRot)(m.waitMotor)),
+			ro(MaxSpeedName, 0444, (*waitMotorMaxSpeed)(m.waitMotor)),
+			ro(StopActionsName, 0444, (*waitMotorStopActions)(m.waitMotor)),
 			ro(StateName, 0444, (*waitMotorState)(m.waitMotor)),
 		)
 	}

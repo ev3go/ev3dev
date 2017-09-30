@@ -17,6 +17,10 @@ var _ idSetter = (*TachoMotor)(nil)
 type TachoMotor struct {
 	id int
 
+	// Cached values:
+	countPerRot, maxSpeed int
+	commands, stopActions []string
+
 	err error
 }
 
@@ -43,8 +47,30 @@ func (m *TachoMotor) Err() error {
 
 // idInt and setID satisfy the idSetter interface.
 func (m *TachoMotor) setID(id int) error {
-	*m = TachoMotor{id: id}
+	t := TachoMotor{id: id}
+	var err error
+	t.countPerRot, err = intFrom(attributeOf(&t, countPerRot))
+	if err != nil {
+		goto fail
+	}
+	t.maxSpeed, err = intFrom(attributeOf(&t, maxSpeed))
+	if err != nil {
+		goto fail
+	}
+	t.commands, err = stringSliceFrom(attributeOf(&t, commands))
+	if err != nil {
+		goto fail
+	}
+	t.stopActions, err = stringSliceFrom(attributeOf(&t, stopActions))
+	if err != nil {
+		goto fail
+	}
+	*m = t
 	return nil
+
+fail:
+	*m = TachoMotor{id: -1}
+	return err
 }
 func (m *TachoMotor) idInt() int {
 	if m == nil {
@@ -85,8 +111,15 @@ func (m *TachoMotor) Next() (*TachoMotor, error) {
 }
 
 // Commands returns the available commands for the TachoMotor.
-func (m *TachoMotor) Commands() ([]string, error) {
-	return stringSliceFrom(attributeOf(m, commands))
+func (m *TachoMotor) Commands() []string {
+	if m.commands == nil {
+		return nil
+	}
+	// Return a copy to prevent users
+	// changing the values under our feet.
+	avail := make([]string, len(m.commands))
+	copy(avail, m.commands)
+	return avail
 }
 
 // Command issues a command to the TachoMotor.
@@ -94,20 +127,15 @@ func (m *TachoMotor) Command(comm string) *TachoMotor {
 	if m.err != nil {
 		return m
 	}
-	avail, err := m.Commands()
-	if err != nil {
-		m.err = err
-		return m
-	}
 	ok := false
-	for _, c := range avail {
+	for _, c := range m.commands {
 		if c == comm {
 			ok = true
 			break
 		}
 	}
 	if !ok {
-		m.err = newInvalidValueError(m, command, "", comm, avail)
+		m.err = newInvalidValueError(m, command, "", comm, m.Commands())
 		return m
 	}
 	m.err = setAttributeOf(m, command, comm)
@@ -115,9 +143,8 @@ func (m *TachoMotor) Command(comm string) *TachoMotor {
 }
 
 // CountPerRot returns the number of tacho counts in one rotation of the motor.
-// Calls to CountPerRot will return an error for non-rotational motors.
-func (m *TachoMotor) CountPerRot() (int, error) {
-	return intFrom(attributeOf(m, countPerRot))
+func (m *TachoMotor) CountPerRot() int {
+	return m.countPerRot
 }
 
 // DutyCycle returns the current duty cycle value for the TachoMotor.
@@ -223,8 +250,8 @@ func (m *TachoMotor) SetHoldPIDKp(k int) *TachoMotor {
 }
 
 // MaxSpeed returns the maximum value that is accepted by SpeedSetpoint.
-func (m *TachoMotor) MaxSpeed() (int, error) {
-	return intFrom(attributeOf(m, maxSpeed))
+func (m *TachoMotor) MaxSpeed() int {
+	return m.maxSpeed
 }
 
 // PositionSetpoint returns the current position setpoint value for the TachoMotor.
@@ -362,20 +389,15 @@ func (m *TachoMotor) SetStopAction(action string) *TachoMotor {
 	if m.err != nil {
 		return m
 	}
-	avail, err := m.StopActions()
-	if err != nil {
-		m.err = err
-		return m
-	}
 	ok := false
-	for _, a := range avail {
+	for _, a := range m.stopActions {
 		if a == action {
 			ok = true
 			break
 		}
 	}
 	if !ok {
-		m.err = newInvalidValueError(m, stopAction, "", action, avail)
+		m.err = newInvalidValueError(m, stopAction, "", action, m.StopActions())
 		return m
 	}
 	m.err = setAttributeOf(m, stopAction, action)
@@ -383,8 +405,15 @@ func (m *TachoMotor) SetStopAction(action string) *TachoMotor {
 }
 
 // StopActions returns the available stop actions for the TachoMotor.
-func (m *TachoMotor) StopActions() ([]string, error) {
-	return stringSliceFrom(attributeOf(m, stopActions))
+func (m *TachoMotor) StopActions() []string {
+	if m.stopActions == nil {
+		return nil
+	}
+	// Return a copy to prevent users
+	// changing the values under our feet.
+	avail := make([]string, len(m.stopActions))
+	copy(avail, m.stopActions)
+	return avail
 }
 
 // TimeSetpoint returns the current time setpoint value for the TachoMotor.
