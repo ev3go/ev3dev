@@ -428,10 +428,7 @@ func TestLegoPort(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		modes, err := p.Modes()
-		if err != nil {
-			t.Fatalf("unexpected error getting modes: %v", err)
-		}
+		modes := p.Modes()
 		want := conn[0].legoPort.modes()
 		if !reflect.DeepEqual(modes, want) {
 			t.Errorf("unexpected modes value: got:%q want:%q", modes, want)
