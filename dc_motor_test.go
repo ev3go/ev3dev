@@ -638,6 +638,10 @@ func TestDCMotor(t *testing.T) {
 			if gotDriver != wantDriver {
 				t.Errorf("unexpected value for driver name: got:%q want:%q", gotDriver, wantDriver)
 			}
+			methodDriver := got.Driver()
+			if methodDriver != wantDriver {
+				t.Errorf("unexpected value for driver name: got:%q want:%q", methodDriver, wantDriver)
+			}
 		}
 	})
 

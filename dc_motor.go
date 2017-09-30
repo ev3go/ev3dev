@@ -17,6 +17,7 @@ type DCMotor struct {
 	id int
 
 	// Cached values:
+	driver                string
 	commands, stopActions []string
 
 	err error
@@ -52,6 +53,10 @@ func (m *DCMotor) setID(id int) error {
 		goto fail
 	}
 	t.stopActions, err = stringSliceFrom(attributeOf(&t, stopActions))
+	if err != nil {
+		goto fail
+	}
+	t.driver, err = DriverFor(&t)
 	if err != nil {
 		goto fail
 	}
@@ -98,6 +103,11 @@ func (m *DCMotor) Next() (*DCMotor, error) {
 		return nil, err
 	}
 	return &DCMotor{id: id}, err
+}
+
+// Driver returns the driver used by the DCMotor.
+func (m *DCMotor) Driver() string {
+	return m.driver
 }
 
 // Commands returns the available commands for the DCMotor.

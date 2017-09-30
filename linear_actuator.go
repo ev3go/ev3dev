@@ -18,6 +18,7 @@ type LinearActuator struct {
 	id int
 
 	// Cached values:
+	driver                                   string
 	countPerMeter, fullTravelCount, maxSpeed int
 	commands, stopActions                    []string
 
@@ -69,6 +70,10 @@ func (m *LinearActuator) setID(id int) error {
 	if err != nil {
 		goto fail
 	}
+	t.driver, err = DriverFor(&t)
+	if err != nil {
+		goto fail
+	}
 	*m = t
 	return nil
 
@@ -112,6 +117,11 @@ func (m *LinearActuator) Next() (*LinearActuator, error) {
 		return nil, err
 	}
 	return &LinearActuator{id: id}, err
+}
+
+// Driver returns the driver used by the LinearActuator.
+func (m *LinearActuator) Driver() string {
+	return m.driver
 }
 
 // Commands returns the available commands for the LinearActuator.

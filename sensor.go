@@ -19,8 +19,8 @@ type Sensor struct {
 	id int
 
 	// Cached values:
-	firmwareVersion string
-	commands, modes []string
+	driver, firmwareVersion string
+	commands, modes         []string
 
 	err error
 }
@@ -59,6 +59,10 @@ func (s *Sensor) setID(id int) error {
 		goto fail
 	}
 	t.modes, err = stringSliceFrom(attributeOf(&t, modes))
+	if err != nil {
+		goto fail
+	}
+	t.driver, err = DriverFor(&t)
 	if err != nil {
 		goto fail
 	}
@@ -136,6 +140,11 @@ func (s *Sensor) BinData() ([]byte, error) {
 //  float: IEEE 754 32-bit floating point (float)
 func (s *Sensor) BinDataFormat() (string, error) {
 	return stringFrom(attributeOf(s, binDataFormat))
+}
+
+// Driver returns the driver used by the Sensor.
+func (s *Sensor) Driver() string {
+	return s.driver
 }
 
 // Commands returns the available commands for the Sensor.
