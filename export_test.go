@@ -42,6 +42,7 @@ const (
 	DriverNameName                = driverName
 	DutyCycleName                 = dutyCycle
 	DutyCycleSetpointName         = dutyCycleSetpoint
+	FirmwareVersion               = firmwareVersion
 	FullTravelCountName           = fullTravelCount
 	HoldPIDName                   = holdPID
 	HoldPIDkdName                 = holdPIDkd
