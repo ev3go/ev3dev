@@ -22,6 +22,10 @@ type Sensor struct {
 	driver, firmwareVersion string
 	commands, modes         []string
 
+	// Mode cached values:
+	decimals, numValues        int
+	mode, units, binDataFormat string
+
 	err error
 }
 
@@ -63,6 +67,10 @@ func (s *Sensor) setID(id int) error {
 		goto fail
 	}
 	t.driver, err = DriverFor(&t)
+	if err != nil {
+		goto fail
+	}
+	err = t.cacheModeAttrs()
 	if err != nil {
 		goto fail
 	}
@@ -138,8 +146,8 @@ func (s *Sensor) BinData() ([]byte, error) {
 //  s32: Signed 32-bit integer (int)
 //  s32_be: Signed 32-bit integer, big endian
 //  float: IEEE 754 32-bit floating point (float)
-func (s *Sensor) BinDataFormat() (string, error) {
-	return stringFrom(attributeOf(s, binDataFormat))
+func (s *Sensor) BinDataFormat() string {
+	return s.binDataFormat
 }
 
 // Driver returns the driver used by the Sensor.
@@ -193,8 +201,8 @@ func (s *Sensor) Direct(flag int) (*os.File, error) {
 
 // Decimals returns the number of decimal places for the values in the
 // attributes of the current mode.
-func (s *Sensor) Decimals() (int, error) {
-	return intFrom(attributeOf(s, decimals))
+func (s *Sensor) Decimals() int {
+	return s.decimals
 }
 
 // FirmwareVersion returns the firmware version of the Sensor.
@@ -219,7 +227,8 @@ func (s *Sensor) Mode() (string, error) {
 	return stringFrom(attributeOf(s, mode))
 }
 
-// SetMode sets the mode of the Sensor.
+// SetMode sets the mode of the Sensor. Calling SetMode invalidates and refreshes
+// cached values for BinDataFormat, Decimals, Mode, NumValues and Units.
 func (s *Sensor) SetMode(m string) *Sensor {
 	if s.err != nil {
 		return s
@@ -236,12 +245,40 @@ func (s *Sensor) SetMode(m string) *Sensor {
 		return s
 	}
 	s.err = setAttributeOf(s, mode, m)
+	if s.err == nil {
+		s.err = s.cacheModeAttrs()
+	}
 	return s
 }
 
+func (s *Sensor) cacheModeAttrs() error {
+	var err error
+	s.decimals, err = intFrom(attributeOf(s, decimals))
+	if err != nil {
+		return err
+	}
+	s.numValues, err = intFrom(attributeOf(s, numValues))
+	if err != nil {
+		return err
+	}
+	s.mode, err = stringFrom(attributeOf(s, mode))
+	if err != nil {
+		return err
+	}
+	s.units, err = stringFrom(attributeOf(s, units))
+	if err != nil {
+		return err
+	}
+	s.binDataFormat, err = stringFrom(attributeOf(s, binDataFormat))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // NumValues returns number of values available from the Sensor.
-func (s *Sensor) NumValues() (int, error) {
-	return intFrom(attributeOf(s, numValues))
+func (s *Sensor) NumValues() int {
+	return s.numValues
 }
 
 // PollRate returns the current polling rate value for the Sensor.
@@ -259,8 +296,8 @@ func (s *Sensor) SetPollRate(d time.Duration) *Sensor {
 }
 
 // Units returns the units of the measured value for the current mode for the Sensor.
-func (s *Sensor) Units() (string, error) {
-	return stringFrom(attributeOf(s, units))
+func (s *Sensor) Units() string {
+	return s.units
 }
 
 // Value returns tthe value or values measured by the Sensor. Value will return

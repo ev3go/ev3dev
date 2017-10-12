@@ -82,10 +82,7 @@ func znap() {
 	if err != nil {
 		log.Fatalf("failed to find ultrasonic sensor: %v", err)
 	}
-	d, err := us.Decimals()
-	if err != nil {
-		log.Fatalf("failed to read decimal precision: %v", err)
-	}
+	d := us.Decimals()
 	s := 1 / math.Pow10(d)
 
 	for {

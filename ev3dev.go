@@ -10,7 +10,8 @@
 // result and constant. Action method calls return the receiver and result method calls
 // return an error value generally with another result. Action methods result in
 // a change of state in the robot while result methods return the requested attribute
-// state of the robot. Constant methods return values that are constant for the device.
+// state of the robot. Constant methods return values that are constant for the device
+// or sensor mode.
 //
 // To allow fluent call chains, errors are sticky for action methods and are cleared
 // and returned by result methods. In a chain of calls the first error that is caused
