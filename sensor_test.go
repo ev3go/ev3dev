@@ -849,10 +849,7 @@ func TestSensor(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			format, err := s.BinDataFormat()
-			if err != nil {
-				t.Fatalf("unexpected error getting bin data format: %v", err)
-			}
+			format := s.BinDataFormat()
 			wantFmt := c.sensor.binDataFormat()
 			if format != wantFmt {
 				t.Errorf("unexpected bin data format value: got:%q want:%q", format, wantFmt)
@@ -950,10 +947,7 @@ func TestSensor(t *testing.T) {
 				t.Fatalf("unexpected error invalidating units: %v", err)
 			}
 
-			got, err := s.Units()
-			if err != nil {
-				t.Errorf("unexpected error getting units: %v", err)
-			}
+			got := s.Units()
 			want := conn[0].sensor.units()
 			if got != want {
 				t.Errorf("unexpected mode value: got:%q want:%q", got, want)
@@ -977,10 +971,7 @@ func TestSensor(t *testing.T) {
 				t.Fatalf("unexpected error invalidating decimals: %v", err)
 			}
 
-			got, err := s.Decimals()
-			if err != nil {
-				t.Errorf("unexpected error getting decimals: %v", err)
-			}
+			got := s.Decimals()
 			want := conn[0].sensor.decimals()
 			if got != want {
 				t.Errorf("unexpected decimals value: got:%d want:%d", got, want)
@@ -994,10 +985,7 @@ func TestSensor(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			got, err := s.NumValues()
-			if err != nil {
-				t.Errorf("unexpected error getting num values: %v", err)
-			}
+			got := s.NumValues()
 			want := len(c.sensor.values())
 			if got != want {
 				t.Errorf("unexpected num values: got:%d want:%d", got, want)
@@ -1011,10 +999,7 @@ func TestSensor(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			n, err := s.NumValues()
-			if err != nil {
-				t.Errorf("unexpected error getting num values: %v", err)
-			}
+			n := s.NumValues()
 			for i := 0; i < n; i++ {
 				got, err := s.Value(i)
 				if err != nil {
