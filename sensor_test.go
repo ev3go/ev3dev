@@ -755,10 +755,7 @@ func TestSensor(t *testing.T) {
 			if gotDriver != wantDriver {
 				t.Errorf("unexpected value for driver name: got:%q want:%q", gotDriver, wantDriver)
 			}
-			gotFirmwareVersion, err := got.FirmwareVersion()
-			if err != nil {
-				t.Errorf("unexpected error getting firmware version:%v", err)
-			}
+			gotFirmwareVersion := got.FirmwareVersion()
 			wantFirmwareVersion := c.sensor._firmwareVersion
 			if gotFirmwareVersion != wantFirmwareVersion {
 				t.Errorf("unexpected value for firmware version: got:%q want:%q", gotFirmwareVersion, wantFirmwareVersion)
