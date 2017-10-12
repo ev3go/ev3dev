@@ -198,8 +198,8 @@ func (s *Sensor) Decimals() (int, error) {
 }
 
 // FirmwareVersion returns the firmware version of the Sensor.
-func (s *Sensor) FirmwareVersion() (string, error) {
-	return stringFrom(attributeOf(s, firmwareVersion))
+func (s *Sensor) FirmwareVersion() string {
+	return s.firmwareVersion
 }
 
 // Modes returns the available modes for the Sensor.
