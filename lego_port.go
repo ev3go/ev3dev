@@ -32,6 +32,9 @@ type LegoPort struct {
 
 // String satisfies the fmt.Stringer interface.
 func (p *LegoPort) String() string {
+	if p == nil {
+		return portPrefix + "*"
+	}
 	return portPrefix + strconv.Itoa(p.id)
 }
 

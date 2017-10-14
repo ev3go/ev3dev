@@ -468,3 +468,15 @@ func (s stack) writeTo(w io.Writer) (int, error) {
 	}
 	return n, nil
 }
+
+type causer interface {
+	Cause() error
+}
+
+func cause(err error) error {
+	c, ok := err.(causer)
+	if ok {
+		return c.Cause()
+	}
+	return err
+}
