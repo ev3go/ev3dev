@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"syscall"
 	"time"
 )
 
@@ -60,7 +61,13 @@ func (s *Sensor) setID(id int) error {
 	}
 	t.commands, err = stringSliceFrom(attributeOf(&t, commands))
 	if err != nil {
-		goto fail
+		cerr := cause(err)
+		if _err, ok := cerr.(*os.PathError); ok {
+			cerr = _err.Err
+		}
+		if cerr != syscall.ENOTSUP {
+			goto fail
+		}
 	}
 	t.modes, err = stringSliceFrom(attributeOf(&t, modes))
 	if err != nil {
