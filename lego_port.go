@@ -24,8 +24,13 @@ type LegoPort struct {
 	id int
 
 	// Cached values:
+	modes []string
+
+	// Mode cached value:
+	mode string
+
+	// Device cached value:
 	driver string
-	modes  []string
 
 	err error
 }
@@ -47,6 +52,10 @@ func (p *LegoPort) setID(id int) error {
 	t := LegoPort{id: id}
 	var err error
 	t.modes, err = stringSliceFrom(attributeOf(&t, modes))
+	if err != nil {
+		goto fail
+	}
+	t.mode, err = stringFrom(attributeOf(&t, mode))
 	if err != nil {
 		goto fail
 	}
@@ -117,8 +126,8 @@ func (p *LegoPort) Modes() []string {
 }
 
 // Mode returns the currently selected mode of the LegoPort.
-func (p *LegoPort) Mode() (string, error) {
-	return stringFrom(attributeOf(p, mode))
+func (p *LegoPort) Mode() string {
+	return p.mode
 }
 
 // SetMode sets the mode of the LegoPort.
@@ -138,6 +147,9 @@ func (p *LegoPort) SetMode(m string) *LegoPort {
 		return p
 	}
 	p.err = setAttributeOf(p, mode, m)
+	if p.err == nil {
+		p.mode, p.err = stringFrom(attributeOf(p, mode))
+	}
 	return p
 }
 
@@ -147,6 +159,9 @@ func (p *LegoPort) SetDevice(d string) *LegoPort {
 		return p
 	}
 	p.err = setAttributeOf(p, setDevice, d)
+	if p.err == nil {
+		p.driver, p.err = DriverFor(p)
+	}
 	return p
 }
 
