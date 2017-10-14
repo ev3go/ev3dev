@@ -443,10 +443,7 @@ func TestLegoPort(t *testing.T) {
 				t.Errorf("unexpected error for mode %q: %v", mode, err)
 			}
 
-			got, err := p.Mode()
-			if err != nil {
-				t.Errorf("unexpected error: %v", err)
-			}
+			got := p.Mode()
 			want := mode
 			if got != want {
 				t.Errorf("unexpected mode value: got:%q want:%q", got, want)
@@ -458,10 +455,7 @@ func TestLegoPort(t *testing.T) {
 				t.Errorf("expected error for mode %q", mode)
 			}
 
-			got, err := p.Mode()
-			if err != nil {
-				t.Errorf("unexpected error: %v", err)
-			}
+			got := p.Mode()
 			dontwant := mode
 			if got == dontwant {
 				t.Errorf("unexpected invalid mode value: got:%q, don't want:%q", got, dontwant)
