@@ -20,6 +20,9 @@
 // error state. Any attribute value returned by a call chain returning a non-nil error
 // is invalid.
 //
+// To avoid confusion caused by multiple writes to the same underlying device by
+// different handles, only one handle is allowed per physical device.
+
 // In most cases, errors returned by functions in the ev3dev package implement
 // the Causer error interface and will be able to print a stack trace if printed
 // with the "+v" fmt verb.
@@ -38,6 +41,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -383,37 +387,44 @@ func deviceIDFor(port, driver string, d Device, after int) (int, error) {
 			if device.id <= after {
 				continue
 			}
-			path := filepath.Join(d.Path(), device.name, driverName)
-			b, err := ioutil.ReadFile(path)
-			if os.IsNotExist(err) {
+			drvr, err := probeAttributeFor(d, device.name, driverName)
+			if os.IsNotExist(cause(err)) {
 				// If the device disappeared
 				// try the next one.
 				continue
 			}
 			if err != nil {
-				return -1, fmt.Errorf("ev3dev: could not read driver name %s: %v", path, err)
+				return -1, err
 			}
-			if !bytes.Equal(driverBytes, chomp(b)) {
+			if !bytes.Equal(driverBytes, chomp(drvr)) {
+				continue
+			}
+			addr, err := probeAttributeFor(d, device.name, address)
+			if err != nil {
+				return -1, err
+			}
+			if inUse(d, addr) {
 				continue
 			}
 			return device.id, nil
 		}
 
-		path := filepath.Join(d.Path(), device.name, address)
-		b, err := ioutil.ReadFile(path)
+		addr, err := probeAttributeFor(d, device.name, address)
 		if err != nil {
-			return -1, fmt.Errorf("ev3dev: could not read address %s: %v", path, err)
+			return -1, err
 		}
-		if !bytes.Equal(portBytes, chomp(b)) {
+		if !bytes.Equal(portBytes, chomp(addr)) {
 			continue
 		}
-		path = filepath.Join(d.Path(), device.name, driverName)
-		b, err = ioutil.ReadFile(path)
-		if err != nil {
-			return -1, fmt.Errorf("ev3dev: could not read driver name %s: %v", path, err)
+		if inUse(d, addr) {
+			return -1, fmt.Errorf("ev3dev: port %s in use", port)
 		}
-		if !bytes.Equal(driverBytes, chomp(b)) {
-			err = DriverMismatch{Want: driver, Have: string(chomp(b))}
+		drvr, err := probeAttributeFor(d, device.name, driverName)
+		if err != nil {
+			return -1, err
+		}
+		if !bytes.Equal(driverBytes, chomp(drvr)) {
+			err = DriverMismatch{Want: driver, Have: string(chomp(drvr))}
 		}
 		return device.id, err
 	}
@@ -425,6 +436,54 @@ func deviceIDFor(port, driver string, d Device, after int) (int, error) {
 		return -1, fmt.Errorf("ev3dev: could not find device for driver %q", driver)
 	}
 	return -1, fmt.Errorf("ev3dev: could find device with driver name %q after %s%d", driver, d.Type(), after)
+}
+
+func probeAttributeFor(d Device, name, attr string) ([]byte, error) {
+	path := filepath.Join(d.Path(), name, attr)
+	b, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, newAttrOpError(d, attr, string(b), "read", err)
+	}
+	return b, nil
+}
+
+var (
+	resLock   sync.Mutex
+	resources = map[string]map[string]Device{
+		"in":   make(map[string]Device),
+		"out":  make(map[string]Device),
+		"port": make(map[string]Device),
+	}
+)
+
+func inUse(d Device, address []byte) bool {
+	typ := d.Type()
+	switch typ {
+	case "linear", "motor":
+		typ = "out"
+	case "sensor":
+		typ = "in"
+	}
+	id := d.String()
+
+	resLock.Lock()
+	defer resLock.Unlock()
+
+	attached, exists := resources[typ][string(address)]
+	if !exists {
+		if id[len(id)-1] != '*' {
+			resources[typ][string(address)] = d
+		}
+		return false
+	}
+	addr, err := AddressOf(attached)
+	if err != nil || addr != string(address) {
+		if id[len(id)-1] != '*' {
+			resources[typ][string(address)] = d
+		}
+		return false
+	}
+	return true
 }
 
 func devicesIn(path string) ([]string, error) {
