@@ -179,7 +179,7 @@ func (p *LegoPort) Uevent() (map[string]string, error) {
 }
 
 // ConnectedTo returns a description of the device attached to p in the form
-// {inX,outY}:DEVICE-NAME, where X is in {1-4} and Y is in {A-D}.
+// PLATFORM-ports:{inX,outY}:DEVICE, where X is in {1-4} and Y is in {A-D}.
 func ConnectedTo(p *LegoPort) (string, error) {
 	if p.id < 0 {
 		return "", newIDErrorFor(p, p.id)
@@ -194,13 +194,17 @@ func ConnectedTo(p *LegoPort) (string, error) {
 		return "", err
 	}
 	for _, n := range names {
+		if !strings.Contains(n, "-ports:") {
+			continue
+		}
+		suff := n[strings.Index(n, ":")+1:]
 		switch {
-		case strings.HasPrefix(n, "in"):
-			if len(n) >= 4 && n[3] == ':' && '1' <= n[2] && n[2] <= '4' {
+		case strings.HasPrefix(suff, "in"):
+			if len(suff) >= 4 && suff[3] == ':' && '1' <= suff[2] && suff[2] <= '4' {
 				return n, nil
 			}
-		case strings.HasPrefix(n, "out"):
-			if len(n) >= 5 && n[4] == ':' && 'A' <= n[3] && n[3] <= 'D' {
+		case strings.HasPrefix(suff, "out"):
+			if len(suff) >= 5 && suff[4] == ':' && 'A' <= suff[3] && suff[3] <= 'D' {
 				return n, nil
 			}
 		}
