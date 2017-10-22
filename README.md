@@ -1,6 +1,8 @@
 ![Gopherbrick](gopherbrick.png)
 # ev3dev is an idiomatic Go interface to an ev3dev device
 
+This is the deprecated jessie branch of ev3go/ev3dev.
+
 [![Build Status](https://travis-ci.org/ev3go/ev3dev.svg?branch=master)](https://travis-ci.org/ev3go/ev3dev) [![Coverage Status](https://coveralls.io/repos/ev3go/ev3dev/badge.svg?branch=master&service=github)](https://coveralls.io/github/ev3go/ev3dev?branch=master) [![GoDoc](https://godoc.org/github.com/ev3go/ev3dev?status.svg)](https://godoc.org/github.com/ev3go/ev3dev)
 
 The goal is to implement a simple Go style ev3dev API and helpers for common tasks.
