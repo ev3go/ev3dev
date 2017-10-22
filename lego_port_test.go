@@ -278,7 +278,7 @@ func TestLegoPort(t *testing.T) {
 		{
 			id: 5,
 			legoPort: &legoPort{
-				address: "in1",
+				address: "ev3-ports:in1",
 				driver:  driver,
 
 				_modes: []string{"GYRO-ANG", "GYRO-RATE", "GYRO-FAS", "GYRO-G&A", "GYRO-CAL"},
@@ -287,7 +287,7 @@ func TestLegoPort(t *testing.T) {
 				_uevent: map[string]string{
 					"DEVTYPE":          "legoev3-input-port",
 					"LEGO_DRIVER_NAME": driver,
-					"LEGO_ADDRESS":     "in1",
+					"LEGO_ADDRESS":     "ev3-ports:in1",
 				},
 
 				t: t,
@@ -296,7 +296,7 @@ func TestLegoPort(t *testing.T) {
 		{
 			id: 7,
 			legoPort: &legoPort{
-				address: "in4",
+				address: "ev3-ports:in4",
 				driver:  driver,
 
 				t: t,
@@ -524,7 +524,7 @@ func TestLegoPort(t *testing.T) {
 				t.Fatalf("unexpected error: %v", err)
 			}
 
-			name := []string{"in2:sensor", "outC:motor"}[i%2]
+			name := []string{"ev3-ports:in2:sensor", "ev3-ports:outC:motor"}[i%2]
 
 			path := filepath.Join(p.Path(), p.String())
 			err = fs.Bind(path, d(name, 0775))
