@@ -294,9 +294,27 @@ func TestLegoPort(t *testing.T) {
 			},
 		},
 		{
-			id: 7,
+			id: 6,
 			legoPort: &legoPort{
 				address: "ev3-ports:in4",
+				driver:  driver,
+
+				t: t,
+			},
+		},
+		{
+			id: 7,
+			legoPort: &legoPort{
+				address: "spi0.1:S4",
+				driver:  driver,
+
+				t: t,
+			},
+		},
+		{
+			id: 8,
+			legoPort: &legoPort{
+				address: "spi0.1:MA",
 				driver:  driver,
 
 				t: t,
@@ -524,7 +542,12 @@ func TestLegoPort(t *testing.T) {
 				t.Fatalf("unexpected error: %v", err)
 			}
 
-			name := []string{"ev3-ports:in2:sensor", "ev3-ports:outC:motor"}[i%2]
+			name := []string{
+				"ev3-ports:in2:sensor",
+				"ev3-ports:outC:motor",
+				"spi0.1:S2:sensor",
+				"spi0.1:MC:motor",
+			}[i%4]
 
 			path := filepath.Join(p.Path(), p.String())
 			err = fs.Bind(path, d(name, 0775))

@@ -179,7 +179,9 @@ func (p *LegoPort) Uevent() (map[string]string, error) {
 }
 
 // ConnectedTo returns a description of the device attached to p in the form
-// PLATFORM-ports:{inX,outY}:DEVICE, where X is in {1-4} and Y is in {A-D}.
+// PLATFORM-ports:{inX,outY}:DEVICE, where X is in {1-4} and Y is in {A-D},
+// or if on a BrickPi3 platform, spi0.1:{SX,MY}:DEVICE, where X is in {1-16}
+// and Y is in {A-P}.
 func ConnectedTo(p *LegoPort) (string, error) {
 	if p.id < 0 {
 		return "", newIDErrorFor(p, p.id)
@@ -194,18 +196,30 @@ func ConnectedTo(p *LegoPort) (string, error) {
 		return "", err
 	}
 	for _, n := range names {
-		if !strings.Contains(n, "-ports:") {
-			continue
-		}
-		suff := n[strings.Index(n, ":")+1:]
 		switch {
-		case strings.HasPrefix(suff, "in"):
-			if len(suff) >= 4 && suff[3] == ':' && '1' <= suff[2] && suff[2] <= '4' {
-				return n, nil
+		case strings.Contains(n, "-ports:"):
+			suff := n[strings.Index(n, ":")+1:]
+			switch {
+			case strings.HasPrefix(suff, "in"):
+				if len(suff) >= 4 && suff[3] == ':' && '1' <= suff[2] && suff[2] <= '4' {
+					return n, nil
+				}
+			case strings.HasPrefix(suff, "out"):
+				if len(suff) >= 5 && suff[4] == ':' && 'A' <= suff[3] && suff[3] <= 'D' {
+					return n, nil
+				}
 			}
-		case strings.HasPrefix(suff, "out"):
-			if len(suff) >= 5 && suff[4] == ':' && 'A' <= suff[3] && suff[3] <= 'D' {
-				return n, nil
+		case strings.Contains(n, "spi0.1:"):
+			suff := n[strings.Index(n, ":")+1:]
+			switch {
+			case strings.HasPrefix(suff, "S"):
+				if len(suff) >= 3 && suff[2] == ':' && '1' <= suff[1] && suff[1] <= '9' {
+					return n, nil
+				}
+			case strings.HasPrefix(suff, "M"):
+				if len(suff) >= 3 && suff[2] == ':' && 'A' <= suff[1] && suff[1] <= 'P' {
+					return n, nil
+				}
 			}
 		}
 	}
