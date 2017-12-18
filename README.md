@@ -37,7 +37,7 @@ Compiling for a brick can be done on the platform itself if Go is installed ther
 $ GOOS=linux GOARCH=arm GOARM=5 go build github.com/ev3go/ev3dev/examples/demo
 ```
 
-This will leave a `demo` executable (from the name of the package path) in your current director. You can then copy the executable over to your brick using `scp`.
+This will leave a `demo` executable (from the name of the package path) in your current directory. You can then copy the executable over to your brick using `scp`.
 
 ---
 
