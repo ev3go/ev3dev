@@ -29,4 +29,17 @@ For device-specific functions see [EV3](https://github.com/ev3go/ev3) and [Brick
 
 - [x] Steering helper similar to EV-G steering block
 
+## Quick start compiling for a brick
+
+Compiling for a brick can be done on the platform itself if Go is installed there, but it is generally quicker on your computer. This requires that you prefix the `go build` invocation with `GOOS=linux GOARCH=arm GOARM=5`. For example, to build the [demo program](https://github.com/ev3go/ev3dev/tree/master/examples/demo) you can do this:
+
+```
+$ GOOS=linux GOARCH=arm GOARM=5 go build github.com/ev3go/ev3dev/examples/demo
+```
+
+This will leave a `demo` executable (from the name of the package path) in your current director. You can then copy the executable over to your brick using `scp`.
+
+---
+
 LEGO® is a trademark of the LEGO Group of companies which does not sponsor, authorize or endorse this software.
+
