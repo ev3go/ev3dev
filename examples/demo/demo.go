@@ -27,7 +27,7 @@ func main() {
 	defer ev3.LCD.Close()
 
 	// Get the handle for the medium motor on outA.
-	outA, err := ev3dev.TachoMotorFor("outA", "lego-ev3-m-motor")
+	outA, err := ev3dev.TachoMotorFor("ev3-ports:outA", "lego-ev3-m-motor")
 	if err != nil {
 		log.Fatalf("failed to find medium motor on outA: %v", err)
 	}
@@ -38,7 +38,7 @@ func main() {
 	maxMedium := outA.MaxSpeed()
 
 	// Get the handle for the left large motor on outB.
-	outB, err := ev3dev.TachoMotorFor("outB", "lego-ev3-l-motor")
+	outB, err := ev3dev.TachoMotorFor("ev3-ports:outB", "lego-ev3-l-motor")
 	if err != nil {
 		log.Fatalf("failed to find left large motor on outB: %v", err)
 	}
@@ -49,7 +49,7 @@ func main() {
 	maxLarge := outB.MaxSpeed()
 
 	// Get the handle for the right large motor on outC.
-	outC, err := ev3dev.TachoMotorFor("outC", "lego-ev3-l-motor")
+	outC, err := ev3dev.TachoMotorFor("ev3-ports:outC", "lego-ev3-l-motor")
 	if err != nil {
 		log.Fatalf("failed to find right large motor on outC: %v", err)
 	}
