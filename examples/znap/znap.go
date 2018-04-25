@@ -23,15 +23,15 @@ import (
 )
 
 func main() {
-	b, err := ev3dev.TachoMotorFor("outB", "lego-ev3-m-motor")
+	b, err := ev3dev.TachoMotorFor("ev3-ports:outB", "lego-ev3-m-motor")
 	if err != nil {
 		log.Fatalf("failed to find motor for jaw in outB: %v", err)
 	}
-	a, err := ev3dev.TachoMotorFor("outA", "lego-ev3-l-motor")
+	a, err := ev3dev.TachoMotorFor("ev3-ports:outA", "lego-ev3-l-motor")
 	if err != nil {
 		log.Fatalf("failed to find left motor in outA: %v", err)
 	}
-	d, err := ev3dev.TachoMotorFor("outD", "lego-ev3-l-motor")
+	d, err := ev3dev.TachoMotorFor("ev3-ports:outD", "lego-ev3-l-motor")
 	if err != nil {
 		log.Fatalf("failed to find left motor in outD: %v", err)
 	}
