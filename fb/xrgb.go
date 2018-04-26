@@ -14,7 +14,7 @@ import (
 // NewXRGB returns a new XRGB image with the given bounds.
 func NewXRGB(r image.Rectangle) *XRGB {
 	w, h := r.Dx(), r.Dy()
-	stride := 2 * w
+	stride := 4 * w
 	pix := make([]uint8, stride*h)
 	return &XRGB{Pix: pix, Stride: stride, Rect: r}
 }
@@ -34,12 +34,12 @@ func NewXRGBWith(pix []byte, r image.Rectangle, stride int) (draw.Image, error) 
 	return &XRGB{Pix: pix, Stride: stride, Rect: r}, nil
 }
 
-// XRGB is an in-memory image whose At method returns Pixel565 values.
+// XRGB is an in-memory image whose At method returns PixelXRGB values.
 type XRGB struct {
 	// Pix holds the image's pixels, as 32 bit XRGB
 	// values stored in little-endian order.
 	// The pixel at (x, y) is the four bytes at
-	// Pix[2*(x-Rect.Min.X) + (y-Rect.Min.Y)*Stride].
+	// Pix[4*(x-Rect.Min.X) + (y-Rect.Min.Y)*Stride].
 	Pix []uint8
 	// Stride is the Pix stride (in bytes) between
 	// vertically adjacent pixels.
@@ -63,7 +63,7 @@ func (p *XRGB) At(x, y int) color.Color {
 	return PixelXRGB{R: p.Pix[i+2], G: p.Pix[i+1], B: p.Pix[i]}
 }
 
-// Set sets the color of the pixel565 at (x, y) to c.
+// Set sets the color of the pixel at (x, y) to c.
 func (p *XRGB) Set(x, y int, c color.Color) {
 	if !(image.Point{x, y}.In(p.Rect)) {
 		return

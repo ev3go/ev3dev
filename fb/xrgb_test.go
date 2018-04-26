@@ -22,7 +22,7 @@ func TestXRGB(t *testing.T) {
 			t.Fatalf("failed to read src image file %v.png: %v", test, err)
 		}
 
-		got := NewRGB565(src.Bounds())
+		got := NewXRGB(src.Bounds())
 		draw.Draw(got, got.Bounds(), src, src.Bounds().Min, draw.Src)
 
 		if *genGolden {
@@ -42,7 +42,7 @@ func TestXRGB(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to read golden image file %v-xrgb.png: %v", test, err)
 		}
-		want := NewRGB565(gol.Bounds())
+		want := NewXRGB(gol.Bounds())
 		draw.Draw(want, want.Bounds(), gol, gol.Bounds().Min, draw.Src)
 
 		if !reflect.DeepEqual(got, want) {
