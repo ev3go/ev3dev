@@ -179,9 +179,10 @@ func (p *LegoPort) Uevent() (map[string]string, error) {
 }
 
 // ConnectedTo returns a description of the device attached to p in the form
-// PLATFORM-ports:{inX,outY}:DEVICE, where X is in {1-4} and Y is in {A-D},
-// or if on a BrickPi3 platform, spi0.1:{SX,MY}:DEVICE, where X is in {1-16}
-// and Y is in {A-P}.
+// CONNECTION:PORT:DEVICE where the connection is the underlying transport
+// used by the port and is in {"spi0.1", "serial0-0", "ev3-ports", "evb-ports",
+// "pistorms"} and the port is the name physically printed on the device — with
+// the prefix "in" and "out" for EV3.
 func ConnectedTo(p *LegoPort) (string, error) {
 	if p.id < 0 {
 		return "", newIDErrorFor(p, p.id)
