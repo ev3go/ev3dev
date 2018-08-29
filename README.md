@@ -5,7 +5,7 @@
 
 The goal is to implement a simple Go style ev3dev API and helpers for common tasks.
 
-github.com/ev3go/ev3dev depends on ev3dev stretch and has been tested on kernel 4.14.35-ev3dev-2.0.0-ev3. For jessie support see the [ev3dev-jessie branch](https://github.com/ev3go/ev3dev/tree/ev3dev-jessie).
+github.com/ev3go/ev3dev depends on ev3dev stretch and has been tested on kernel 4.14.61-ev3dev-2.2.2-ev3. For jessie support see the [ev3dev-jessie branch](https://github.com/ev3go/ev3dev/tree/ev3dev-jessie).
 
 For device-specific functions see [EV3](https://github.com/ev3go/ev3) and [BrickPi](https://github.com/ev3go/brickpi).
 
