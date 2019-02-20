@@ -186,6 +186,17 @@ github.com/ev3go/ev3dev.init
 	stack_test.go:7
 main.init
 `
+	// Expected output for go1.12 runtime.
+	wantTracePrefix112 = `github.com/ev3go/ev3dev.testStack
+	stack_test.go:13
+github.com/ev3go/ev3dev.testStack
+	stack_test.go:13
+github.com/ev3go/ev3dev.testStack
+	stack_test.go:13
+github.com/ev3go/ev3dev.init.ializers
+	stack_test.go:7
+runtime.main
+`
 )
 
 func TestStack(t *testing.T) {
@@ -199,7 +210,7 @@ func TestStack(t *testing.T) {
 		t.Errorf("unexpected error writing trace: %v", err)
 	}
 	gotTrace := buf.String()
-	if !strings.HasPrefix(gotTrace, wantTracePrefix) {
+	if !strings.HasPrefix(gotTrace, wantTracePrefix) && !strings.HasPrefix(gotTrace, wantTracePrefix112) {
 		t.Errorf("unexpected trace string:\ngot:\n%s\nwant prefix:\n%s", gotTrace, wantTracePrefix)
 	}
 }
@@ -210,18 +221,25 @@ const (
 github.com/ev3go/ev3dev.init
 	stack_test.go:16
 main.init`
+
+	// Expected output for go1.12 runtime.
+	wantGoSyntax112         = `ev3dev.invalidValueError{dev:ev3dev.mockDevice{}, attr:"attr", mesg:"", value:"invalid", valid:[]string{"ok", "valid"}, stack:ev3dev.stack{0x0, 0x0, 0x0}}`
+	wantErrorTracePrefix112 = `ev3dev: invalid value for mock attr: "invalid" (valid:["ok" "valid"]) at stack_test.go:16 github.com/ev3go/ev3dev.init.ializers
+github.com/ev3go/ev3dev.init.ializers
+	stack_test.go:16
+runtime.main`
 )
 
 func TestPrintTrace(t *testing.T) {
 	gotTrace := fmt.Sprintf("%+v", mockValueError)
-	if !strings.HasPrefix(gotTrace, wantErrorTracePrefix) {
+	if !strings.HasPrefix(gotTrace, wantErrorTracePrefix) && !strings.HasPrefix(gotTrace, wantErrorTracePrefix112) {
 		t.Errorf("unexpected trace string:\ngot:\n%s\nwant:\n%s", gotTrace, wantErrorTracePrefix)
 	}
 	for i := range mockValueError.stack {
 		mockValueError.stack[i] = 0
 	}
 	gotGoSyntax := fmt.Sprintf("%#v", mockValueError)
-	if gotGoSyntax != wantGoSyntax {
+	if gotGoSyntax != wantGoSyntax && gotGoSyntax != wantGoSyntax112 {
 		t.Errorf("unexpected Go syntax string: got:%s want:%s", gotGoSyntax, wantGoSyntax)
 	}
 }
