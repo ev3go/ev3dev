@@ -1,0 +1,12 @@
+bazil.org/fuse v0.0.0-20180421153158-65cc252bf669 h1:FNCRpXiquG1aoyqcIWVFmpTSKVcx2bQD38uZZeGtdlw=
+bazil.org/fuse v0.0.0-20180421153158-65cc252bf669/go.mod h1:Xbm+BRKSBEpa4q4hTSxohYNQpsxXPbPry4JJWOB3LB8=
+github.com/ev3go/ev3 v0.0.0-20180809222216-71c98163af71 h1:Z/91t3Mco51yJ8FeHONLHhTk557H2vfIdp5afTOqmZo=
+github.com/ev3go/ev3 v0.0.0-20180809222216-71c98163af71/go.mod h1:YBb2YEFMxoLDpwFOG9ZGhmvQp049IwkdzVw+xoBUpCc=
+github.com/ev3go/sisyphus v0.0.0-20190227015249-5542215c6c83 h1:6InjxiJLsbAeWYgZfwUI339zekIQBoDz9XiFjoGFhFU=
+github.com/ev3go/sisyphus v0.0.0-20190227015249-5542215c6c83/go.mod h1:daybdCVh1er5FA9h9LRBchKrm2RNh5Mr0RdlBageXiU=
+golang.org/x/net v0.0.0-20190227020308-4602d507505b h1:NcJE75iMPvzOZiQbt917kZzOkwB1RQRMIEJkx/odbng=
+golang.org/x/net v0.0.0-20190227020308-4602d507505b/go.mod h1:mL1N/T3taQHkDXs73rZJwtUhF3w3ftmwwsq0BUmARs4=
+golang.org/x/sys v0.0.0-20190226215855-775f8194d0f9 h1:N26gncmS+iqc/W/SKhX3ElI5pkt72XYoRLgi5Z70LSc=
+golang.org/x/sys v0.0.0-20190226215855-775f8194d0f9/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
+periph.io/x/periph v3.4.0+incompatible h1:5gzxE4ryPq52cdqSw0mErR6pyJK8cBF2qdUAcOWh0bo=
+periph.io/x/periph v3.4.0+incompatible/go.mod h1:EWr+FCIU2dBWz5/wSWeiIUJTriYv9v2j2ENBmgYyy7Y=
