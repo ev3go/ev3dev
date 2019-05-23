@@ -61,7 +61,7 @@ const (
 	LEDPath = "/sys/class/leds"
 
 	// ButtonPath is the path to the ev3 button events.
-	ButtonPath = "/dev/input/by-path/platform-gpio-keys.0-event"
+	ButtonPath = "/dev/input/by-path/platform-gpio_keys-event"
 
 	// LegoPortPath is the path to the ev3 lego-port file system.
 	LegoPortPath = "/sys/class/lego-port"
