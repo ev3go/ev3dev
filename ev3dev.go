@@ -22,7 +22,7 @@
 //
 // To avoid confusion caused by multiple writes to the same underlying device by
 // different handles, only one handle is allowed per physical device.
-
+//
 // In most cases, errors returned by functions in the ev3dev package implement
 // the Causer error interface and will be able to print a stack trace if printed
 // with the "+v" fmt verb.
