@@ -14,7 +14,7 @@ For device-specific functions see [EV3](https://github.com/ev3go/ev3) and [Brick
 ### Low level API
 
 - [x] Automatic identification of attached devices
-- [x] Buttons `/dev/input/by-path/platform-gpio-keys.0-event`
+- [x] Buttons `/dev/input/by-path/platform-gpio_keys-event`
 - [x] Power supply `/sys/class/power_supply`
 - [x] LED `/sys/class/leds`
 - [x] LCD `/dev/fb0`
