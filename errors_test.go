@@ -175,17 +175,8 @@ func TestErrors(t *testing.T) {
 }
 
 const (
-	wantCaller      = "stack_test.go:13 github.com/ev3go/ev3dev.testStack"
-	wantTracePrefix = `github.com/ev3go/ev3dev.testStack
-	stack_test.go:13
-github.com/ev3go/ev3dev.testStack
-	stack_test.go:13
-github.com/ev3go/ev3dev.testStack
-	stack_test.go:13
-github.com/ev3go/ev3dev.init
-	stack_test.go:7
-main.init
-`
+	wantCaller = "stack_test.go:13 github.com/ev3go/ev3dev.testStack"
+
 	// Expected output for go1.12 runtime.
 	wantTracePrefix112 = `github.com/ev3go/ev3dev.testStack
 	stack_test.go:13
@@ -196,6 +187,18 @@ github.com/ev3go/ev3dev.testStack
 github.com/ev3go/ev3dev.init.ializers
 	stack_test.go:7
 runtime.main
+`
+
+	// Expected output for go1.13 runtime.
+	wantTracePrefix113 = `github.com/ev3go/ev3dev.testStack
+	stack_test.go:13
+github.com/ev3go/ev3dev.testStack
+	stack_test.go:13
+github.com/ev3go/ev3dev.testStack
+	stack_test.go:13
+github.com/ev3go/ev3dev.init
+	stack_test.go:7
+runtime.doInit
 `
 )
 
@@ -210,36 +213,55 @@ func TestStack(t *testing.T) {
 		t.Errorf("unexpected error writing trace: %v", err)
 	}
 	gotTrace := buf.String()
-	if !strings.HasPrefix(gotTrace, wantTracePrefix) && !strings.HasPrefix(gotTrace, wantTracePrefix112) {
-		t.Errorf("unexpected trace string:\ngot:\n%s\nwant prefix:\n%s", gotTrace, wantTracePrefix)
+	if !hasAnyPrefix(gotTrace, wantTracePrefix112, wantTracePrefix113) {
+		t.Errorf("unexpected trace string:\ngot:\n%s\nwant prefix:\n%s", gotTrace, wantTracePrefix112)
 	}
 }
 
 const (
-	wantGoSyntax         = `ev3dev.invalidValueError{dev:ev3dev.mockDevice{}, attr:"attr", mesg:"", value:"invalid", valid:[]string{"ok", "valid"}, stack:ev3dev.stack{0x0, 0x0, 0x0, 0x0}}`
-	wantErrorTracePrefix = `ev3dev: invalid value for mock attr: "invalid" (valid:["ok" "valid"]) at stack_test.go:16 github.com/ev3go/ev3dev.init
-github.com/ev3go/ev3dev.init
-	stack_test.go:16
-main.init`
-
 	// Expected output for go1.12 runtime.
 	wantGoSyntax112         = `ev3dev.invalidValueError{dev:ev3dev.mockDevice{}, attr:"attr", mesg:"", value:"invalid", valid:[]string{"ok", "valid"}, stack:ev3dev.stack{0x0, 0x0, 0x0}}`
 	wantErrorTracePrefix112 = `ev3dev: invalid value for mock attr: "invalid" (valid:["ok" "valid"]) at stack_test.go:16 github.com/ev3go/ev3dev.init.ializers
 github.com/ev3go/ev3dev.init.ializers
 	stack_test.go:16
 runtime.main`
+
+	// Expected output for go1.13 runtime.
+	wantGoSyntax113         = `ev3dev.invalidValueError{dev:ev3dev.mockDevice{}, attr:"attr", mesg:"", value:"invalid", valid:[]string{"ok", "valid"}, stack:ev3dev.stack{0x0, 0x0, 0x0, 0x0, 0x0}}`
+	wantErrorTracePrefix113 = `ev3dev: invalid value for mock attr: "invalid" (valid:["ok" "valid"]) at stack_test.go:16 github.com/ev3go/ev3dev.init
+github.com/ev3go/ev3dev.init
+	stack_test.go:16
+runtime.doInit`
 )
 
 func TestPrintTrace(t *testing.T) {
 	gotTrace := fmt.Sprintf("%+v", mockValueError)
-	if !strings.HasPrefix(gotTrace, wantErrorTracePrefix) && !strings.HasPrefix(gotTrace, wantErrorTracePrefix112) {
-		t.Errorf("unexpected trace string:\ngot:\n%s\nwant:\n%s", gotTrace, wantErrorTracePrefix)
+	if !hasAnyPrefix(gotTrace, wantErrorTracePrefix112, wantErrorTracePrefix113) {
+		t.Errorf("unexpected trace string:\ngot:\n%s\nwant:\n%s", gotTrace, wantErrorTracePrefix112)
 	}
 	for i := range mockValueError.stack {
 		mockValueError.stack[i] = 0
 	}
 	gotGoSyntax := fmt.Sprintf("%#v", mockValueError)
-	if gotGoSyntax != wantGoSyntax && gotGoSyntax != wantGoSyntax112 {
-		t.Errorf("unexpected Go syntax string: got:%s want:%s", gotGoSyntax, wantGoSyntax)
+	if !matchesAny(gotGoSyntax, wantGoSyntax112, wantGoSyntax113) {
+		t.Errorf("unexpected Go syntax string: got:%s want:%s", gotGoSyntax, wantGoSyntax112)
 	}
+}
+
+func hasAnyPrefix(q string, prefixes ...string) bool {
+	for _, pre := range prefixes {
+		if strings.HasPrefix(q, pre) {
+			return true
+		}
+	}
+	return false
+}
+
+func matchesAny(q string, targets ...string) bool {
+	for _, t := range targets {
+		if q == t {
+			return true
+		}
+	}
+	return false
 }

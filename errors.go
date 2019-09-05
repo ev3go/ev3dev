@@ -384,7 +384,8 @@ func (e attrOpError) Format(fs fmt.State, c rune) {
 	}
 }
 
-func (e attrOpError) Cause() error { return e.err }
+func (e attrOpError) Cause() error  { return e.err }
+func (e attrOpError) Unwrap() error { return e.err }
 
 type parseError struct {
 	dev  Device
@@ -432,7 +433,8 @@ func (e parseError) Format(fs fmt.State, c rune) {
 	}
 }
 
-func (e parseError) Cause() error { return e.err }
+func (e parseError) Cause() error  { return e.err }
+func (e parseError) Unwrap() error { return e.err }
 
 type syntaxError string
 
