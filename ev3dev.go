@@ -351,7 +351,7 @@ func IsConnected(d Device) (ok bool, err error) {
 func AddressOf(d Device) (string, error) {
 	b, err := ioutil.ReadFile(fmt.Sprintf(d.Path()+"/%s/"+address, d))
 	if err != nil {
-		return "", fmt.Errorf(wrapped("ev3dev: failed to read %s address: %w"), d.Type(), err)
+		return "", fmt.Errorf("ev3dev: failed to read %s address: %w", d.Type(), err)
 	}
 	return string(chomp(b)), err
 }
@@ -360,7 +360,7 @@ func AddressOf(d Device) (string, error) {
 func DriverFor(d Device) (string, error) {
 	b, err := ioutil.ReadFile(fmt.Sprintf(d.Path()+"/%s/"+driverName, d))
 	if err != nil {
-		return "", fmt.Errorf(wrapped("ev3dev: failed to read %s driver name: %w"), d.Type(), err)
+		return "", fmt.Errorf("ev3dev: failed to read %s driver name: %w", d.Type(), err)
 	}
 	return string(chomp(b)), err
 }
@@ -373,7 +373,7 @@ func DriverFor(d Device) (string, error) {
 func deviceIDFor(port, driver string, d Device, after int) (int, error) {
 	devNames, err := devicesIn(d.Path())
 	if err != nil {
-		return -1, fmt.Errorf(wrapped("ev3dev: could not get devices for %s: %w"), d.Path(), err)
+		return -1, fmt.Errorf("ev3dev: could not get devices for %s: %w", d.Path(), err)
 	}
 	devices, err := sortedDevices(devNames, d.Type())
 	if err != nil {
@@ -503,7 +503,7 @@ func sortedDevices(names []string, prefix string) ([]idDevice, error) {
 		}
 		id, err := strconv.Atoi(n[len(prefix):])
 		if err != nil {
-			return nil, fmt.Errorf(wrapped("ev3dev: could not parse id from device name %q: %w"), n, err)
+			return nil, fmt.Errorf("ev3dev: could not parse id from device name %q: %w", n, err)
 		}
 		devices = append(devices, idDevice{id: id, name: n})
 	}
