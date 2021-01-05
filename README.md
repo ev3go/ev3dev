@@ -2,6 +2,7 @@
 # ev3dev is an idiomatic Go interface to an [ev3dev](http://ev3dev.org) device
 
 [![Build Status](https://travis-ci.org/ev3go/ev3dev.svg?branch=master)](https://travis-ci.org/ev3go/ev3dev) [![Coverage Status](https://coveralls.io/repos/ev3go/ev3dev/badge.svg?branch=master&service=github)](https://coveralls.io/github/ev3go/ev3dev?branch=master) [![GoDoc](https://godoc.org/github.com/ev3go/ev3dev?status.svg)](https://godoc.org/github.com/ev3go/ev3dev)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fev3go%2Fev3dev.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fev3go%2Fev3dev?ref=badge_shield)
 
 The goal is to implement a simple Go style ev3dev API and helpers for common tasks.
 
@@ -43,3 +44,7 @@ This will leave a `demo` executable (from the name of the package path) in your 
 
 LEGO® is a trademark of the LEGO Group of companies which does not sponsor, authorize or endorse this software.
 
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fev3go%2Fev3dev.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fev3go%2Fev3dev?ref=badge_large)
