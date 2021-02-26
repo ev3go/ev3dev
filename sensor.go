@@ -5,7 +5,6 @@
 package ev3dev
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -121,16 +120,8 @@ func (s *Sensor) Next() (*Sensor, error) {
 
 // BinData returns the unscaled raw values from the Sensor.
 func (s *Sensor) BinData() ([]byte, error) {
-	err := s.Err()
-	if err != nil {
-		return nil, err
-	}
-	path := filepath.Join(s.Path(), s.String(), binData)
-	b, err := ioutil.ReadFile(path)
-	if err != nil {
-		return nil, newAttrOpError(s, binData, string(b), "read", err)
-	}
-	return b, nil
+	_, b, _, err := binAttributeOf(s, binData)
+	return b, err
 }
 
 // BinDataFormat returns the format of the values returned by BinData for the
@@ -300,7 +291,7 @@ func (s *Sensor) Units() string {
 	return s.units
 }
 
-// Value returns tthe value or values measured by the Sensor. Value will return
+// Value returns the value or values measured by the Sensor. Value will return
 // and error if n is greater than or equal to the value returned by NumValues.
 func (s *Sensor) Value(n int) (string, error) {
 	return stringFrom(attributeOf(s, value+strconv.Itoa(n)))

@@ -522,17 +522,35 @@ func (d byID) Len() int           { return len(d) }
 func (d byID) Less(i, j int) bool { return d[i].id < d[j].id }
 func (d byID) Swap(i, j int)      { d[i], d[j] = d[j], d[i] }
 
-func attributeOf(d Device, attr string) (dev Device, data string, _attr string, err error) {
+var openedFiles = map[string]*os.File{}
+
+func binAttributeOf(d Device, attr string) (dev Device, data []byte, _attr string, err error) {
 	err = d.Err()
 	if err != nil {
-		return d, "", "", err
+		return d, nil, "", err
 	}
 	path := filepath.Join(d.Path(), d.String(), attr)
-	b, err := ioutil.ReadFile(path)
-	if err != nil {
-		return d, "", "", newAttrOpError(d, attr, string(b), "read", err)
+	var file *os.File
+	if openedFiles[path] == nil {
+		file, err = os.Open(path)
+		if err != nil {
+			return d, nil, "", newAttrOpError(d, attr, "", "read", err)
+		}
+		openedFiles[path] = file
+	} else {
+		file = openedFiles[path]
+		file.Seek(0, 0)
 	}
-	return d, string(chomp(b)), attr, nil
+	b, err := ioutil.ReadAll(file)
+	if err != nil {
+		return d, nil, "", newAttrOpError(d, attr, string(b), "read", err)
+	}
+	return d, b, attr, nil
+}
+
+func attributeOf(d Device, attr string) (dev Device, data string, _attr string, err error) {
+	d, b, attr, err := binAttributeOf(d, attr)
+	return d, string(chomp(b)), attr, err
 }
 
 func chomp(b []byte) []byte {
