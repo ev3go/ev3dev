@@ -5,7 +5,6 @@
 package ev3dev
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -126,7 +125,7 @@ func (s *Sensor) BinData() ([]byte, error) {
 		return nil, err
 	}
 	path := filepath.Join(s.Path(), s.String(), binData)
-	b, err := ioutil.ReadFile(path)
+	b, err := readFile(path)
 	if err != nil {
 		return nil, newAttrOpError(s, binData, string(b), "read", err)
 	}
