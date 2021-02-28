@@ -7,6 +7,8 @@ package ev3dev
 var Prefix string
 
 func init() {
+	isTesting = true
+
 	prefix = "testmount"
 	Prefix = prefix
 

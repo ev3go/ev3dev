@@ -47,7 +47,7 @@ func readAt(b []byte, offset int64, val interface{}) (int, error) {
 		return 0, io.EOF
 	}
 	n := copy(b, s[offset:])
-	if n <= len(b) {
+	if n < len(b) {
 		return n, io.EOF
 	}
 	return n, nil

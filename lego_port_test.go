@@ -14,9 +14,9 @@ import (
 	"syscall"
 	"testing"
 
-	. "github.com/ev3go/ev3dev"
-
 	"github.com/ev3go/sisyphus"
+
+	. "github.com/ev3go/ev3dev"
 )
 
 // legoPort is a legoPort sysfs directory.

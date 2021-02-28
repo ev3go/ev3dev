@@ -16,9 +16,9 @@ import (
 	"testing"
 	"time"
 
-	. "github.com/ev3go/ev3dev"
-
 	"github.com/ev3go/sisyphus"
+
+	. "github.com/ev3go/ev3dev"
 )
 
 // linearActuator is a linearActuator sysfs directory.

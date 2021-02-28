@@ -34,6 +34,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"math"
 	"os"
 	"path/filepath"
@@ -337,7 +338,8 @@ func FindAfter(d, dst Device, driver string) error {
 
 // IsConnected returns whether the Device is connected.
 func IsConnected(d Device) (ok bool, err error) {
-	_, err = os.Stat(fmt.Sprintf(d.Path()+"/%s", d))
+	path := filepath.Join(d.Path(), d.String())
+	_, err = os.Stat(path)
 	if err == nil {
 		return true, nil
 	}
@@ -349,7 +351,8 @@ func IsConnected(d Device) (ok bool, err error) {
 
 // AddressOf returns the port address of the Device.
 func AddressOf(d Device) (string, error) {
-	b, err := ioutil.ReadFile(fmt.Sprintf(d.Path()+"/%s/"+address, d))
+	path := filepath.Join(d.Path(), d.String(), address)
+	b, err := readFile(path)
 	if err != nil {
 		return "", fmt.Errorf("ev3dev: failed to read %s address: %w", d.Type(), err)
 	}
@@ -358,7 +361,8 @@ func AddressOf(d Device) (string, error) {
 
 // DriverFor returns the driver name for the Device.
 func DriverFor(d Device) (string, error) {
-	b, err := ioutil.ReadFile(fmt.Sprintf(d.Path()+"/%s/"+driverName, d))
+	path := filepath.Join(d.Path(), d.String(), driverName)
+	b, err := readFile(path)
 	if err != nil {
 		return "", fmt.Errorf("ev3dev: failed to read %s driver name: %w", d.Type(), err)
 	}
@@ -440,7 +444,7 @@ func deviceIDFor(port, driver string, d Device, after int) (int, error) {
 
 func probeAttributeFor(d Device, name, attr string) ([]byte, error) {
 	path := filepath.Join(d.Path(), name, attr)
-	b, err := ioutil.ReadFile(path)
+	b, err := readFile(path)
 	if err != nil {
 		return nil, newAttrOpError(d, attr, string(b), "read", err)
 	}
@@ -528,7 +532,7 @@ func attributeOf(d Device, attr string) (dev Device, data string, _attr string, 
 		return d, "", "", err
 	}
 	path := filepath.Join(d.Path(), d.String(), attr)
-	b, err := ioutil.ReadFile(path)
+	b, err := readFile(path)
 	if err != nil {
 		return d, "", "", newAttrOpError(d, attr, string(b), "read", err)
 	}
@@ -632,4 +636,90 @@ func setAttributeOf(d Device, attr, data string) error {
 		return newAttrOpError(d, attr, data, "set", err)
 	}
 	return nil
+}
+
+var (
+	isTesting bool
+
+	// files and fileRegLock record files that have been opened
+	// during the life of the program. There is currently no
+	// mechanism to remove a file from the registry, but this is
+	// probably not a problem given that attached devices are
+	// extremely likely to remain attached for the life of the
+	// program.
+	fileRegLock sync.Mutex
+	files       = make(map[string]*os.File)
+)
+
+func readFile(path string) ([]byte, error) {
+	if isTesting {
+		// FIXME(kortschak): Make this work always.
+		//
+		// This horror is here to work around flakey
+		// kernel hangs that happen during testing if
+		// we use the fast path code below.
+		// The flakes appear to be in bazil.org/fuse
+		// or in FUSE itself since the behaviour is
+		// dependent on bazil.org/fuse version. The
+		// behaviour is very variable, depending on
+		// timing and debugging output.
+		//
+		// The upshot of this is that the code below
+		// is only exercised on actual devices. This
+		// is not terrible, since bugs should show up
+		// quickly and the remainder of the code is
+		// properly tested using the slow path.
+		return ioutil.ReadFile(path)
+	}
+
+	f, err := fileFor(path)
+	if err != nil {
+		return nil, err
+	}
+	if f == nil {
+		// Don't try fast path for files that already
+		// failed to read into short buffer.
+		return ioutil.ReadFile(path)
+	}
+	var buf [256]byte
+	n, err := f.ReadAt(buf[:], 0)
+	if err == nil {
+		// EV3 sysfs files are maximally 4096 byte
+		// (memory page size), but files are likely
+		// to be significantly smaller. The size of
+		// 128 bytes was suggested in ev3go/ev3dev#93,
+		// but this fails with the LED trigger files.
+		// We log if there is no error since ReadAt
+		// will always return an error if n is less
+		// than len(buf). So we catch all the cases
+		// where the file is longer, with a small number
+		// of false positives where the file is exactly
+		// the length of the buffer. Bump the length
+		// of the buffer when that happens.
+		log.Printf("ev3dev: buffer too short for %s: falling back to ioutil.ReadFile", path)
+		fileRegLock.Lock()
+		f.Close()
+		files[path] = nil
+		fileRegLock.Unlock()
+		return ioutil.ReadFile(path)
+	}
+	if err == io.EOF {
+		err = nil
+	}
+	return buf[:n], err
+}
+
+func fileFor(path string) (*os.File, error) {
+	defer fileRegLock.Unlock()
+	fileRegLock.Lock()
+	f, ok := files[path]
+	if ok {
+		return f, nil
+	}
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	files[path] = f
+	return f, nil
 }

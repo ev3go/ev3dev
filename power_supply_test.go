@@ -12,9 +12,9 @@ import (
 	"strings"
 	"testing"
 
-	. "github.com/ev3go/ev3dev"
-
 	"github.com/ev3go/sisyphus"
+
+	. "github.com/ev3go/ev3dev"
 )
 
 // powerSupply is a power supply sysfs directory.
